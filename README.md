@@ -13,4 +13,6 @@ Here show example figure, same one Jean is workin on.
 
 ## 2D to 2D slice to slice registration
 
+## 2D to 2D slice to slice registration between different modalities.
+
 ## Interactive landmarking tool
