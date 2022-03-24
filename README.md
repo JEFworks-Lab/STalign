@@ -4,3 +4,10 @@ This repository contains software tools and examples for registering pairs of sp
 The package by converting datasets to cell density images, and using LDDMM based registration tools.  We include automatic and semiautomatic (with landmark placement) tools.
 
 Two examples are included, illustrating registration of MERFISH to Visium data, and Allen Common Coordinate atlas to MERFISH data.
+
+
+## 3D to 2D atlas to slice registration
+
+## 2D to 2D slice to slice registration
+
+## Interactive landmarking tool
