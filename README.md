@@ -1,7 +1,7 @@
 # Important note
 This is a work in progress!
 
-The notebook which was used for merfish to merfish alignment, more_slices_v01_loop.ipynb.
+The notebook which was used for allen to merfish alignment, more_slices_v01_loop.ipynb.
 
 The notebooks with higher version numbers are trying to estimate the contrast of each structure individually. We never finalized this.
 
