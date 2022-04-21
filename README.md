@@ -1,3 +1,12 @@
+# Important note
+This is a work in progress!
+
+The notebook which was used for merfish to merfish alignment, more_slices_v01_loop.ipynb.
+
+The notebooks with higher version numbers are trying to estimate the contrast of each structure individually. We never finalized this.
+
+For merfish to visium alignment, the latest notebook to use is merfish_visium_v02_tweak_params.ipynb
+
 # Spatial Transcriptomics Registration
 This repository contains software tools and examples for registering pairs of spatial transcriptomics datasets to each other, or single datasets to an atlas.
 
