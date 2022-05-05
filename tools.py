@@ -350,8 +350,10 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     epV : float
         Gradient descent step size for velocity field.
     sigmaM : float
-        Standard deviation of matching term for Gaussian mixture modeling in cost function. 
+        Standard deviation of image matching term for Gaussian mixture modeling in cost function. 
         This term generally controls matching accuracy with smaller corresponding to more accurate.
+        As an common example (rule of thumb), you could chose this parameter to be the variance of the pixels
+        in your target image.
     sigmaB : float
         Standard deviation of backtround term for Gaussian mixture modeling in cost function. 
         If there is missing tissue in target, we may label some pixels in target as background,
@@ -360,6 +362,13 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
         Standard deviation of artifact term for Gaussian mixture modeling in cost function. 
         If there are artifacts in target or other lack of corresponding between template and target, 
         we may label some pixels in target as artifact, and not enforce matching here.
+    sigmaR: float
+        Standard deviation for regularization. Smaller sigmaR means a smoother resulting transformation. 
+        Regularization is of the form: 0.5/sigmaR^2 int_0^1 int_X |Lv|^2 dx dt. 
+    sigmaP: float
+        Standard deviation for matching of points.  
+        Cost is of the form 0.5/sigmaP^2 sum_i (atlas_point_i - target_point_i)^2
+        
         
     
     Returns
@@ -368,6 +377,10 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
         Affine transform
     v : torch tensor
         Velocity field
+        
+    TODO
+    ----
+    Include input for initialization.
     
     '''
     
