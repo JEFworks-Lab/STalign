@@ -308,6 +308,7 @@ def extent_from_x(xJ):
 
 
 def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
+          L=None,T=None,A=None,
           a=500.0,p=3.0,expand=2.0,nt=3,
          niter=5000,diffeo_start=100, epL=5e-11, epT=5e-4, epV=5e1,
          sigmaM=0.2,sigmaB=0.19,sigmaA=0.3,sigmaR=5e5,sigmaP=2e-1):
@@ -327,6 +328,13 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
         Location of voxels in target image J
     J : torch tensor
         Target image J, with channels along first axis
+    L : torch tensor
+        Initial guess for linear transform (2x2 torch tensor). Defaults to None (identity).
+    T : torch tensor
+        Initial guess for translation (2 element torch tensor). Defaults to None (identity)
+    A : torch tensor
+        Initial guess for affine matrix.  Either L and T can be specified, or A, but not both.
+        Defaults to None (identity).
     a : float
         Smoothness scale of velocity field (default 200.0)
     p : float
@@ -398,6 +406,13 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     #epV = 5e1
     #niter = 5000
 
+    # check initial inputs
+    if A is not None:
+        if L is not None or T is not None:
+            raise Exception('If specifying A, you must not specify L or T')
+        A
+    
+    
     L = torch.eye(2,device=device,dtype=dtype,requires_grad=True)
     #L.data[0,0] = -1.0
     #L.data[:2,:2] *= 0.2
