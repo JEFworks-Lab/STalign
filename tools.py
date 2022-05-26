@@ -492,7 +492,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     DV = torch.prod(dv)
     Ki = torch.fft.ifftn(K).real
     fig,ax = plt.subplots()
-    ax.imshow(Ki,vmin=0.0,extent=extentV)
+    ax.imshow(Ki.clone().detach().cpu().numpy(),vmin=0.0,extent=extentV)
     ax.set_title('smoothing kernel')
     fig.canvas.draw()
 
@@ -519,10 +519,10 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     XI = torch.stack(torch.meshgrid(*xI,indexing='ij'),-1)
     XJ = torch.stack(torch.meshgrid(*xJ,indexing='ij'),-1)
     dJ = [x[1]-x[0] for x in xJ]
-    extentJ = (xJ[1][0].item()-dJ[1]/2.0,
-          xJ[1][-1].item()+dJ[1]/2.0,
-          xJ[0][-1].item()+dJ[0]/2.0,
-          xJ[0][0].item()-dJ[0]/2.0)
+    extentJ = (xJ[1][0].item()-dJ[1].item()/2.0,
+          xJ[1][-1].item()+dJ[1].item()/2.0,
+          xJ[0][-1].item()+dJ[0].item()/2.0,
+          xJ[0][0].item()-dJ[0].item()/2.0)
     
     #sigmaM = 0.2
     #sigmaB = 0.19
@@ -645,7 +645,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
         # draw
         if not it%10:
             ax[0].cla()
-            ax[0].imshow(((AI-torch.amin(AI,(1,2))[...,None,None])/(torch.amax(AI,(1,2))-torch.amin(AI,(1,2)))[...,None,None]).permute(1,2,0).clone().detach().cpu(),extent=extentJ)
+            ax[0].imshow(   ((AI-torch.amin(AI,(1,2))[...,None,None])/(torch.amax(AI,(1,2))-torch.amin(AI,(1,2)))[...,None,None]).permute(1,2,0).clone().detach().cpu(),extent=extentJ)
             ax[0].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
             ax[1].cla()    
             ax[1].imshow(clip(fAI.permute(1,2,0).clone().detach()/torch.max(J).item()).cpu(),extent=extentJ)
