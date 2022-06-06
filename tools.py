@@ -341,9 +341,9 @@ def extent_from_x(xJ):
 
 def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
           L=None,T=None,A=None,
-          a=500.0,p=3.0,expand=2.0,nt=3,
-         niter=5000,diffeo_start=100, epL=1e-10, epT=1e-3, epV=5e1,
-         sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=5e5,sigmaP=2e-1,
+          a=500.0,p=2.0,expand=2.0,nt=3,
+         niter=5000,diffeo_start=100, epL=1e-7, epT=1e0, epV=1e4,
+         sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=1e6,sigmaP=2e-1,
          device='cpu',dtype=torch.float64):
     ''' Run LDDMM between a pair of images.
     
@@ -426,6 +426,8 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     Include input for initialization.
     
     Include a metric for L and T
+    
+    Include input initial guess for velocity.
     
     '''
     
@@ -652,7 +654,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             ax[1].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
 
             ax[5].cla()
-            ax[5].imshow(clip(fAI - J).permute(1,2,0).clone().detach().cpu()/(torch.max(J).item())*0.5+0.5,extent=extentJ)
+            ax[5].imshow(clip( (fAI - J)/(torch.max(J).item())*3.0  ).permute(1,2,0).clone().detach().cpu()*0.5+0.5,extent=extentJ)
             ax[5].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
             ax[5].scatter(pointsJ[:,1].clone().detach().cpu(),pointsJ[:,0].clone().detach().cpu())
 
