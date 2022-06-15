@@ -313,6 +313,8 @@ def to_A(L,T):
 def extent_from_x(xJ):
     ''' Given a set of pixel locations, returns an extent 4-tuple for use with np.imshow.
     
+    Note inputs are locations of pixels along each axis, i.e. row column not xy.
+    
     Parameters
     ----------
     xJ : list of torch tensors
@@ -338,12 +340,61 @@ def extent_from_x(xJ):
                (xJ[0][0] - dJ[0]/2.0).item())
     return extentJ
 
+def L_T_from_points(pointsI,pointsJ):
+    '''
+    Compute an affine transformation from points.
+    
+    Note for an affine transformation (6dof) we need 3 points.
+    
+    Outputs, L,T should be rconstructed blockwize like [L,T;0,0,1]
+    
+    Parameters
+    ----------
+    pointsI : array
+        An Nx2 array of floating point numbers describing atlas points in ROW COL order (not xy)
+    pointsJ : array
+        An Nx2 array of floating point numbers describing target points in ROW COL order (not xy)
+    
+    Returns
+    -------
+    L : array
+        A 2x2 linear transform array.
+    T : array
+        A 2 element translation vector
+    '''
+    if pointsI is None or pointsJ is None:
+        raise Exception('Points are set to None')
+        
+    nI = pointsI.shape[0]
+    nJ = pointsJ.shape[0]
+    if nI != nJ:
+        raise Exception(f'Number of pointsI ({nI}) is not equal to number of pointsJ ({nJ})')
+    if pointsI.shape[1] != 2:
+        raise Exception(f'Number of components of pointsI ({pointsI.shape[1]}) should be 2')
+    if pointsJ.shape[1] != 2:
+        raise Exception(f'Number of components of pointsJ ({pointsJ.shape[1]}) should be 2')
+    # transformation model
+    if nI < 3:
+        # translation only 
+        L = np.eye(2)
+        T = np.mean(pointsJ,0) - np.mean(pointsI,0)
+    else:
+        # we need an affine transform
+        pointsI_ = np.concatenate((pointsI,np.ones((nI,1))),1)
+        pointsJ_ = np.concatenate((pointsJ,np.ones((nI,1))),1)
+        II = pointsI_.T@pointsI_
+        IJ = pointsI_.T@pointsJ_
+        A = (np.linalg.inv(II)@IJ).T        
+        L = A[:2,:2]
+        T = A[:2,-1]
+    return L,T
+
 
 def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
-          L=None,T=None,A=None,
+          L=None,T=None,A=None,v=None,xv=None,
           a=500.0,p=2.0,expand=2.0,nt=3,
-         niter=5000,diffeo_start=100, epL=1e-7, epT=1e0, epV=1e4,
-         sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=1e6,sigmaP=2e-1,
+         niter=5000,diffeo_start=100, epL=5e-8, epT=5e-1, epV=5e3,
+         sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=5e5,sigmaP=2e1,
          device='cpu',dtype=torch.float64):
     ''' Run LDDMM between a pair of images.
     
@@ -368,6 +419,10 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     A : torch tensor
         Initial guess for affine matrix.  Either L and T can be specified, or A, but not both.
         Defaults to None (identity).
+    v : torch tensor
+        Initial guess for velocity field
+    xv : torch tensor
+        pixel locations for velocity field
     a : float
         Smoothness scale of velocity field (default 200.0)
     p : float
@@ -375,7 +430,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     expand : float
         Factor to expand size of velocity field around image boundaries (default 2.0)
     nt : int
-        Number of timesteps for integrating velocity field (defulat 3)
+        Number of timesteps for integrating velocity field (default 3). Ignored if you input v.
     pointsI : torch tensor
         N x 2 set of corresponding points for matching in atlas image. Default None (no points).
     pointsJ : torch tensor
@@ -420,14 +475,18 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
         Affine transform
     v : torch tensor
         Velocity field
+    xv : list of torch tensor
+        Pixel locations in v
         
     TODO
     ----
-    Include input for initialization.
+    Include input for initialization. (done)
     
     Include a metric for L and T
     
-    Include input initial guess for velocity.
+    Include input initial guess for velocity. (done)
+    
+    Better initialization for mu
     
     '''
     
@@ -473,13 +532,25 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     #a = 500.0
     #p = 3.0
     #expand = 2.0
-    minv = torch.as_tensor([x[0] for x in xI],device=device,dtype=dtype)
-    maxv = torch.as_tensor([x[-1] for x in xI],device=device,dtype=dtype)
-    minv,maxv = (minv+maxv)*0.5 + 0.5*torch.tensor([-1.0,1.0],device=device,dtype=dtype)[...,None]*(maxv-minv)*expand
-    xv = [torch.arange(m,M,a*0.5,device=device,dtype=dtype) for m,M in zip(minv,maxv)]
+    if v is not None and xv is not None:
+        v = torch.tensor(v,device=device,dtype=dtype,requires_grad=True)
+        xv = [torch.tensor(x,device=device,dtype=dtype) for x in xv]
+        XV = torch.stack(torch.meshgrid(xv),-1)
+        nt = v.shape[0]        
+    elif v is None and xv is None:
+        minv = torch.as_tensor([x[0] for x in xI],device=device,dtype=dtype)
+        maxv = torch.as_tensor([x[-1] for x in xI],device=device,dtype=dtype)
+        minv,maxv = (minv+maxv)*0.5 + 0.5*torch.tensor([-1.0,1.0],device=device,dtype=dtype)[...,None]*(maxv-minv)*expand
+        xv = [torch.arange(m,M,a*0.5,device=device,dtype=dtype) for m,M in zip(minv,maxv)]
+        XV = torch.stack(torch.meshgrid(xv),-1)
+        v = torch.zeros((nt,XV.shape[0],XV.shape[1],XV.shape[2]),device=device,dtype=dtype,requires_grad=True)
+    else:
+        raise Exception(f'If inputting an initial v, must input both xv and v')
     extentV = extent_from_x(xv)
     dv = torch.as_tensor([x[1]-x[0] for x in xv],device=device,dtype=dtype)
-    XV = torch.stack(torch.meshgrid(xv),-1)
+    
+    
+ 
     fv = [torch.arange(n,device=device,dtype=dtype)/n/d for n,d in zip(XV.shape,dv)]
     extentF = extent_from_x(fv)
     FV = torch.stack(torch.meshgrid(fv),-1)
@@ -500,7 +571,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
 
 
     # nt = 3
-    v = torch.zeros((nt,XV.shape[0],XV.shape[1],XV.shape[2]),device=device,dtype=dtype,requires_grad=True)
+    
 
 
     WM = torch.ones(J[0].shape,dtype=J.dtype,device=J.device)*0.5
@@ -649,22 +720,27 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             ax[0].cla()
             ax[0].imshow(   ((AI-torch.amin(AI,(1,2))[...,None,None])/(torch.amax(AI,(1,2))-torch.amin(AI,(1,2)))[...,None,None]).permute(1,2,0).clone().detach().cpu(),extent=extentJ)
             ax[0].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
+            ax[0].set_title('space tformed atlas')
+            
             ax[1].cla()    
             ax[1].imshow(clip(fAI.permute(1,2,0).clone().detach()/torch.max(J).item()).cpu(),extent=extentJ)
             ax[1].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
-
+            ax[1].set_title('contrast tformed atlas')
+            
             ax[5].cla()
             ax[5].imshow(clip( (fAI - J)/(torch.max(J).item())*3.0  ).permute(1,2,0).clone().detach().cpu()*0.5+0.5,extent=extentJ)
             ax[5].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
             ax[5].scatter(pointsJ[:,1].clone().detach().cpu(),pointsJ[:,0].clone().detach().cpu())
+            ax[5].set_title('Error')
 
             ax[2].cla()
             ax[2].imshow(J.permute(1,2,0).cpu()/torch.max(J).item(),extent=extentJ)
             ax[2].scatter(pointsJ[:,1].clone().detach().cpu(),pointsJ[:,0].clone().detach().cpu())
+            ax[2].set_title('Target')
 
             ax[4].cla()
             ax[4].imshow(clip(torch.stack((WM,WA,WB),-1).clone().detach()).cpu(),extent=extentJ)
-
+            ax[4].set_title('Weights')
 
 
             toshow = v[0].clone().detach().cpu()
@@ -673,7 +749,8 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             toshow = torch.cat((toshow,torch.zeros_like(toshow[...,0][...,None])),-1)   
             ax[3].cla()
             ax[3].imshow(clip(toshow),extent=extentV)
-
+            ax[3].set_title('velocity')
+            
             axE.cla()
             axE.plot(Esave)
             axE.legend(['E','EM','ER','EP'])
@@ -683,7 +760,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             fig.canvas.draw()
             figE.canvas.draw()
             
-    return A,v
+    return A,v,xv
 
 
 def build_transform(xv,v,A,XJ):
@@ -721,4 +798,5 @@ def build_transform(xv,v,A,XJ):
     nt = v.shape[0]
     for t in range(nt-1,-1,-1):
         Xs = Xs + interp(xv,-v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
-    return Xs
+    return Xs 
+
