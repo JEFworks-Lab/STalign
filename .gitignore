@@ -1,0 +1,10 @@
+.Rproj.user
+*.Rproj
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+*.nrrd
+.ipynb_checkpoints/
+__pycache__/
+*~
