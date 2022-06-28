@@ -59,10 +59,7 @@ def rasterize(x, y, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=Fal
     Rasterize a dataset at 30 micron pixel size, with three kernels, using difference between scales.
     
     >>> X,Y,M,fig = tools.rasterize(x,y,dx=30.0,blur=[2.0,1.0,0.5],draw=10000, wavelet_magnitude=True)
-    
-    TODO
-    ----
-    Use a window to make kernels faster and verify it is working. Note it looks like part is chopped off
+        
         
     '''
     
@@ -763,7 +760,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     return A,v,xv
 
 
-def build_transform(xv,v,A,XJ):
+def build_transform(xv,v,A,direction='b',XJ=None):
     ''' Create sample points to transform atlas to target from affine and velocity.
     
     Parameters
@@ -774,8 +771,12 @@ def build_transform(xv,v,A,XJ):
         time dependent velocity field
     A : array
         Affine transformation matrix
+    direction : char
+        'f' for forward and 'b' for backward. 'b' is default and is used for transforming images.
+        'f' is used for transforming points.
     XJ : array
-        Sample points for target (meshgrid with ij index style)
+        Sample points for target (meshgrid with ij index style).  Defaults to None 
+        to keep sampling on the xv.
     
     Returns
     -------
@@ -786,17 +787,62 @@ def build_transform(xv,v,A,XJ):
     TODO
     ----
     Check types.
+    Implement forward versus backwards
     
     '''
+    
     A = torch.tensor(A)
     v = torch.tensor(v)
-    XJ = torch.tensor(XJ)
-    Ai = torch.linalg.inv(A)
-    # transform sample points
-    Xs = (Ai[:2,:2]@XJ[...,None])[...,0] + Ai[:2,-1]    
-    # now diffeo, not semilagrange here
-    nt = v.shape[0]
-    for t in range(nt-1,-1,-1):
-        Xs = Xs + interp(xv,-v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
+    if XJ is not None:
+        # check some types here
+        if isinstance(XJ,list):
+            if XJ[0].ndim == 1: # need meshgrid
+                XJ = torch.stack(torch.meshgrid([torch.tensor(x) for x in XJ],indexing='ij'),-1)
+            elif XJ[0].ndim == 2: # assume already meshgrid
+                XJ = torch.stack([torch.tensor(x) for x in XJ],-1)
+            else:
+                raise Expression('Could not understand variable XJ type')
+            
+        # if it is already in meshgrid form we just need to make sure it is a tensor
+        XJ = torch.tensor(XJ)
+    else:
+        XJ = torch.stack(torch.meshgrid([torch.tensor(x) for x in xv],indexing='ij'),-1)
+        
+    if direction == 'b':
+        Ai = torch.linalg.inv(A)
+        # transform sample points
+        Xs = (Ai[:2,:2]@XJ[...,None])[...,0] + Ai[:2,-1]    
+        # now diffeo, not semilagrange here
+        nt = v.shape[0]
+        for t in range(nt-1,-1,-1):
+            Xs = Xs + interp(xv,-v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
+    elif direction == 'f':
+        Xs = torch.clone(XJ)
+        nt = v.shape[0]
+        for t in range(nt):
+            Xs = Xs + interp(xv,v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
+        Xs = (A[:2,:2]@XJ[...,None])[...,0] + A[:2,-1]    
+            
+    else:
+        raise Exception(f'Direction must be "f" or "b" but you input {direction}')
     return Xs 
 
+
+def transform_image_atlas_to_target(xv,v,A,xI,I,XJ=None):
+    '''
+    Transform an image
+    '''
+def transform_image_target_to_atlas(xv,v,A,xJ,J,XI=None):
+    '''
+    Transform an image
+    '''
+    
+def transform_points_atlas_to_target(xv,v,A,points):
+    '''
+    Transform points.  Note points are in row column order, not xy.
+    '''
+    
+def transform_points_target_to_atlas(xv,v,A,points):
+    '''
+    Transform points.  Note points are in row column order, not xy.
+    '''
