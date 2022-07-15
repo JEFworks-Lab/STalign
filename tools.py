@@ -757,7 +757,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             fig.canvas.draw()
             figE.canvas.draw()
             
-    return A,v,xv
+    return A.clone().detach(),v.clone().detach(),xv
 
 
 def build_transform(xv,v,A,direction='b',XJ=None):
@@ -821,7 +821,7 @@ def build_transform(xv,v,A,direction='b',XJ=None):
         nt = v.shape[0]
         for t in range(nt):
             Xs = Xs + interp(xv,v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
-        Xs = (A[:2,:2]@XJ[...,None])[...,0] + A[:2,-1]    
+        Xs = (A[:2,:2]@Xs[...,None])[...,0] + A[:2,-1]    
             
     else:
         raise Exception(f'Direction must be "f" or "b" but you input {direction}')
@@ -832,17 +832,45 @@ def transform_image_atlas_to_target(xv,v,A,xI,I,XJ=None):
     '''
     Transform an image
     '''
+    phii = build_transform(xv,v,A,direction='b',XJ=XJ)    
+    phiI = interp(xI,I,phii.permute(2,0,1))
+    return phiI
+    
+    
 def transform_image_target_to_atlas(xv,v,A,xJ,J,XI=None):
     '''
     Transform an image
     '''
+    phi = build_transform(xv,v,A,direction='f',XJ=XI)    
+    phiiJ = interp(xJ,J,phi.permute(2,0,1))
+    return phiiJ
     
-def transform_points_atlas_to_target(xv,v,A,points):
+def transform_points_atlas_to_target(xv,v,A,pointsI):
+    '''
+    Transform points.  Note points are in row column order, not xy.
+    '''
+    #phi = build_transform(xv,v,A,direction='f',XJ=XI)
+    if isinstance(pointsI,torch.Tensor):
+        pointsIt = torch.clone(pointsI)
+    else:
+        pointsIt = torch.tensor(pointsI)
+    nt = v.shape[0]
+    for t in range(nt):            
+        pointsIt += interp(xv,v[t].permute(2,0,1),pointsIt.T[...,None])[...,0].T/nt
+    pointsIt = (A[:2,:2]@pointsIt.T + A[:2,-1][...,None]).T
+    return pointsIt
+def transform_points_target_to_atlas(xv,v,A,pointsI):
     '''
     Transform points.  Note points are in row column order, not xy.
     '''
     
-def transform_points_target_to_atlas(xv,v,A,points):
-    '''
-    Transform points.  Note points are in row column order, not xy.
-    '''
+    if isinstance(pointsI,torch.Tensor):
+        pointsIt = torch.clone(pointsI)
+    else:
+        pointsIt = torch.tensor(pointsI)
+    Ai = torch.linalg.inv(A)
+    pointsIt = (Ai[:2,:2]@pointsIt.T + Ai[:2,-1][...,None]).T
+    nt = v.shape[0]
+    for t in range(nt):            
+        pointsIt += interp(xv,-v[t].permute(2,0,1),pointsIt.T[...,None])[...,0].T/nt
+    return pointsIt
