@@ -1,4 +1,4 @@
-''' Tools for registration of spatial transcriptomics data.
+''' Tools for registration of spatial transcriptomics data. Last editied 07/28/22.
 '''
 
 import numpy as np
@@ -9,7 +9,36 @@ from torch.nn.functional import grid_sample
 
 
 
-def rasterize(x, y, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=False,use_windowing=True):
+def normalize(arr, t_min=0, t_max=1):
+    """Linearly normalizes an array between two specifed values.
+    
+    Parameters
+    ----------
+    arr : numpy array
+        array to be normalized
+    t_min : int or float
+        Lower bound of normalization range
+    t_max : int or float
+        Upper bound of normalization range
+    
+    Returns
+    -------
+    norm_arr : numpy array
+        1D array with normalized arr values
+        
+    """
+    
+    diff = t_max - t_min
+    diff_arr = np.max(arr) - np.min(arr)
+    min_ = np.min(arr)
+        
+    norm_arr = ((arr - min_)/diff_arr * diff) + t_min
+    
+    return norm_arr
+
+
+
+def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wavelet_magnitude=False,use_windowing=True):
     ''' Rasterize a spatial transcriptomics dataset into a density image
     
     Paramters
@@ -18,6 +47,9 @@ def rasterize(x, y, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=Fal
         x location of cells
     y : numpy array of length N
         y location of cells
+    g : numpy array of length N
+        RNA count of cells
+        If not given, density image is created
     dx : float
         Pixel size to rasterize data (default 30.0, in same units as x and y)
     blur : float or list of floats
@@ -39,7 +71,7 @@ def rasterize(x, y, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=Fal
     Y  : numpy array
         Locations of pixels along the y axis
     M : numpy array
-        A rasterized image with len(blur) channels along the last axis
+        A rasterized image with len(blur) channels along the first axis
     fig : matplotlib figure handle
         If draw=True, returns a figure handle to the drawn figure.
         
@@ -93,8 +125,12 @@ def rasterize(x, y, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=Fal
     if draw: fig,ax = plt.subplots()
     count = 0
     
-    for x_,y_ in zip(x,y):
-        # to speed things up I shoul index
+    g = np.resize(g,x.size)
+    if(not (g==1.0).all()):
+        g = normalize(g)
+    
+    for x_,y_,g_ in zip(x,y,g):
+        # to speed things up I should index
         # to do this I'd have to find row and column indices
         #col = np.round((x_ - X_[0])/dx).astype(int)
         #row = np.round((y_ - X_[1])/dx).astype(int)
@@ -109,7 +145,8 @@ def rasterize(x, y, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=Fal
         # W[row,col] += 1.0
         if not use_windowing: # legacy version
             k = np.exp( - ( (X[0][...,None] - x_)**2 + (X[1][...,None] - y_)**2 )/(2.0*(dx*blur*2)**2)  )
-            k /= np.sum(k,axis=(0,1),keepdims=True)     
+            k /= np.sum(k,axis=(0,1),keepdims=True)
+            k *= g_
             if wavelet_magnitude:
                 for i in reversed(range(nb)):
                     if i == 0:
@@ -133,14 +170,15 @@ def rasterize(x, y, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=Fal
             col1 = np.minimum(np.maximum(col1,0),W.shape[1]-1)
             
            
-            k = np.exp( - ( (X[0][row0:row1+1,col0:col1+1,None] - x_)**2 + (X[1][row0:row1+1,col0:col1+1,None] - y_)**2 )/(2.0*(dx*blur*2)**2)  )
-            k /= np.sum(k,axis=(0,1),keepdims=True)     
+            k =  np.exp( - ( (X[0][row0:row1+1,col0:col1+1,None] - x_)**2 + (X[1][row0:row1+1,col0:col1+1,None] - y_)**2 )/(2.0*(dx*blur*2)**2)  )
+            k /= np.sum(k,axis=(0,1),keepdims=True)  
+            k *= g_
             if wavelet_magnitude:
                 for i in reversed(range(nb)):
                     if i == 0:
                         continue
                     k[...,i] = k[...,i] - k[...,i-1]
-            W[row0:row1+1,col0:col1+1,:] += k
+            W[row0:row1+1,col0:col1+1,:] += k #range of voxels -oka
             
         
             
@@ -178,6 +216,179 @@ def rasterize(x, y, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=Fal
     else:
         output = X,Y,W
     return output
+    
+    
+
+def rasterizePCA(x, y, G):
+    """Rasterize a spatial transcriptomics dataset into a density image and perform PCA on it.
+    
+    Parameters
+    ----------
+    x : numpy array of length N
+        x location of cells
+    y : numpy array of length N
+        y location of cells
+    G : pandas Dataframe of shape (N,M)
+        gene expression level of cells for M genes
+       
+    Returns
+    -------
+    X : numpy array
+        A rasterized image for each gene with the channel along the first axis
+    Y : numpy array
+        A rasterized image unraveled to 1-D for each gene; data is centered
+    W : numpy array
+        The eigenvalues for the principal components in descending order
+    V : numpy array
+        The normalized eigenvectors for the principal components
+        V[:, i] corresponds to eigenvalue at W[i]
+    Z : numpy array
+        X rotated to align with the principal component axes
+    nrows : int
+        Row dimension of rasterized image
+    ncols : int
+        Column dimension of rasterized image
+    
+    Notes
+    -----
+    Each value/row at the same index in x, y, and G should all correspond to the same cell.
+    x[i] <-> y[i] <-> G[i,:]
+    
+    """
+    
+    nrows=0
+    ncols=0
+    
+    for i in range(G.shape[1]):
+        g = np.array(G.iloc[:,i])
+        
+        XI,YI,I = tools.rasterize(x,y,g,dx=30.0,blur=1.0,expand=1.1, draw=0, 
+                              wavelet_magnitude=True, use_windowing=True)
+        
+        if(i==0):
+            # dimensions
+            nrows=YI.size
+            ncols=XI.size
+            X = np.empty([G.shape[1], nrows, ncols])
+            Y = np.empty([G.shape[1], nrows*ncols])
+        
+        # centers data
+        X[i] = np.array(I)
+        I_ = I.ravel()
+        meanI = np.mean(I_)
+        I_ -= meanI
+        Y[i] = I_
+        
+        if(i % 50 == 0):
+            print(f"{i} out of {G.shape[1]} genes rasterized.")
+        
+    S = np.cov(Y) # computes covariance matrix
+    W,V = np.linalg.eigh(S) # W = eigenvalues, V = eigenvectors
+    
+    # reverses order to make it descending by eigenvalue
+    W = W[::-1]
+    V = V[:,::-1]
+    Z = V.T @ Y
+    
+    return X, Y, W, V, Z, nrows, ncols
+
+
+
+def make_scree(W, name, p=6):
+    """Create a scree plot for a given set of eigenvalues.
+    
+    Parameters
+    ----------
+    W : numpy array
+        Eigenvalues in descending order
+    name : str
+        Name of the dataset the eigenvalue originate from
+        Will be included in plot title
+    p : int
+        Number of eigenvalue from W to plot. Defaults to 6
+        
+    Returns
+    -------
+    fig : matplotlib Figure
+        Figure handle for scree plot
+        
+    Raises
+    ------
+    ValueError
+        If p is larger than the number to eigenvalues in W.
+    
+    """
+    
+    if(p > W.size):
+        raise ValueError("Cannot plot more eigenvalues than what is given.")
+    
+    fig, ax = plt.subplots(figsize=(8,6))
+    
+    ax.bar(range(p),W[:p],width=.9,tick_label=range(1,p+1))
+    ax.plot(W[:p],'ko-',linewidth=1)
+
+    ax.set_title("Scree Plot: First %s PCs (%s)" %(p,name), fontsize=18,fontweight='bold')
+    ax.set_xlabel('Principal Components')
+    ax.set_ylabel("Eigenvalues")
+        
+    return fig
+
+
+
+def saveRasters(X, Y, W, V, Z, scree_fig, nrows, ncols, name, path):
+    """
+    Create an RGB image principal components 1-3 and 4-6.
+    Save numpy arrays necessary for rasterizing and performing PCA.
+    Save scree plot and RGB image as jpeg, and their figure handles.
+    
+    Parameters
+    ----------
+    X : numpy array
+        A rasterized image for each gene with the channel along the first axis
+    Y : numpy array
+        A rasterized image unraveled to 1-D for each gene; data is centered
+    W : numpy array
+        The eigenvalues for the principal components in descending order
+    V : numpy array
+        The normalized eigenvectors for the principal components
+        V[:, i] corresponds to eigenvalue at W[i]
+    Z : numpy array
+        X rotated to align with the principal component axes
+    scree_fig : matplotlib Figure
+        Figure handle for scree plot
+    nrows : int
+        Row dimension of rasterized image
+    ncols : int
+        Column dimension of rasterized image
+    name : str
+        Name of the dataset the arrays originate from
+    path : str
+        Absolute path to folder where files should be saved
+        
+    Returns
+    -------
+    None
+    
+    """
+    
+    I_pca = Z.reshape((Z.shape[0], nrows, ncols))
+    I_rgb = np.array(I_pca[:6].transpose(1,2,0))
+    I_rgb[...,:] = normalize(I_rgb[...,:])
+    
+    fig,axs = plt.subplots(1,2)
+    axs[0].imshow(I_rgb[:,:,:3])
+    axs[1].imshow(I_rgb[:,:,3:])
+    
+    fig.suptitle("Principal Components in RGB (%s)" %name, fontsize=18,fontweight='bold')
+    axs[0].set_title("PCs 1-3")
+    axs[1].set_title("PCs 4-6")
+    
+    scree_fig.savefig(f"{path}{name}_screefig.jpg")
+    fig.savefig(f"{path}{name}_rgbfig.jpg")
+    np.savez(f"{path}{name}_arrays", X=X, Y=Y, W=W, V=V, Z=Z, I_pca=I_pca, I_rgb=I_rgb,
+             screefig=scree_fig, rgbfig = fig)
+    
+    print(f"Saved all {name} files!\n")
     
     
     
@@ -390,7 +601,7 @@ def L_T_from_points(pointsI,pointsJ):
 def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
           L=None,T=None,A=None,v=None,xv=None,
           a=500.0,p=2.0,expand=2.0,nt=3,
-         niter=5000,diffeo_start=100, epL=5e-8, epT=5e-1, epV=5e3,
+         niter=5000,diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
          sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=5e5,sigmaP=2e1,
          device='cpu',dtype=torch.float64):
     ''' Run LDDMM between a pair of images.
@@ -631,11 +842,11 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             pointsIt = (A[:2,:2]@pointsIt.T + A[:2,-1][...,None]).T
 
         # transform image
-        AI = interp(xI,I,Xs.permute(2,0,1))
+        AI = interp(xI,I,Xs.permute(2,0,1),padding_mode="border")
 
         # transform the contrast
         B = torch.ones(1+AI.shape[0],AI.shape[1]*AI.shape[2],device=AI.device,dtype=AI.dtype)
-        B[1:4] = AI.reshape(AI.shape[0],-1)
+        B[1:AI.shape[0]+1] = AI.reshape(AI.shape[0],-1)
         #B = torch.ones(10,AI.shape[1]*AI.shape[2],device=AI.device,dtype=AI.dtype)
         #B[1:4] = AI.reshape(AI.shape[0],-1)
         #B[4] = (AI[0][None]**2).reshape(1,-1)
@@ -687,9 +898,9 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
                 # M step for these params
                 muA = torch.sum(WA*J,dim=(-1,-2))/torch.sum(WA)
                 muB = torch.sum(WB*J,dim=(-1,-2))/torch.sum(WB)
-                if it <= 200:
-                    muA = torch.tensor([0.75,0.77,0.79],device=J.device,dtype=J.dtype)
-                    muB = torch.ones(J.shape[0],device=J.device,dtype=J.dtype)*0.96
+                #if it <= 200:
+                #    muA = torch.tensor([0.75,0.77,0.79],device=J.device,dtype=J.dtype)
+                #    muB = torch.ones(J.shape[0],device=J.device,dtype=J.dtype)*0.96
 
                 if it >= 50:
 
@@ -833,7 +1044,7 @@ def transform_image_atlas_to_target(xv,v,A,xI,I,XJ=None):
     Transform an image
     '''
     phii = build_transform(xv,v,A,direction='b',XJ=XJ)    
-    phiI = interp(xI,I,phii.permute(2,0,1))
+    phiI = interp(xI,I,phii.permute(2,0,1),padding_mode="border")
     return phiI
     
     
@@ -842,7 +1053,7 @@ def transform_image_target_to_atlas(xv,v,A,xJ,J,XI=None):
     Transform an image
     '''
     phi = build_transform(xv,v,A,direction='f',XJ=XI)    
-    phiiJ = interp(xJ,J,phi.permute(2,0,1))
+    phiiJ = interp(xJ,J,phi.permute(2,0,1),padding_mode="border")
     return phiiJ
     
 def transform_points_atlas_to_target(xv,v,A,pointsI):
@@ -874,3 +1085,10 @@ def transform_points_target_to_atlas(xv,v,A,pointsI):
     for t in range(nt):            
         pointsIt += interp(xv,-v[t].permute(2,0,1),pointsIt.T[...,None])[...,0].T/nt
     return pointsIt
+
+#given two sets of points, caluclates the target registratoin error (TRE) and their mean/std
+def calculate_tre(pointsI, pointsJ):
+    TRE_i = np.sqrt(np.sum((pointsI - pointsJ)**2,axis=1))
+    meanTRE = np.mean(TRE_i)
+    stdTRE = np.std(TRE_i)
+    return meanTRE, stdTRE
