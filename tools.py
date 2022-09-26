@@ -589,7 +589,7 @@ def saveRasters(X, Y, W, V, Z, scree_fig, nrows, ncols, name, path):
     
 def interp(x,I,phii,**kwargs):
     '''
-    Interpolate the image I, with regular grid positions stored in x (1d arrays),
+    Interpolate the 2D image I, with regular grid positions stored in x (1d arrays),
     at the positions stored in phii (3D arrays with first channel storing component)    
     
     Parameters
@@ -640,6 +640,58 @@ def interp(x,I,phii,**kwargs):
 
     return out[0]
 
+# build an interp function from grid sample
+def interp3D(x,I,phii,**kwargs):
+    '''
+    Interpolate the 3D image I, with regular grid positions stored in x (1d arrays),
+    at the positions stored in phii (4D arrays with first channel storing component)    
+    
+    Parameters
+    ----------
+    x : list of arrays
+        List of arrays storing the pixel locations along each image axis. convention is row column order not xy.
+    I : array
+        Image array. First axis should contain different channels.
+    phii : array
+        Sampling array. First axis should contain sample locations corresponding to each axis.
+    **kwargs : dict
+        Other arguments fed into the torch interpolation function torch.nn.grid_sample
+        
+    
+    Returns
+    -------
+    out : torch tensor
+            The image I resampled on the points defined in phii.
+    
+    Notes
+    -----
+    Convention is to use align_corners=True.
+    
+    This uses the torch library.
+    '''
+    # first we have to normalize phii to the range -1,1    
+    I = torch.as_tensor(I)
+    phii = torch.as_tensor(phii)
+    phii = torch.clone(phii)
+    for i in range(3):
+        phii[i] -= x[i][0]
+        phii[i] /= x[i][-1] - x[i][0]
+    # note the above maps to 0,1
+    phii *= 2.0
+    # to 0 2
+    phii -= 1.0
+    # done
+
+    # NOTE I should check that I can reproduce identity
+    # note that phii must now store x,y,z along last axis
+    # is this the right order?
+    # I need to put batch (none) along first axis
+    # what order do the other 3 need to be in?    
+    out = grid_sample(I[None],phii.flip(0).permute((1,2,3,0))[None],align_corners=True,**kwargs)
+    # note align corners true means square voxels with points at their centers
+    # post processing, get rid of batch dimension
+
+    return out[0]
 
 
 def clip(I):
@@ -672,7 +724,7 @@ def v_to_phii(xv,v):
     xv : list of torch tensor 
         List of 1D tensors describing locations of sample points in v
     v : torch tensor
-        5D (nt,3,v0,v1,v2) velocity field
+        5D (nt,2,v0,v1) velocity field
     
     Returns
     -------
@@ -689,6 +741,30 @@ def v_to_phii(xv,v):
         phii = interp(xv,phii-XV,Xs)+Xs
     return phii
 
+def v_to_phii_3D(xv,v):
+    ''' Integrate a 3D velocity field over time to return a 3D position field (diffeomorphism).
+    
+    Parameters
+    ----------
+    xv : list of torch tensor 
+        List of 1D tensors describing locations of sample points in v
+    v : torch tensor
+        5D (nt,3,v0,v1,v2) velocity field
+    
+    Returns
+    -------
+    phii: torch tensor
+        Inverse map (position field) computed by method of characteristics
+
+    '''
+    
+    XV = torch.stack(torch.meshgrid(xv))
+    phii = torch.clone(XV)
+    dt = 1.0/v.shape[0]
+    for t in range(v.shape[0]):
+        Xs = XV - v[t]*dt
+        phii = interp3D(xv,phii-XV,Xs)+Xs
+    return phii
 
 def to_A(L,T):
     ''' Convert a linear transform matrix and a translation vector into an affine matrix.
@@ -710,6 +786,28 @@ def to_A(L,T):
         
     '''
     O = torch.tensor([0.,0.,1.],device=L.device,dtype=L.dtype)
+    A = torch.cat((torch.cat((L,T[:,None]),1),O[None]))
+    return A
+def to_A_3D(L,T):
+    ''' Convert a linear transform matrix and a translation vector into an affine matrix.
+    
+    Parameters
+    ----------
+    L : torch tensor
+        3x3 linear transform matrix
+        
+    T : torch tensor
+        3 element translation vector (note NOT 2x1)
+        
+    Returns
+    -------
+    
+    A : torch tensor
+        Affine transform matrix
+        
+        
+    '''
+    O = torch.tensor([0.,0.,0.0,1.],device=L.device,dtype=L.dtype)
     A = torch.cat((torch.cat((L,T[:,None]),1),O[None]))
     return A
 
@@ -1164,6 +1262,15 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             figE.canvas.draw()
             
     return A.clone().detach(),v.clone().detach(),xv
+
+
+def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
+          L=None,T=None,A=None,v=None,xv=None,
+          a=500.0,p=2.0,expand=2.0,nt=3,
+         niter=5000,diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
+         sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=5e5,sigmaP=2e1,
+         device='cpu',dtype=torch.float64):
+    pass
 
 
 def build_transform(xv,v,A,direction='b',XJ=None):
