@@ -1010,8 +1010,8 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
         # if we specify an A
         if L is not None or T is not None:
             raise Exception('If specifying A, you must not specify L or T')
-        L = torch.tensor(A[:3,:3],device=device,dtype=dtype,requires_grad=True)
-        T = torch.tensor(A[:3,-1],device=device,dtype=dtype,requires_grad=True)   
+        L = torch.tensor(A[:2,:2],device=device,dtype=dtype,requires_grad=True)
+        T = torch.tensor(A[:2,-1],device=device,dtype=dtype,requires_grad=True)   
     else:
         # if we do not specify A                
         if L is None: L = torch.eye(2,device=device,dtype=dtype,requires_grad=True)
@@ -1106,7 +1106,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     
     fig,ax = plt.subplots(2,3)
     ax = ax.ravel()
-    figE,axE = plt.subplots()
+    figE,axE = plt.subplots(1,3)
     Esave = []
 
     try:
@@ -1252,10 +1252,19 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             ax[3].imshow(clip(toshow),extent=extentV)
             ax[3].set_title('velocity')
             
-            axE.cla()
-            axE.plot(Esave)
-            axE.legend(['E','EM','ER','EP'])
-            axE.set_yscale('log')
+            axE[0].cla()
+            axE[0].plot(Esave)
+            axE[0].legend(['E','EM','ER','EP'])
+            axE[0].set_yscale('log')
+            axE[1].cla()
+            axE[1].plot([e[:2] for e in Esave])
+            axE[1].legend(['E','EM'])
+            axE[1].set_yscale('log')
+            axE[2].cla()
+            axE[2].plot([e[2] for e in Esave])
+            axE[2].legend(['ER'])
+            axE[2].set_yscale('log')
+
 
 
             fig.canvas.draw()
@@ -1265,12 +1274,298 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
 
 
 def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
-          L=None,T=None,A=None,v=None,xv=None,
-          a=500.0,p=2.0,expand=2.0,nt=3,
-         niter=5000,diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
-         sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=5e5,sigmaP=2e1,
-         device='cpu',dtype=torch.float64):
-    pass
+        L=None,T=None,A=None,v=None,xv=None,
+        a=500.0,p=2.0,expand=1.25,nt=3,
+        niter=5000,diffeo_start=0, epL=1e-6, epT=1e1, epV=1e3,
+        sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=1e8,sigmaP=2e1,
+        device='cpu',dtype=torch.float64):
+    ''' LDDMM for 3D to 2D slice mapping.
+
+
+    TODO
+    ----
+    check types and convert to tensors better
+    metric
+    semilagrange
+
+    '''
+    
+    # check initial inputs and convert to torch
+    if A is not None:
+        # if we specify an A
+        if L is not None or T is not None:
+            raise Exception('If specifying A, you must not specify L or T')
+        L = torch.tensor(A[:3,:3],device=device,dtype=dtype,requires_grad=True)
+        T = torch.tensor(A[:3,-1],device=device,dtype=dtype,requires_grad=True)   
+    else:
+        # if we do not specify A                
+        if L is None: L = torch.eye(3,device=device,dtype=dtype,requires_grad=True)
+        if T is None: T = torch.zeros(3,device=device,dtype=dtype,requires_grad=True)
+    
+    L = torch.tensor(L,device=device,dtype=dtype,requires_grad=True)
+    T = torch.tensor(T,device=device,dtype=dtype,requires_grad=True)
+    # change to torch
+    I = torch.tensor(I,device=device,dtype=dtype)                         
+    J = torch.tensor(J,device=device,dtype=dtype)
+    if J.ndim == 3:
+        J = J[:,None] # add a z slice dimension
+
+
+    if v is not None and xv is not None:
+        v = torch.tensor(v,device=device,dtype=dtype,requires_grad=True)
+        xv = [torch.tensor(x,device=device,dtype=dtype) for x in xv]
+        XV = torch.stack(torch.meshgrid(xv),-1)
+        nt = v.shape[0]        
+    elif v is None and xv is None:
+        minv = torch.as_tensor([x[0] for x in xI],device=device,dtype=dtype)
+        maxv = torch.as_tensor([x[-1] for x in xI],device=device,dtype=dtype)
+        minv,maxv = (minv+maxv)*0.5 + 0.5*torch.tensor([-1.0,1.0],device=device,dtype=dtype)[...,None]*(maxv-minv)*expand
+        xv = [torch.arange(m,M,a*0.5,device=device,dtype=dtype) for m,M in zip(minv,maxv)]
+        XV = torch.stack(torch.meshgrid(xv),-1)
+        v = torch.zeros((nt,XV.shape[0],XV.shape[1],XV.shape[2],XV.shape[3]),device=device,dtype=dtype,requires_grad=True)
+        
+    else:
+        raise Exception(f'If inputting an initial v, must input both xv and v')
+    extentV = extent_from_x(xv[1:])
+    dv = torch.as_tensor([x[1]-x[0] for x in xv],device=device,dtype=dtype)
+    
+    
+ 
+    fv = [torch.arange(n,device=device,dtype=dtype)/n/d for n,d in zip(XV.shape,dv)]
+    extentF = extent_from_x(fv[1:])
+    FV = torch.stack(torch.meshgrid(fv),-1)
+    LL = (1.0 + 2.0*a**2* torch.sum( (1.0 - torch.cos(2.0*np.pi*FV*dv))/dv**2 ,-1))**(p*2.0)
+
+    K = 1.0/LL
+    #fig,ax = plt.subplots()
+    #ax.imshow(K,vmin=0.0,vmax=0.1,extent=extentF)
+    
+    #fig,ax = plt.subplots()
+    #ax.imshow(K[0].cpu())
+    DV = torch.prod(dv)
+    Ki = torch.fft.ifftn(K).real
+    fig,ax = plt.subplots()
+    ax.imshow(Ki[Ki.shape[0]//2].clone().detach().cpu().numpy(),vmin=0.0,extent=extentV)
+    ax.set_title('smoothing kernel')
+    fig.canvas.draw()
+
+    # steps
+    epL = torch.tensor(epL,device=device,dtype=dtype)
+    epT = torch.tensor(epT,device=device,dtype=dtype)
+
+    # initialize weights
+    WM = torch.ones(J[0].shape,dtype=J.dtype,device=J.device)*0.5
+    WB = torch.ones(J[0].shape,dtype=J.dtype,device=J.device)*0.4
+    WA = torch.ones(J[0].shape,dtype=J.dtype,device=J.device)*0.1
+
+    # locations of pixels
+    extentI = extent_from_x(xI[1:]) 
+    xI = [torch.tensor(x,device=device,dtype=dtype) for x in xI]
+    if len(xJ) == 2:
+        xJ = [[0.0],xJ[0],xJ[1]]    
+    extentJ = extent_from_x(xJ[1:])
+    xJ = [torch.tensor(x,device=device,dtype=dtype) for x in xJ]
+    XI = torch.stack(torch.meshgrid(*xI,indexing='ij'),-1)
+    XJ = torch.stack(torch.meshgrid(*xJ,indexing='ij'),-1)
+    dJ = [x[1]-x[0] for x in xJ[1:]]
+    
+    # metric TODO
+    '''
+    g = torch.zeros((12,12))
+    count = 0
+    for i in range(12):
+        Ei = (torch.arange(16)==i).reshape((4,4))*1.0
+        EiXI = (Ei[:3,:3]@XI[...,None])[...,0] + Ei[:3,-1]
+        for j in range(12):
+            Ej = (torch.arange(16)==j).reshape((4,4))*1.0
+            EjXI = (Ej[:3,:3]@XI[...,None])[...,0] + Ej[:3,-1]
+            g[i,j] = torch.mean(torch.sum(EiXI*EjXI,-1))
+
+    gi = torch.inverse(g)
+    fig,ax = plt.subplots(1,2)
+    ax[0].imshow(g)
+    ax[0].set_title('Metric') 
+    ax[1].imshow(gi)    
+    ax[1].set_title('Inverse metric') 
+    fig.canvas.draw()
+    '''
+
+    # a figure
+    fig,ax = plt.subplots(2,3)
+    ax = ax.ravel()
+    figE,axE = plt.subplots(1,3)
+    axE = axE.ravel()
+    Esave = []
+    # zero gradients
+    try:
+        L.grad.zero_()
+    except:
+        pass
+    try:
+        T.grad.zero_()
+    except:
+        pass
+
+
+    for it in range(niter):
+        # make A
+        A = to_A_3D(L,T)
+        # Ai
+        Ai = torch.linalg.inv(A)
+        # transform sample points        
+        Xs = (Ai[:-1,:-1]@XJ[...,None])[...,0] + Ai[:-1,-1]
+
+        # now diffeo, not semilagrange here
+
+        for t in range(nt-1,-1,-1):
+            Xs = Xs + interp3D(xv,-v[t].permute(3,0,1,2),Xs.permute(3,0,1,2)).permute(1,2,3,0)/nt
+        # # and points (not in 3D)        
+        # pointsIt = torch.clone(pointsI)
+        # if pointsIt.shape[0] >0:
+        #     for t in range(nt):            
+        #         pointsIt += interp(xv,v[t].permute(2,0,1),pointsIt.T[...,None])[...,0].T/nt
+        #     pointsIt = (A[:2,:2]@pointsIt.T + A[:2,-1][...,None]).T
+        
+        # transform image
+        AI = interp3D(xI,I,Xs.permute(3,0,1,2),padding_mode="border")
+        
+
+        # transform the contrast
+        B = torch.ones(1+AI.shape[0],AI.shape[1]*AI.shape[2]*AI.shape[3],device=AI.device,dtype=AI.dtype)
+        B[1:AI.shape[0]+1] = AI.reshape(AI.shape[0],-1)
+        #B = torch.ones(10,AI.shape[1]*AI.shape[2],device=AI.device,dtype=AI.dtype)
+        #B[1:4] = AI.reshape(AI.shape[0],-1)
+        #B[4] = (AI[0][None]**2).reshape(1,-1)
+        #B[5] = (AI[1][None]**2).reshape(1,-1)
+        #B[6] = (AI[2][None]**2).reshape(1,-1)
+        #B[7] = (AI[0][None]*AI[1][None]).reshape(1,-1)
+        #B[8] = (AI[0][None]*AI[2][None]).reshape(1,-1)
+        #B[9] = (AI[1][None]*AI[2][None]).reshape(1,-1)
+        with torch.no_grad():    
+            BB = B@(B*WM.ravel()).T
+            BJ = B@((J*WM).reshape(J.shape[0],J.shape[1]*J.shape[2]*J.shape[3])).T
+            small = 0.1
+            coeffs = torch.linalg.solve(BB + small*torch.eye(BB.shape[0],device=BB.device,dtype=BB.dtype),BJ)
+        fAI = ((B.T@coeffs).T).reshape(J.shape)
+
+        # objective function
+        EM = torch.sum((fAI - J)**2*WM)/2.0/sigmaM**2
+        ER = torch.sum(torch.sum(torch.abs(torch.fft.fftn(v,dim=(1,2)))**2,dim=(0,-1))*LL)*DV/2.0/v.shape[1]/v.shape[2]/sigmaR**2
+        E = EM + ER
+        tosave = [E.item(), EM.item(), ER.item()]
+        #if pointsIt.shape[0]>0:
+        #    EP = torch.sum((pointsIt - pointsJ)**2)/2.0/sigmaP**2
+        #    E += EP
+        #    tosave.append(EP.item())
+        
+        Esave.append( tosave )
+        # gradient update
+        E.backward()
+        with torch.no_grad():            
+            L -= (epL/(1.0 + (it>=diffeo_start)*9))*L.grad
+            T -= (epT/(1.0 + (it>=diffeo_start)*9))*T.grad
+
+            L.grad.zero_()
+            T.grad.zero_()
+            
+
+            # v grad
+            vgrad = v.grad
+            # smooth it            
+            if it >= diffeo_start:
+                vgrad = torch.fft.ifftn(torch.fft.fftn(vgrad,dim=(1,2,3))*K[...,None],dim=(1,2,3)).real
+                v -= vgrad*epV
+            v.grad.zero_()
+
+
+        # update weights
+        if not it%5:
+            with torch.no_grad():
+                # M step for these params
+                muA = torch.sum(WA*J,dim=(-1,-2,-3))/torch.sum(WA)
+                muB = torch.sum(WB*J,dim=(-1,-2,-3))/torch.sum(WB)
+                #if it <= 200:
+                #    muA = torch.tensor([0.75,0.77,0.79],device=J.device,dtype=J.dtype)
+                #    muB = torch.ones(J.shape[0],device=J.device,dtype=J.dtype)*0.96
+
+                if it >= 50:
+
+                    W = torch.stack((WM,WA,WB))
+                    pi = torch.sum(W,dim=(1,2,3))
+                    pi += torch.max(pi)*1e-6
+                    pi /= torch.sum(pi)
+
+
+                    # now the E step, update the weights
+                    WM = pi[0]* torch.exp( -torch.sum((fAI - J)**2,0)/2.0/sigmaM**2 )/np.sqrt(2.0*np.pi*sigmaM**2)**J.shape[0]
+                    WA = pi[1]* torch.exp( -torch.sum((muA[...,None,None,None] - J)**2,0)/2.0/sigmaA**2 )/np.sqrt(2.0*np.pi*sigmaA**2)**J.shape[0]
+                    WB = pi[2]* torch.exp( -torch.sum((muB[...,None,None,None] - J)**2,0)/2.0/sigmaB**2 )/np.sqrt(2.0*np.pi*sigmaB**2)**J.shape[0]
+                    WS = WM+WB+WA
+                    WS += torch.max(WS)*1e-6
+                    WM /= WS
+                    WB /= WS
+                    WA /= WS
+
+
+
+
+        # draw
+        if not it%10:
+            ax[0].cla()
+            Ishow = ((AI-torch.amin(AI,(1,2,3))[...,None,None])/(torch.amax(AI,(1,2,3))-torch.amin(AI,(1,2,3)))[...,None,None,None]).permute(1,2,3,0).clone().detach().cpu()
+            ax[0].imshow(  Ishow[0,...,0] ,extent=extentJ)
+            #ax[0].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
+            ax[0].set_title('space tformed atlas')
+
+            ax[1].cla()    
+            Ishow = clip(fAI.permute(1,2,3,0).clone().detach()/torch.max(J).item()).cpu()
+            ax[1].imshow(Ishow[0,...,0],extent=extentJ,vmin=0,vmax=1)
+            #ax[1].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
+            ax[1].set_title('contrast tformed atlas')
+            
+            ax[5].cla()
+            Ishow = clip( (fAI - J)/(torch.max(J).item())*3.0  ).permute(1,2,3,0).clone().detach().cpu()*0.5+0.5
+            ax[5].imshow(Ishow[0,...,0],extent=extentJ)
+            #ax[5].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
+            #ax[5].scatter(pointsJ[:,1].clone().detach().cpu(),pointsJ[:,0].clone().detach().cpu())
+            ax[5].set_title('Error')
+
+            ax[2].cla()
+            Ishow = J.permute(1,2,3,0).cpu()/torch.max(J).item()
+            ax[2].imshow(Ishow[0,...,0],extent=extentJ,vmin=0,vmax=1)
+            #ax[2].scatter(pointsJ[:,1].clone().detach().cpu(),pointsJ[:,0].clone().detach().cpu())
+            ax[2].set_title('Target')
+
+            ax[4].cla()
+            ax[4].imshow(clip(torch.stack((WM,WA,WB),-1).clone().detach()).cpu()[0],extent=extentJ)
+            ax[4].set_title('Weights')
+
+
+            toshow = v[0].clone().detach().cpu() # initial velocity, components are rgb
+            toshow /= torch.max(torch.abs(toshow))
+            toshow = toshow*0.5+0.5
+            #toshow = torch.cat((toshow,torch.zeros_like(toshow[...,0][...,None])),-1)   
+            ax[3].cla()
+            ax[3].imshow(clip(toshow)[toshow.shape[0]//2],extent=extentV)
+            ax[3].set_title('velocity')
+            
+            axE[0].cla()
+            axE[0].plot(Esave)
+            axE[0].legend(['E','EM','ER','EP'])
+            axE[0].set_yscale('log')
+            axE[1].cla()
+            axE[1].plot([e[:2] for e in Esave])
+            axE[1].legend(['E','EM'])
+            axE[1].set_yscale('log')
+            axE[2].cla()
+            axE[2].plot([e[2] for e in Esave])
+            axE[2].legend(['ER'])
+            axE[2].set_yscale('log')
+
+
+            fig.canvas.draw()
+            figE.canvas.draw()
+    return  A.clone().detach(),v.clone().detach(),xv
 
 
 def build_transform(xv,v,A,direction='b',XJ=None):
@@ -1314,7 +1609,7 @@ def build_transform(xv,v,A,direction='b',XJ=None):
             elif XJ[0].ndim == 2: # assume already meshgrid
                 XJ = torch.stack([torch.tensor(x) for x in XJ],-1)
             else:
-                raise Expression('Could not understand variable XJ type')
+                raise Exception('Could not understand variable XJ type')
             
         # if it is already in meshgrid form we just need to make sure it is a tensor
         XJ = torch.tensor(XJ)
@@ -1324,7 +1619,7 @@ def build_transform(xv,v,A,direction='b',XJ=None):
     if direction == 'b':
         Ai = torch.linalg.inv(A)
         # transform sample points
-        Xs = (Ai[:2,:2]@XJ[...,None])[...,0] + Ai[:2,-1]    
+        Xs = (Ai[:-1,:-1]@XJ[...,None])[...,0] + Ai[:-1,-1]    
         # now diffeo, not semilagrange here
         nt = v.shape[0]
         for t in range(nt-1,-1,-1):
@@ -1335,6 +1630,74 @@ def build_transform(xv,v,A,direction='b',XJ=None):
         for t in range(nt):
             Xs = Xs + interp(xv,v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
         Xs = (A[:2,:2]@Xs[...,None])[...,0] + A[:2,-1]    
+            
+    else:
+        raise Exception(f'Direction must be "f" or "b" but you input {direction}')
+    return Xs 
+
+def build_transform3D(xv,v,A,direction='b',XJ=None):
+    ''' Create sample points to transform atlas to target from affine and velocity.
+    
+    Parameters
+    ----------
+    xv : list of array
+        Sample points for velocity
+    v : array
+        time dependent velocity field
+    A : array
+        Affine transformation matrix
+    direction : char
+        'f' for forward and 'b' for backward. 'b' is default and is used for transforming images.
+        'f' is used for transforming points.
+    XJ : array
+        Sample points for target (meshgrid with ij index style).  Defaults to None 
+        to keep sampling on the xv.
+    
+    Returns
+    -------
+    Xs : array
+        Sample points in mehsgrid format.
+    
+    
+    TODO
+    ----
+    Check types.
+    Implement forward versus backwards
+    THIS FUNCTION IS IN PROGRESS
+    
+    '''
+    
+    A = torch.tensor(A)
+    v = torch.tensor(v)
+    if XJ is not None:
+        # check some types here
+        if isinstance(XJ,list):
+            if XJ[0].ndim == 1: # need meshgrid
+                XJ = torch.stack(torch.meshgrid([torch.tensor(x) for x in XJ],indexing='ij'),-1)
+            elif XJ[0].ndim == 3: # assume already meshgrid
+                XJ = torch.stack([torch.tensor(x) for x in XJ],-1)
+            else:
+                raise Exception('Could not understand variable XJ type')
+            
+        # if it is already in meshgrid form we just need to make sure it is a tensor
+        XJ = torch.tensor(XJ)
+    else:
+        XJ = torch.stack(torch.meshgrid([torch.tensor(x) for x in xv],indexing='ij'),-1)
+        
+    if direction == 'b':
+        Ai = torch.linalg.inv(A)
+        # transform sample points
+        Xs = (Ai[:-1,:-1]@XJ[...,None])[...,0] + Ai[:-1,-1]    
+        # now diffeo, not semilagrange here
+        nt = v.shape[0]
+        for t in range(nt-1,-1,-1):
+            Xs = Xs + interp3D(xv,-v[t].permute(3,0,1,2),Xs.permute(3,0,1,2)).permute(1,2,3,0)/nt
+    elif direction == 'f':
+        Xs = torch.clone(XJ)
+        nt = v.shape[0]
+        for t in range(nt):
+            Xs = Xs + interp(xv,v[t].permute(3,0,1,2),Xs.permute(3,0,1,2)).permute(1,2,0)/nt
+        Xs = (A[:-1,:-1]@Xs[...,None])[...,0] + A[:-1,-1]    
             
     else:
         raise Exception(f'Direction must be "f" or "b" but you input {direction}')
