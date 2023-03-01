@@ -896,7 +896,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
           a=500.0,p=2.0,expand=2.0,nt=3,
          niter=5000,diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
          sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=5e5,sigmaP=2e1,
-         device='cpu',dtype=torch.float64):
+          device='cpu',dtype=torch.float64, muB=None, muA=None):
     ''' Run LDDMM between a pair of images.
     
     This jointly estimates an affine transform A, and a diffeomorphism phi.
