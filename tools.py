@@ -896,7 +896,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
           a=500.0,p=2.0,expand=2.0,nt=3,
          niter=5000,diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
          sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=5e5,sigmaP=2e1,
-         device='cpu',dtype=torch.float64):
+          device='cpu',dtype=torch.float64, muB=None, muA=None):
     ''' Run LDDMM between a pair of images.
     
     This jointly estimates an affine transform A, and a diffeomorphism phi.
@@ -969,7 +969,13 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
         torch device. defaults to 'cpu'. Can also be 'cuda:0' for example.
     dtype: torch dtype
         torch data type. defaults to torch.float64
-    
+    muA: torch tensor whose dimension is the same as the target image
+        Defaults to None, which means we estimate this. If you provide a value, we will not estimate it.
+        If the target is a RGB image, this should be a tensor of size 3.
+        If the target is a grayscale image, this should be a tensor of size 1.
+    muB: torch tensor whose dimension is the same as the target image
+        Defaults to None, which means we estimate this. If you provide a value, we will not estimate it.
+        
     Returns
     -------
     A : torch tensor
@@ -1104,6 +1110,15 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     #sigmaR = 5e5
     #sigmaP = 2e-1
     
+    if muA is None:
+        estimate_muA = True
+    else:
+        estimate_muA = False
+    if muB is None:
+        estimate_muB = True
+    else:
+        estimate_muB = False
+    
     fig,ax = plt.subplots(2,3)
     ax = ax.ravel()
     figE,axE = plt.subplots(1,3)
@@ -1189,8 +1204,10 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
         if not it%5:
             with torch.no_grad():
                 # M step for these params
-                muA = torch.sum(WA*J,dim=(-1,-2))/torch.sum(WA)
-                muB = torch.sum(WB*J,dim=(-1,-2))/torch.sum(WB)
+                if estimate_muA:
+                    muA = torch.sum(WA*J,dim=(-1,-2))/torch.sum(WA)
+                if estimate_muB:
+                    muB = torch.sum(WB*J,dim=(-1,-2))/torch.sum(WB)
                 #if it <= 200:
                 #    muA = torch.tensor([0.75,0.77,0.79],device=J.device,dtype=J.dtype)
                 #    muB = torch.ones(J.shape[0],device=J.device,dtype=J.dtype)*0.96
