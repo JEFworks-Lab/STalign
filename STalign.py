@@ -1,4 +1,4 @@
-''' Tools for registration of spatial transcriptomics data. Last editied 07/28/22.
+''' Tools for aligning spatial transcriptomics data
 '''
 
 import numpy as np
@@ -1753,7 +1753,7 @@ def transform_image_target_to_atlas(xv,v,A,xJ,J,XI=None):
     '''
     Transform an image
     '''
-    phi = build_transforms(xv,v,A,direction='f',XJ=XI)    
+    phi = build_transform(xv,v,A,direction='f',XJ=XI)    
     phiiJ = interp(xJ,J,phi.permute(2,0,1),padding_mode="border")
     return phiiJ
     
