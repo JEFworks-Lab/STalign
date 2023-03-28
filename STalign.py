@@ -7,7 +7,27 @@ import matplotlib.pyplot as plt
 import torch
 from torch.nn.functional import grid_sample
 
-
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd # for csv.
+from matplotlib import cm
+from matplotlib.lines import Line2D
+import os
+from os.path import exists,split,join,splitext
+from os import makedirs
+import glob
+import requests
+from collections import defaultdict
+import nrrd
+import torch
+from torch.nn.functional import grid_sample
+import tornado
+import sys
+import numpy as np
+import plotly.graph_objs as go
+import plotly.express as px
+import copy
+import pandas as pd
 
 def normalize(arr, t_min=0, t_max=1):
     """Linearly normalizes an array between two specifed values.
@@ -1601,7 +1621,7 @@ def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
 
             fig.canvas.draw()
             figE.canvas.draw()
-    return  A.clone().detach(),v.clone().detach(),xv
+    return  A.clone().detach(),v.clone().detach(),xv, Xs
 
 
 def build_transform(xv,v,A,direction='b',XJ=None):
@@ -1793,3 +1813,117 @@ def calculate_tre(pointsI, pointsJ):
     meanTRE = np.mean(TRE_i)
     stdTRE = np.std(TRE_i)
     return meanTRE, stdTRE
+
+
+#Download and store ontology
+def download_aba_ontology(url,file_name): 
+    # url - location of brain region names
+    #file_name - where to store ontology info
+    #'http://api.brain-map.org/api/v2/data/query.csv?criteria=model::Structure,rma::criteria,[ontology_id$eq1],rma::options[order$eq%27structures.graph_order%27][num_rows$eqall]'
+    r = requests.get(url)
+    print(r)
+    with open(file_name,'w') as f:
+        f.write(r.text)
+    ontology_name = file_name
+
+    O = pd.read_csv(ontology_name)
+
+    # store the ontology in a dictionary
+    namesdict = defaultdict(lambda: 'unk')
+    namesdict[0] = 'bg'
+
+    # we need to add the structure names from the structure_id
+    for i,n in zip(O['id'],O['acronym']):
+        namesdict[i] = n
+    return ontology_name,namesdict
+
+def download_aba_image_labels(imageurl, labelurl, imagefile, labelfile):
+    #image_url - location of cell stain 3d atlas
+    #label_atlas - location of brain region annotations for 3d atlas
+    #imagefile, labelfile - where to store image and label informations
+        url = imageurl#'http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/ara_nissl/ara_nissl_50.nrrd'
+        r = requests.get(url, stream=True)
+        with open(imagefile, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024): 
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
+        imagefile = imagefile
+
+        url = labelurl#'http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/annotation/ccf_2017/annotation_50.nrrd'
+        r = requests.get(url, stream=True)
+        with open(labelfile, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024): 
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
+        labelfile = labelfile
+        return imagefile, labelfile
+
+def analyze3Dalign(labelfile, xv,v,mat, xJ, dx, scale_x, scale_y,x,y, X_, Y_, namesdict, device='cpu'):
+    # map the annotations
+    #xS = [np.arange(n)*d - (n-1)*d/2.0 for n,d in zip(nxS,dxS)]
+    vol,hdr = nrrd.read(labelfile)
+    L = vol
+    dxL = np.diag(hdr['space directions'])
+    nL = L.shape
+    xL = [np.arange(n)*d - (n-1)*d/2 for n,d in zip(nL,dxL)]
+
+    # next we'll chose a set of points to sample on
+    # if we wanted to use the same resolution as our rasterized image, we would do this
+    res = np.array(dx)
+    XJ = np.stack(np.meshgrid(np.zeros(1),xJ[0],xJ[1],indexing='ij'),-1)
+    # if we want to use a different resolution
+    res = 10.0
+    XJ = np.stack(np.meshgrid(np.zeros(1), np.arange(xJ[0][0],xJ[0][-1],res), np.arange(xJ[1][0],xJ[1][-1],res), indexing='ij'),-1)
+
+
+    tform = build_transform3D(xv,v,mat,direction='b',XJ=torch.tensor(XJ,device=mat.device))
+
+    AphiL = interp3D(
+        xL,
+        torch.tensor(L[None].astype(np.float64),dtype=torch.float64,device=tform.device),
+        tform.permute(-1,0,1,2),
+        mode='nearest',
+    )[0,0].int()
+    AphiL = AphiL.detach().cpu()
+
+    # now look at the cells and assign
+    q = np.stack((y,x))
+    qi = np.round(((q - np.stack([xJ[0][0],xJ[1][0]])[...,None])/res)).astype(int)
+    # by definition, no points should be out of bounds
+    # but if I change resolutions, there may be points out of bounds
+    df_ = pd.DataFrame()
+    labels = AphiL[qi[0],qi[1]]
+    col = ((x - X_[0])/dx).astype(int)
+    row = ((y - Y_[0])/dx).astype(int)
+    df_['coord0'] = tform[0,row,col,0].detach().cpu()
+    df_['coord1'] = tform[0,row,col,1].detach().cpu()
+    df_['coord2'] = tform[0,row,col,2].detach().cpu()
+    df_['x'] = x
+    df_['y'] = y
+    df_['struct_id'] = labels
+    
+    all_names = [namesdict[i] for i in df_['struct_id']]
+    df_['acronym'] = all_names  
+    
+    return df_ 
+
+def plot_brain_regions(df):
+    #plot brain regions
+    brain_regions = np.unique(df['acronym'])
+    fig,ax = plt.subplots()
+    for i in range(len(brain_regions)):
+        region_df = df[df['acronym']==brain_regions[i]]
+
+        ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
+        ax.legend()
+
+def plot_subset_brain_regions(df, brain_regions):
+    #plot brain regions
+    brain_regions = brain_regions
+    fig,ax = plt.subplots()
+    ax.scatter(df['x'], df['y'],color = 'grey',s= 0.1)   
+    for i in range(len(brain_regions)):
+        region_df = df[df['acronym']==brain_regions[i]]
+
+        ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
+        ax.legend()
