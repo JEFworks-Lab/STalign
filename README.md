@@ -1,5 +1,5 @@
 # STalign
-Python tool for alignment of spatial transcriptomics (ST) data using diffeomorphic metric mapping
+Python tool for alignment of spatial transcriptomics (ST) data using diffeomorphic metric mapping.
 
 [fig 1]
 
