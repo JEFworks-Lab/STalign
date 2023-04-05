@@ -18,6 +18,6 @@ STalign enables:
 To use `STalign`, please refer to the following Jupyter Notebooks with usage examples:
 
 [Xenium-Xenium Alignment](https://jef.works/STalign/notebooks/xenium-xenium-alignment.html) <br />
-[Xenium-H&EImage Alignment](https://jef.works/STalign/notebooks/xenium-heimage-alignment.html) <br />
+[Xenium-H&E Image Alignment](https://jef.works/STalign/notebooks/xenium-heimage-alignment.html) <br />
 [3D alignment to the Allen Brain Atlas](https://jef.works/STalign/notebooks/merfish-allen3Datlas-alignment.html) <br />
 
