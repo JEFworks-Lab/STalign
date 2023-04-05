@@ -13,10 +13,12 @@ jobs:
           pip install sphinx sphinx_rtd_theme myst_parser autodocsumm nbsphinx
       - name: Install tutorial dependencies
         run: |
-	  brew install pandoc
+	  pip install readthedocs-sphinx-search sphinx sphinx-rtd-theme numpy matplotlib torch pandas requests collection pynrrd tornado plotly myst_parser autodocsumm nbsphinx pypandoc
+          conda install pandoc
+          sudo apt install pandoc
       - name: Sphinx build
         run: |
-          sphinx-build doc _build
+          sphinx-build docs _build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
