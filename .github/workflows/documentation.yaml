@@ -8,11 +8,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
-      - name: Install tutorial dependencies
+      - name: Install dependencies
         run: |
-	  pip install readthedocs-sphinx-search sphinx sphinx-rtd-theme numpy matplotlib torch pandas requests collection pynrrd tornado plotly myst_parser autodocsumm nbsphinx pypandoc
+          pip install readthedocs-sphinx-search sphinx sphinx-rtd-theme numpy matplotlib torch pandas requests collection pynrrd tornado plotly myst_parser autodocsumm nbsphinx pypandoc
           conda install pandoc
           sudo apt install pandoc
+          
       - name: Sphinx build
         run: |
           sphinx-build docs _build
