@@ -8,9 +8,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           pip install sphinx sphinx_rtd_theme myst_parser autodocsumm nbsphinx
+      - name: Install tutorial dependencies
+        run: |
 	  brew install pandoc
       - name: Sphinx build
         run: |
