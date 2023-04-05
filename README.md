@@ -15,7 +15,9 @@ STalign enables:
 
 ## Usage
 
-To use `STalign`, please refer to the following Jupytr notebooks with usage examples:
+To use `STalign`, please refer to the following Jupyter Notebooks with usage examples:
 
-[links to notebooks]
+[Xenium-Xenium Alignment](https://jef.works/STalign/notebooks/xenium-xenium-alignment.html)
+[Xenium-H&EImage Alignment](https://jef.works/STalign/notebooks/xenium-heimage-alignment.html)
+[3D alignment to the Allen Brain Atlas](https://jef.works/STalign/notebooks/merfish-allen3Datlas-alignment.html)
 
