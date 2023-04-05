@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium &mdash; STalign 1.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/nbsphinx-code-cells.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium" href="xenium-heimage-alignment.html" />
+    <link rel="prev" title="Tutorials" href="../tutorials.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            STalign
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">STalign Overview</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-heimage-alignment.html">Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merfish-allen3Datlas-alignment.html">Aligning adult mouse coronal brain sections with the Allen Brain Altas</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../STalign.html">Functions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/xenium-xenium-alignment.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Aligning-partially-matched,-serial,-single-cell-resolution-breast-cancer-spatial-transcriptomics-data-from-Xenium">
+<h1>Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium<a class="headerlink" href="#Aligning-partially-matched,-serial,-single-cell-resolution-breast-cancer-spatial-transcriptomics-data-from-Xenium" title="Permalink to this heading"></a></h1>
+<p>In this notebook, we take two single cell resolution spatial transcriptomics datasets of serial breast cancer sections profiled by the Xenium technology and align them to each other. See the bioRxiv preprint for more details about this data: <a class="reference external" href="https://www.biorxiv.org/content/10.1101/2022.10.06.510405v2">https://www.biorxiv.org/content/10.1101/2022.10.06.510405v2</a></p>
+<p>We will use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to achieve this alignment. We will first load the relevant code libraries.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[51]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># import dependencies</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="c1"># import STalign from upper directory</span>
+<span class="c1"># skip next 2 lines if STalign.py in same folder as notebook</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;..&quot;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">STalign</span>
+
+<span class="c1"># make plots bigger</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;figure.figsize&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We have already downloaded single cell spatial transcriptomics data from and placed the files in a folder called <code class="docutils literal notranslate"><span class="pre">xenium_data</span></code>: <a class="reference external" href="https://www.10xgenomics.com/products/xenium-in-situ/preview-dataset-human-breast">https://www.10xgenomics.com/products/xenium-in-situ/preview-dataset-human-breast</a></p>
+<p>We can read in the cell information for the first dataset using <code class="docutils literal notranslate"><span class="pre">pandas</span></code> as <code class="docutils literal notranslate"><span class="pre">pd</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[52]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Single cell data 1</span>
+<span class="c1"># read in data</span>
+<span class="n">fname</span> <span class="o">=</span> <span class="s1">&#39;../xenium_data/Xenium_FFPE_Human_Breast_Cancer_Rep1_cells.csv.gz&#39;</span>
+<span class="n">df1</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df1</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+   cell_id  x_centroid  y_centroid  transcript_counts  control_probe_counts  \
+0        1  377.663005  843.541888                154                     0
+1        2  382.078658  858.944818                 64                     0
+2        3  319.839529  869.196542                 57                     0
+3        4  259.304707  851.797949                120                     0
+4        5  370.576291  865.193024                120                     0
+
+   control_codeword_counts  total_counts   cell_area  nucleus_area
+0                        0           154  110.361875     45.562656
+1                        0            64   87.919219     24.248906
+2                        0            57   52.561875     23.526406
+3                        0           120   75.230312     35.176719
+4                        0           120  180.218594     34.499375
+</pre></div></div>
+</div>
+<p>For alignment with <code class="docutils literal notranslate"><span class="pre">STalign</span></code>, we only need the cell centroid information. So we can pull out this information. We can further visualize the cell centroids to get a sense of the variation in cell density that we will be relying on for our alignment by plotting using <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> as <code class="docutils literal notranslate"><span class="pre">plt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[74]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get cell centroid coordinates</span>
+<span class="n">xI</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df1</span><span class="p">[</span><span class="s1">&#39;x_centroid&#39;</span><span class="p">])</span>
+<span class="n">yI</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df1</span><span class="p">[</span><span class="s1">&#39;y_centroid&#39;</span><span class="p">])</span>
+
+<span class="c1"># plot</span>
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xI</span><span class="p">,</span><span class="n">yI</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[74]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7f7d18cb0d00&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_5_1.png" src="../_images/notebooks_xenium-xenium-alignment_5_1.png" />
+</div>
+</div>
+<p>We will first use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to rasterize the single cell centroid positions into an image. Assuming the single-cell centroid coordinates are in microns, we will perform this rasterization at a 30 micron resolution. We can visualize the resulting rasterized image.</p>
+<p>Note that points are plotting with the origin at bottom left while images are typically plotted with origin at top left so we’ve used <code class="docutils literal notranslate"><span class="pre">invert_yaxis()</span></code> to invert the yaxis for visualization consistency.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[54]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># rasterize at 30um resolution (assuming positions are in um units) and plot</span>
+<span class="n">XI</span><span class="p">,</span><span class="n">YI</span><span class="p">,</span><span class="n">I</span><span class="p">,</span><span class="n">fig</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">rasterize</span><span class="p">(</span><span class="n">xI</span><span class="p">,</span><span class="n">yI</span><span class="p">,</span><span class="n">dx</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 167782
+10000 of 167782
+20000 of 167782
+30000 of 167782
+40000 of 167782
+50000 of 167782
+60000 of 167782
+70000 of 167782
+80000 of 167782
+90000 of 167782
+100000 of 167782
+110000 of 167782
+120000 of 167782
+130000 of 167782
+140000 of 167782
+150000 of 167782
+160000 of 167782
+167781 of 167782
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_7_1.png" src="../_images/notebooks_xenium-xenium-alignment_7_1.png" />
+</div>
+</div>
+<p>Now, we can repeat this for the cell information from the second dataset.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[73]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Single cell data 2</span>
+<span class="c1"># read in data</span>
+<span class="n">fname</span> <span class="o">=</span> <span class="s1">&#39;../xenium_data/Xenium_FFPE_Human_Breast_Cancer_Rep2_cells.csv.gz&#39;</span>
+<span class="n">df2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+
+<span class="c1"># get cell centroids</span>
+<span class="n">xJ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df2</span><span class="p">[</span><span class="s1">&#39;x_centroid&#39;</span><span class="p">])</span>
+<span class="n">yJ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df2</span><span class="p">[</span><span class="s1">&#39;y_centroid&#39;</span><span class="p">])</span>
+
+<span class="c1"># plot</span>
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xJ</span><span class="p">,</span><span class="n">yJ</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;#ff7f0e&#39;</span><span class="p">)</span>
+
+<span class="c1"># rasterize and plot</span>
+<span class="n">XJ</span><span class="p">,</span><span class="n">YJ</span><span class="p">,</span><span class="n">J</span><span class="p">,</span><span class="n">fig</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">rasterize</span><span class="p">(</span><span class="n">xJ</span><span class="p">,</span><span class="n">yJ</span><span class="p">,</span><span class="n">dx</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 118752
+10000 of 118752
+20000 of 118752
+30000 of 118752
+40000 of 118752
+50000 of 118752
+60000 of 118752
+70000 of 118752
+80000 of 118752
+90000 of 118752
+100000 of 118752
+110000 of 118752
+118751 of 118752
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_9_1.png" src="../_images/notebooks_xenium-xenium-alignment_9_1.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_9_2.png" src="../_images/notebooks_xenium-xenium-alignment_9_2.png" />
+</div>
+</div>
+<p>Note that plotting the cell centroid positions from both datasets shows that alignment is still needed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[79]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot</span>
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xI</span><span class="p">,</span><span class="n">yI</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xJ</span><span class="p">,</span><span class="n">yJ</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[79]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7f7cc8a3ed30&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_11_1.png" src="../_images/notebooks_xenium-xenium-alignment_11_1.png" />
+</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">STalign</span></code> relies on an interative gradient descent to align these two images. This can be somewhat slow. So we can manually designate a few landmark points to help initialize the alignment. A <code class="docutils literal notranslate"><span class="pre">curve_annotator.py</span></code> script is provided to assist with this. In order to use the <code class="docutils literal notranslate"><span class="pre">curve_annotator.py</span></code> script, we will need to write out our images as <code class="docutils literal notranslate"><span class="pre">.npz</span></code> files.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[57]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Optional: write out npz files for landmark point picker</span>
+<span class="n">np</span><span class="o">.</span><span class="n">savez</span><span class="p">(</span><span class="s1">&#39;../xenium_data/Xenium_Breast_Cancer_Rep1&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">XI</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">YI</span><span class="p">,</span><span class="n">I</span><span class="o">=</span><span class="n">I</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">savez</span><span class="p">(</span><span class="s1">&#39;../xenium_data/Xenium_Breast_Cancer_Rep2&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">XJ</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">YJ</span><span class="p">,</span><span class="n">I</span><span class="o">=</span><span class="n">J</span><span class="p">)</span>
+<span class="c1"># outputs Xenium_Breast_Cancer_Rep1.npz and Xenium_Breast_Cancer_Rep2.npz</span>
+</pre></div>
+</div>
+</div>
+<p>Given these <code class="docutils literal notranslate"><span class="pre">.npz</span></code> files, we can then run the following code:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>python curve_annotator.py Xenium_Breast_Cancer_Rep1.npz
+python curve_annotator.py Xenium_Breast_Cancer_Rep2.npz
+</pre></div>
+</div>
+<p>Which will provide a graphical user interface to selecting landmark points, which will then be saved in <code class="docutils literal notranslate"><span class="pre">Xenium_Breast_Cancer_Rep1_points.npy</span></code> and <code class="docutils literal notranslate"><span class="pre">Xenium_Breast_Cancer_Rep2_points.npy</span></code> respectively. We can then read in these files.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[58]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># read from file</span>
+<span class="n">pointsIlist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;../xenium_data/Xenium_Breast_Cancer_Rep1_points.npy&#39;</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pointsIlist</span><span class="p">)</span>
+<span class="n">pointsJlist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;../xenium_data/Xenium_Breast_Cancer_Rep2_points.npy&#39;</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pointsJlist</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;0&#39;: [(2065.0390375683187, 3096.538441761356)], &#39;1&#39;: [(6505.52290853606, 4365.248119180711)], &#39;2&#39;: [(4226.85355369735, 4932.828764342001)]}
+{&#39;0&#39;: [(2365.8569852416354, 1218.8582693193312)], &#39;1&#39;: [(6839.7279529835705, 2387.4066564161058)], &#39;2&#39;: [(4552.711823951313, 3046.801817706428)]}
+</pre></div></div>
+</div>
+<p>Note that these landmark points are read in as lists. We will want to convert them to a simple array for downstream usage.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[59]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># convert to array</span>
+<span class="n">pointsI</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pointsJ</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># Jean&#39;s note: a bit odd to me that the points are stored as y,x</span>
+<span class="c1">## instead of x,y but all downstream code uses this orientation</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pointsIlist</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+    <span class="n">pointsI</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">pointsIlist</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">pointsIlist</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]])</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pointsJlist</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+    <span class="n">pointsJ</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">pointsJlist</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">pointsJlist</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]])</span>
+
+<span class="n">pointsI</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pointsI</span><span class="p">)</span>
+<span class="n">pointsJ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pointsJ</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[60]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># now arrays</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pointsI</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pointsJ</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[3096.53844176 2065.03903757]
+ [4365.24811918 6505.52290854]
+ [4932.82876434 4226.8535537 ]]
+[[1218.85826932 2365.85698524]
+ [2387.40665642 6839.72795298]
+ [3046.80181771 4552.71182395]]
+</pre></div></div>
+</div>
+<p>Alternatively, you can also just manually create an array of points.</p>
+<p>But it will be good to double check that your landmark points look sensible by plotting them along with the rasterized image we created.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[61]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get extent of images</span>
+<span class="n">extentI</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">extent_from_x</span><span class="p">((</span><span class="n">YI</span><span class="p">,</span><span class="n">XI</span><span class="p">))</span>
+<span class="n">extentJ</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">extent_from_x</span><span class="p">((</span><span class="n">YJ</span><span class="p">,</span><span class="n">XJ</span><span class="p">))</span>
+
+<span class="c1"># plot rasterized images</span>
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">((</span><span class="n">I</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()),</span> <span class="n">extent</span><span class="o">=</span><span class="n">extentI</span><span class="p">)</span> <span class="c1"># just want 201x276 matrix</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">((</span><span class="n">J</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()),</span> <span class="n">extent</span><span class="o">=</span><span class="n">extentJ</span><span class="p">)</span> <span class="c1"># just want 201x276 matrix</span>
+<span class="c1"># with points</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">pointsI</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">pointsI</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">pointsJ</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">pointsJ</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pointsI</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">pointsI</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span><span class="n">pointsI</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">pointsJ</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span><span class="n">pointsJ</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_20_0.png" src="../_images/notebooks_xenium-xenium-alignment_20_0.png" />
+</div>
+</div>
+<p>We can now initialize a simple affine alignment from the landmark points.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[62]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># compute initial affine transformation from points</span>
+<span class="n">L</span><span class="p">,</span><span class="n">T</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">L_T_from_points</span><span class="p">(</span><span class="n">pointsI</span><span class="p">,</span> <span class="n">pointsJ</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Depending on distortions in the tissue sample (as well as the accuracy of your landmark points), a simple affine alignment may not be sufficient to align the two single-cell spatial transcriptomics datasets. So we will need to perform non-linear local alignments via LDDMM.</p>
+<p>There are many parameters that can be tuned for performing this alignment.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[63]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># run LDDMM</span>
+<span class="c1"># running this on my desktop so cpu device</span>
+<span class="n">device</span> <span class="o">=</span> <span class="s1">&#39;cpu&#39;</span>
+
+<span class="c1"># keep all other parameters default</span>
+<span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;L&#39;</span><span class="p">:</span><span class="n">L</span><span class="p">,</span><span class="s1">&#39;T&#39;</span><span class="p">:</span><span class="n">T</span><span class="p">,</span>
+          <span class="s1">&#39;niter&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">,</span>
+          <span class="s1">&#39;pointsI&#39;</span><span class="p">:</span><span class="n">pointsI</span><span class="p">,</span>
+          <span class="s1">&#39;pointsJ&#39;</span><span class="p">:</span><span class="n">pointsJ</span><span class="p">,</span>
+          <span class="s1">&#39;device&#39;</span><span class="p">:</span><span class="n">device</span><span class="p">,</span>
+          <span class="s1">&#39;sigmaM&#39;</span><span class="p">:</span><span class="mf">1.5</span><span class="p">,</span>
+          <span class="s1">&#39;sigmaB&#39;</span><span class="p">:</span><span class="mf">1.0</span><span class="p">,</span>
+          <span class="s1">&#39;sigmaA&#39;</span><span class="p">:</span><span class="mf">1.5</span><span class="p">,</span>
+          <span class="s1">&#39;epV&#39;</span><span class="p">:</span> <span class="mi">100</span>
+          <span class="p">}</span>
+
+<span class="n">Ifoo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">I</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">I</span><span class="p">))</span> <span class="c1"># make RGB instead of greyscale</span>
+<span class="n">Jfoo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">J</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">J</span><span class="p">))</span> <span class="c1"># make RGB instead of greyscale</span>
+<span class="n">A</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">xv</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">LDDMM</span><span class="p">([</span><span class="n">YI</span><span class="p">,</span><span class="n">XI</span><span class="p">],</span><span class="n">Ifoo</span><span class="p">,[</span><span class="n">YJ</span><span class="p">,</span><span class="n">XJ</span><span class="p">],</span><span class="n">Jfoo</span><span class="p">,</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+../STalign.py:1283: UserWarning: Data has no positive values, and therefore cannot be log-scaled.
+  axE[2].set_yscale(&#39;log&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_24_1.png" src="../_images/notebooks_xenium-xenium-alignment_24_1.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_24_2.png" src="../_images/notebooks_xenium-xenium-alignment_24_2.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_24_3.png" src="../_images/notebooks_xenium-xenium-alignment_24_3.png" />
+</div>
+</div>
+<p>Plots generated throughout the alignment can be used to give you a sense of whether the parameter choices are appropriate and whether your alignment is converging on a solution.</p>
+<p>We can also evaluate the resulting alignment by applying the transformation to visualize how our source and target images were deformed to achieve the alignment.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[64]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># apply transform</span>
+<span class="n">phii</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">build_transform</span><span class="p">(</span><span class="n">xv</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">XJ</span><span class="o">=</span><span class="p">[</span><span class="n">YJ</span><span class="p">,</span><span class="n">XJ</span><span class="p">],</span><span class="n">direction</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="n">phiI</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">transform_image_atlas_to_target</span><span class="p">(</span><span class="n">xv</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">A</span><span class="p">,[</span><span class="n">YI</span><span class="p">,</span><span class="n">XI</span><span class="p">],</span><span class="n">Ifoo</span><span class="p">,[</span><span class="n">YJ</span><span class="p">,</span><span class="n">XJ</span><span class="p">])</span>
+<span class="n">phipointsI</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">transform_points_atlas_to_target</span><span class="p">(</span><span class="n">xv</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">pointsI</span><span class="p">)</span>
+
+<span class="c1"># plot with grids</span>
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">100000</span><span class="p">,</span><span class="mi">100000</span><span class="p">,</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">XJ</span><span class="p">,</span><span class="n">YJ</span><span class="p">,</span><span class="n">phii</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="n">colors</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span><span class="n">linestyles</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="n">levels</span><span class="o">=</span><span class="n">levels</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">XJ</span><span class="p">,</span><span class="n">YJ</span><span class="p">,</span><span class="n">phii</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span><span class="n">colors</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">,</span><span class="n">linestyles</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="n">levels</span><span class="o">=</span><span class="n">levels</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;source to target&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">phiI</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">phiI</span><span class="p">),</span><span class="n">extent</span><span class="o">=</span><span class="n">extentJ</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">phipointsI</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span><span class="n">phipointsI</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span><span class="n">c</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+../STalign.py:1638: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  A = torch.tensor(A)
+../STalign.py:1639: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  v = torch.tensor(v)
+../STalign.py:1651: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  XJ = torch.tensor(XJ)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_26_1.png" src="../_images/notebooks_xenium-xenium-alignment_26_1.png" />
+</div>
+</div>
+<p>Note that because of our use of LDDMM, the resulting transformation is invertible.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[65]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># transform is invertible</span>
+<span class="n">phi</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">build_transform</span><span class="p">(</span><span class="n">xv</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">XJ</span><span class="o">=</span><span class="p">[</span><span class="n">YI</span><span class="p">,</span><span class="n">XI</span><span class="p">],</span><span class="n">direction</span><span class="o">=</span><span class="s1">&#39;f&#39;</span><span class="p">)</span>
+<span class="n">phiiJ</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">transform_image_target_to_atlas</span><span class="p">(</span><span class="n">xv</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">A</span><span class="p">,[</span><span class="n">YJ</span><span class="p">,</span><span class="n">XJ</span><span class="p">],</span><span class="n">Jfoo</span><span class="p">,[</span><span class="n">YI</span><span class="p">,</span><span class="n">XI</span><span class="p">])</span>
+<span class="n">phiipointsJ</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">transform_points_target_to_atlas</span><span class="p">(</span><span class="n">xv</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">pointsJ</span><span class="p">)</span>
+
+<span class="c1"># plot with grids</span>
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">100000</span><span class="p">,</span><span class="mi">100000</span><span class="p">,</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">XI</span><span class="p">,</span><span class="n">YI</span><span class="p">,</span><span class="n">phi</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="n">colors</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span><span class="n">linestyles</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="n">levels</span><span class="o">=</span><span class="n">levels</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">XI</span><span class="p">,</span><span class="n">YI</span><span class="p">,</span><span class="n">phi</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span><span class="n">colors</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">,</span><span class="n">linestyles</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="n">levels</span><span class="o">=</span><span class="n">levels</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;target to source&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">phiiJ</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">phiiJ</span><span class="p">),</span><span class="n">extent</span><span class="o">=</span><span class="n">extentI</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">phiipointsJ</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span><span class="n">phiipointsJ</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span><span class="n">c</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_28_0.png" src="../_images/notebooks_xenium-xenium-alignment_28_0.png" />
+</div>
+</div>
+<p>Finally, we can apply our transform to the original sets of single cell centroid positions to achieve their new aligned positions.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[66]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># apply transform to original points</span>
+<span class="n">tpointsJ</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">transform_points_target_to_atlas</span><span class="p">(</span><span class="n">xv</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">A</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">yJ</span><span class="p">,</span> <span class="n">xJ</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
+
+<span class="c1"># just original points for visualizing later</span>
+<span class="n">tpointsI</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">xI</span><span class="p">,</span> <span class="n">yI</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<p>And we can visualize the results.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[67]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot results</span>
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">tpointsI</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span><span class="n">tpointsI</span><span class="p">[</span><span class="mi">1</span><span class="p">,:],</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">tpointsJ</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">tpointsJ</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span> <span class="c1"># also needs to plot as y,x not x,y</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[67]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7f7d1867a400&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-xenium-alignment_32_1.png" src="../_images/notebooks_xenium-xenium-alignment_32_1.png" />
+</div>
+</div>
+<p>And save the new aligned positions by appending to our original data using <code class="docutils literal notranslate"><span class="pre">numpy</span></code> with <code class="docutils literal notranslate"><span class="pre">np.hstack</span></code> and save the output as a new csv file with <code class="docutils literal notranslate"><span class="pre">np.savetxt</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[68]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># save results by appending</span>
+<span class="c1"># note results are in y,x coordinates</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">df2</span><span class="p">,</span> <span class="n">tpointsJ</span><span class="o">.</span><span class="n">numpy</span><span class="p">()))</span>
+<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s1">&#39;../xenium_data/Xenium_Breast_Cancer_Rep2_STalign_to_Rep1.csv&#39;</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We will finally <code class="docutils literal notranslate"><span class="pre">gzip</span></code> to compress the <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file to create <code class="docutils literal notranslate"><span class="pre">Xenium_Breast_Cancer_Rep2_STalign_to_Rep1.csv.gz</span></code></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../tutorials.html" class="btn btn-neutral float-left" title="Tutorials" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="xenium-heimage-alignment.html" class="btn btn-neutral float-right" title="Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Manjari Anant.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
