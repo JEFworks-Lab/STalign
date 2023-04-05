@@ -17,3 +17,4 @@ copy
 myst_parser
 autodocsumm
 nbsphinx
+furo
