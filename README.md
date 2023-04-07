@@ -14,7 +14,7 @@ STalign enables:
 - alignment of ST datasets to a 3D common coordinate framework 
 
 ## Installation
-'pip install "git+https://github.com/JEFworks-Lab/STalign.git"'
+`pip install "git+https://github.com/JEFworks-Lab/STalign.git"`
 
 ### Input Data
 To use this tool, you will need provide the following information:
