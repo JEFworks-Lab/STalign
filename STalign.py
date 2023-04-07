@@ -1005,15 +1005,6 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     xv : list of torch tensor
         Pixel locations in v
         
-    TODO
-    ----
-    Include input for initialization. (done)
-    
-    Include a metric for L and T
-    
-    Include input initial guess for velocity. (done)
-    
-    Better initialization for mu
     
     '''
     
@@ -1317,14 +1308,6 @@ def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
         sigmaM=1.0,sigmaB=2.0,sigmaA=5.0,sigmaR=1e8,sigmaP=2e1,
         device='cpu',dtype=torch.float64, muA=None, muB = None):
     ''' LDDMM for 3D to 2D slice mapping.
-
-
-    TODO
-    ----
-    check types and convert to tensors better
-    metric
-    semilagrange
-    
     
     muA: torch tensor whose dimension is the same as the target image
         Defaults to None, which means we estimate this. If you provide a value, we will not estimate it.
@@ -1648,11 +1631,6 @@ def build_transform(xv,v,A,direction='b',XJ=None):
         Sample points in mehsgrid format.
     
     
-    TODO
-    ----
-    Check types.
-    Implement forward versus backwards
-    
     '''
     
     A = torch.tensor(A)
@@ -1714,12 +1692,7 @@ def build_transform3D(xv,v,A,direction='b',XJ=None):
     Xs : array
         Sample points in mehsgrid format.
     
-    
-    TODO
-    ----
-    Check types.
-    Implement forward versus backwards
-    THIS FUNCTION IS IN PROGRESS
+ 
     
     '''
     
@@ -1817,113 +1790,208 @@ def calculate_tre(pointsI, pointsJ):
 
 #Download and store ontology
 def download_aba_ontology(url,file_name): 
-    # url - location of brain region names
-    #file_name - where to store ontology info
-    #'http://api.brain-map.org/api/v2/data/query.csv?criteria=model::Structure,rma::criteria,[ontology_id$eq1],rma::options[order$eq%27structures.graph_order%27][num_rows$eqall]'
-    r = requests.get(url)
-    print(r)
-    with open(file_name,'w') as f:
-        f.write(r.text)
-    ontology_name = file_name
+	''' Create 3D altas ontology
+	    
+	    Parameters
+	    ----------
+	    url : Link to url contain atlas ontology
+	    file_name : File name to save atlas ontology
+	    
+	    Returns
+	    -------
+	    ontology_name : File name to store ontologies
+	    namesdict : Dictionary of all brain rgeion names
+	'''
+	    
+   
+	r = requests.get(url)
+	print(r)
+	with open(file_name,'w') as f:
+        	f.write(r.text)
+	ontology_name = file_name
 
-    O = pd.read_csv(ontology_name)
+	O = pd.read_csv(ontology_name)
 
-    # store the ontology in a dictionary
-    namesdict = defaultdict(lambda: 'unk')
-    namesdict[0] = 'bg'
+	# store the ontology in a dictionary
+	namesdict = defaultdict(lambda: 'unk')
+	namesdict[0] = 'bg'
 
-    # we need to add the structure names from the structure_id
-    for i,n in zip(O['id'],O['acronym']):
-        namesdict[i] = n
-    return ontology_name,namesdict
+	# we need to add the structure names from the structure_id
+	for i,n in zip(O['id'],O['acronym']):
+        	namesdict[i] = n
+	return ontology_name,namesdict
 
 def download_aba_image_labels(imageurl, labelurl, imagefile, labelfile):
-    #image_url - location of cell stain 3d atlas
-    #label_atlas - location of brain region annotations for 3d atlas
-    #imagefile, labelfile - where to store image and label informations
-        url = imageurl#'http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/ara_nissl/ara_nissl_50.nrrd'
-        r = requests.get(url, stream=True)
-        with open(imagefile, 'wb') as f:
+	''' Create 3D altas image and region annotations
+		    
+		    Parameters
+		    ----------
+		    imageurl : array
+		    		Link containing atlas cell stained image.
+		    labelurl : array
+		    		Link containing atlas altas images for each voxel in imageurl.
+		    imagefile : array
+		    		File location to save imageurl information.
+		    labelfile : array
+		    		File location to save labelurl information.
+		    
+		    Returns
+		    -------
+		    imagefile : array
+		    		File location to save imageurl information.
+		    labelfile : array
+		    		File location to save labelurl information.	    
+		    
+	'''
+	url = imageurl
+	r = requests.get(url, stream=True)
+	with open(imagefile, 'wb') as f:
             for chunk in r.iter_content(chunk_size=1024): 
                 if chunk: # filter out keep-alive new chunks
                     f.write(chunk)
-        imagefile = imagefile
+	imagefile = imagefile
 
-        url = labelurl#'http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/annotation/ccf_2017/annotation_50.nrrd'
-        r = requests.get(url, stream=True)
-        with open(labelfile, 'wb') as f:
+	url = labelurl#'http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/annotation/ccf_2017/annotation_50.nrrd'
+	r = requests.get(url, stream=True)
+	with open(labelfile, 'wb') as f:
             for chunk in r.iter_content(chunk_size=1024): 
                 if chunk: # filter out keep-alive new chunks
                     f.write(chunk)
-        labelfile = labelfile
-        return imagefile, labelfile
+	labelfile = labelfile
+	return imagefile, labelfile
 
-def analyze3Dalign(labelfile, xv,v,mat, xJ, dx, scale_x, scale_y,x,y, X_, Y_, namesdict, device='cpu'):
-    # map the annotations
-    #xS = [np.arange(n)*d - (n-1)*d/2.0 for n,d in zip(nxS,dxS)]
-    vol,hdr = nrrd.read(labelfile)
-    L = vol
-    dxL = np.diag(hdr['space directions'])
-    nL = L.shape
-    xL = [np.arange(n)*d - (n-1)*d/2 for n,d in zip(nL,dxL)]
-
-    # next we'll chose a set of points to sample on
-    # if we wanted to use the same resolution as our rasterized image, we would do this
-    res = np.array(dx)
-    XJ = np.stack(np.meshgrid(np.zeros(1),xJ[0],xJ[1],indexing='ij'),-1)
-    # if we want to use a different resolution
-    res = 10.0
-    XJ = np.stack(np.meshgrid(np.zeros(1), np.arange(xJ[0][0],xJ[0][-1],res), np.arange(xJ[1][0],xJ[1][-1],res), indexing='ij'),-1)
-
-
-    tform = build_transform3D(xv,v,mat,direction='b',XJ=torch.tensor(XJ,device=mat.device))
-
-    AphiL = interp3D(
-        xL,
-        torch.tensor(L[None].astype(np.float64),dtype=torch.float64,device=tform.device),
-        tform.permute(-1,0,1,2),
-        mode='nearest',
-    )[0,0].int()
-    AphiL = AphiL.detach().cpu()
-
-    # now look at the cells and assign
-    q = np.stack((y,x))
-    qi = np.round(((q - np.stack([xJ[0][0],xJ[1][0]])[...,None])/res)).astype(int)
-    # by definition, no points should be out of bounds
-    # but if I change resolutions, there may be points out of bounds
-    df_ = pd.DataFrame()
-    labels = AphiL[qi[0],qi[1]]
-    col = ((x - X_[0])/dx).astype(int)
-    row = ((y - Y_[0])/dx).astype(int)
-    df_['coord0'] = tform[0,row,col,0].detach().cpu()
-    df_['coord1'] = tform[0,row,col,1].detach().cpu()
-    df_['coord2'] = tform[0,row,col,2].detach().cpu()
-    df_['x'] = x
-    df_['y'] = y
-    df_['struct_id'] = labels
+def analyze3Dalign(labelfile, xv,v,A, XJ, dx, scale_x, scale_y, x, y, X_, Y_, namesdict, device='cpu'):
+	''' Create dataframe with region annotations and 3D coordinates of target brain slice
+		    
+		    Parameters
+		    ----------
+		    labelfile : array
+		    		File name of 3D atlas with region annotations.
+		    xv : list of array
+        		Sample points for velocity
+    		    v : array
+        		time dependent velocity field
+    		    A : array
+        		Affine transformation matrix
+    		    direction : char
+        		'f' for forward and 'b' for backward. 'b' is default and is used for transforming images.
+        		'f' is used for transforming points.
+    		    XJ : array
+        		Sample points for target (meshgrid with ij index style).  Defaults to None 
+       		to keep sampling on the xv.
     
-    all_names = [namesdict[i] for i in df_['struct_id']]
-    df_['acronym'] = all_names  
+		    dx : int
+		    	Step of rasterized image.
+		    scale_x : double
+		    	Value that x positions of atlas were scaled by
+		    scale_y : double
+		    	Value that y positions of atlas were scaled by
+		    x : array
+		    	X positions of target brain slice
+		    y : array
+		    	Y positions of target brain slice
+		    X_ : array
+		    	-
+		    Y_ : array
+		    	-
+		    namesdict : Dictionary
+		    		Dictionary of brain regions corresponding to region numbers
+		    
+		    Returns
+		    -------
+		    df : Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.
+	'''
+	# map the annotations
+	#xS = [np.arange(n)*d - (n-1)*d/2.0 for n,d in zip(nxS,dxS)]
+	vol,hdr = nrrd.read(labelfile)
+	L = vol
+	dxL = np.diag(hdr['space directions'])
+	nL = L.shape
+	xL = [np.arange(n)*d - (n-1)*d/2 for n,d in zip(nL,dxL)]
+
+	# next we'll chose a set of points to sample on
+	# if we wanted to use the same resolution as our rasterized image, we would do this
+	res = np.array(dx)
+	XJ = np.stack(np.meshgrid(np.zeros(1),xJ[0],xJ[1],indexing='ij'),-1)
+	# if we want to use a different resolution
+	res = 10.0
+	XJ = np.stack(np.meshgrid(np.zeros(1), np.arange(xJ[0][0],xJ[0][-1],res), np.arange(xJ[1][0],xJ[1][-1],res), indexing='ij'),-1)
+
+
+	tform = build_transform3D(xv,v,mat,direction='b',XJ=torch.tensor(XJ,device=mat.device))
+
+	AphiL = interp3D(
+        	xL, 
+        	torch.tensor(L[None].astype(np.float64),dtype=torch.float64,device=tform.device),
+        	tform.permute(-1,0,1,2),
+        	mode='nearest',
+	)[0,0].int()
+	AphiL = AphiL.detach().cpu()
+
+	# now look at the cells and assign
+	q = np.stack((y,x))
+	qi = np.round(((q - np.stack([xJ[0][0],xJ[1][0]])[...,None])/res)).astype(int)
+	# by definition, no points should be out of bounds
+	# but if I change resolutions, there may be points out of bounds
+	df_ = pd.DataFrame()
+	labels = AphiL[qi[0],qi[1]]
+	col = ((x - X_[0])/dx).astype(int)
+	row = ((y - Y_[0])/dx).astype(int)
+	df_['coord0'] = tform[0,row,col,0].detach().cpu()
+	df_['coord1'] = tform[0,row,col,1].detach().cpu()
+	df_['coord2'] = tform[0,row,col,2].detach().cpu()
+	df_['x'] = x
+	df_['y'] = y
+	df_['struct_id'] = labels
     
-    return df_ 
+	all_names = [namesdict[i] for i in df_['struct_id']]
+	df_['acronym'] = all_names  
+    
+	return df_ 
 
 def plot_brain_regions(df):
-    #plot brain regions
-    brain_regions = np.unique(df['acronym'])
-    fig,ax = plt.subplots()
-    for i in range(len(brain_regions)):
-        region_df = df[df['acronym']==brain_regions[i]]
+	''' Plot all brain regions in target brain slice with different color.
+		    
+		    Parameters
+		    ----------
+		    df : DataFrame
+		    	Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.
+		    
+		    Returns
+		    -------
+		    None
+		    
+	'''
+	#plot brain regions
+	brain_regions = np.unique(df['acronym'])
+	fig,ax = plt.subplots()
+	for i in range(len(brain_regions)):
+        	region_df = df[df['acronym']==brain_regions[i]]
 
-        ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
-        ax.legend()
+        	ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
+        	ax.legend()
 
 def plot_subset_brain_regions(df, brain_regions):
-    #plot brain regions
-    brain_regions = brain_regions
-    fig,ax = plt.subplots()
-    ax.scatter(df['x'], df['y'],color = 'grey',s= 0.1)   
-    for i in range(len(brain_regions)):
-        region_df = df[df['acronym']==brain_regions[i]]
+	''' Plot subset of brain regions in target brain slice with different color.
+		    
+		    Parameters
+		    ----------
+		    df : DataFrame
+		    	Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.
+		    brain_regions : array
+		    		Subset of brain regions of interest (i.e. ['CA1', 'CP', 'DG-sg'])
+		    
+		    Returns
+		    -------
+		    None
+		    
+	'''
+    	#plot brain regions
+	brain_regions = brain_regions
+	fig,ax = plt.subplots()
+	ax.scatter(df['x'], df['y'],color = 'grey',s= 0.1)   
+	for i in range(len(brain_regions)):
+        	region_df = df[df['acronym']==brain_regions[i]]
 
-        ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
-        ax.legend()
+	ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
+	ax.legend()
