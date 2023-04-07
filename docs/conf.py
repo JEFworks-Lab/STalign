@@ -18,7 +18,7 @@ release = '1.0'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['myst_parser', 'autodocsumm', 'nbsphinx',
+extensions = ['myst_parser', 'autodocsumm', 'nbsphinx', 
 ]
 source_suffix = ['.rst', '.md'
 ]
