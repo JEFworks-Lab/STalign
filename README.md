@@ -13,6 +13,19 @@ STalign enables:
 - alignment of ST datasets across technologies
 - alignment of ST datasets to a 3D common coordinate framework 
 
+## Installation
+'pip install "git+https://github.com/JEFworks-Lab/STalign.git"'
+
+### Input Data
+To use this tool, you will need provide the following information:
+
+2D-2D alignment:
+- Source Image: Arrays of x and y positions of cells
+- Target Image: Arrays of x and y positions of cells
+3D-2D alignment:
+- Source Image: (Default: Adult mouse Allen Brain Altas CCFv3) 3D Matrix with voxels corresponding to (1) cell intensity and (2) brain regions
+- Target Image: Arrays of x and y positions of cells
+
 ## Usage
 
 To use `STalign`, please refer to the following Jupyter Notebooks with usage examples:
