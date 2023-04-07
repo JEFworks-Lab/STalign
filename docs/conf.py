@@ -11,8 +11,8 @@ sys.path.insert(0,os.path.abspath('..'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'STalign'
-copyright = '2023, Manjari Anant'
-author = 'Manjari Anant'
+copyright = '2023, JEFworks Lab'
+author = 'Manjari Anant, Kalen Clifton, Daniel Tward, Jean Fan, et al.'
 release = '1.0'
 
 # -- General configuration ---------------------------------------------------
