@@ -23,7 +23,7 @@ To use this tool, you will need provide the following information:
 - Target Image: Arrays of x and y positions of cells
 
 #### 3D-2D alignment:
-- Source Image: (Default: Adult mouse Allen Brain Altas CCFv3) 3D Matrix with voxels corresponding to (1) cell intensity and (2) brain regions
+- Source Image: (Default: Adult mouse Allen Brain Altas CCFv3) 3D Matrix with voxels corresponding to (1) cell intensity and (2) annotated tissue regions
 - Target Image: Arrays of x and y positions of cells
 
 ## Tutorials
