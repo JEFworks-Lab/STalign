@@ -8,7 +8,7 @@ matplotlib
 torch
 pandas
 requests
-collections
+
 pynrrd
 tornado
 plotly
