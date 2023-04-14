@@ -7,14 +7,12 @@ numpy
 matplotlib
 torch
 pandas
-os
 requests
 collections
-nrrd
+pynrrd
 tornado
 plotly
-copy
 myst_parser
 autodocsumm
 nbsphinx
-furo
+pypandoc
