@@ -26,13 +26,7 @@ To use this tool, you will need provide the following information:
 - Source Image: (Default: Adult mouse Allen Brain Altas CCFv3) 3D Matrix with voxels corresponding to (1) cell intensity and (2) annotated tissue regions
 - Target Image: Arrays of x and y positions of cells
 
-## Tutorials
+## Usage
 
-To use `STalign`, please refer to the following Jupyter Notebooks with usage examples:
-
-[Xenium-Xenium Alignment](https://jef.works/STalign/notebooks/xenium-xenium-alignment.html) <br />
-
-[Xenium-H&E Image Alignment](https://jef.works/STalign/notebooks/xenium-heimage-alignment.html) <br />
-
-[3D alignment to the Allen Brain Atlas](https://jef.works/STalign/notebooks/merfish-allen3Datlas-alignment.html) <br />
+To use `STalign`, please refer to our [tutorials](jef.works/STalign/tutorials.html) with usage examples.
 

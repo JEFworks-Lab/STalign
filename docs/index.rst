@@ -10,7 +10,6 @@ Welcome to STalign's documentation!
    :maxdepth: 10
    :glob:
    
-   
    overview
    tutorials
    STalign

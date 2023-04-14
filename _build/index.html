@@ -21,7 +21,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="STalign Overview" href="overview.html" /> 
+    <link rel="next" title="Overview" href="overview.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -44,7 +44,9 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="overview.html">STalign Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#usage">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="STalign.html">Functions</a></li>
 </ul>
@@ -77,11 +79,16 @@
 <h1>Welcome to STalign’s documentation!<a class="headerlink" href="#welcome-to-stalign-s-documentation" title="Permalink to this heading"></a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="overview.html">STalign Overview</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="overview.html#overview">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="overview.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#installation">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#input-data">Input Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#d-2d-alignment">2D-2D alignment:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#id1">3D-2D alignment:</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#usage">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/xenium-xenium-alignment.html">Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/xenium-heimage-alignment.html">Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium</a></li>
@@ -90,34 +97,34 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="STalign.html">Functions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.LDDMM"><code class="docutils literal notranslate"><span class="pre">LDDMM()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.LDDMM_3D_to_slice"><code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.L_T_from_points"><code class="docutils literal notranslate"><span class="pre">L_T_from_points()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.analyze3Dalign"><code class="docutils literal notranslate"><span class="pre">analyze3Dalign()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.build_transform"><code class="docutils literal notranslate"><span class="pre">build_transform()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.build_transform3D"><code class="docutils literal notranslate"><span class="pre">build_transform3D()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.clip"><code class="docutils literal notranslate"><span class="pre">clip()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.download_aba_image_labels"><code class="docutils literal notranslate"><span class="pre">download_aba_image_labels()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.download_aba_ontology"><code class="docutils literal notranslate"><span class="pre">download_aba_ontology()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.extent_from_x"><code class="docutils literal notranslate"><span class="pre">extent_from_x()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.interp"><code class="docutils literal notranslate"><span class="pre">interp()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.interp3D"><code class="docutils literal notranslate"><span class="pre">interp3D()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.make_scree"><code class="docutils literal notranslate"><span class="pre">make_scree()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.normalize"><code class="docutils literal notranslate"><span class="pre">normalize()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.plot_brain_regions"><code class="docutils literal notranslate"><span class="pre">plot_brain_regions()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.plot_subset_brain_regions"><code class="docutils literal notranslate"><span class="pre">plot_subset_brain_regions()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.rasterize"><code class="docutils literal notranslate"><span class="pre">rasterize()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.rasterizePCA"><code class="docutils literal notranslate"><span class="pre">rasterizePCA()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.rasterize_with_signal"><code class="docutils literal notranslate"><span class="pre">rasterize_with_signal()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.saveRasters"><code class="docutils literal notranslate"><span class="pre">saveRasters()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.to_A"><code class="docutils literal notranslate"><span class="pre">to_A()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.to_A_3D"><code class="docutils literal notranslate"><span class="pre">to_A_3D()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.transform_image_atlas_to_target"><code class="docutils literal notranslate"><span class="pre">transform_image_atlas_to_target()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.transform_image_target_to_atlas"><code class="docutils literal notranslate"><span class="pre">transform_image_target_to_atlas()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.transform_points_atlas_to_target"><code class="docutils literal notranslate"><span class="pre">transform_points_atlas_to_target()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.transform_points_target_to_atlas"><code class="docutils literal notranslate"><span class="pre">transform_points_target_to_atlas()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.v_to_phii"><code class="docutils literal notranslate"><span class="pre">v_to_phii()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.v_to_phii_3D"><code class="docutils literal notranslate"><span class="pre">v_to_phii_3D()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.LDDMM"><code class="docutils literal notranslate"><span class="pre">LDDMM()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.LDDMM_3D_to_slice"><code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.L_T_from_points"><code class="docutils literal notranslate"><span class="pre">L_T_from_points()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.analyze3Dalign"><code class="docutils literal notranslate"><span class="pre">analyze3Dalign()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.build_transform"><code class="docutils literal notranslate"><span class="pre">build_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.build_transform3D"><code class="docutils literal notranslate"><span class="pre">build_transform3D()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.clip"><code class="docutils literal notranslate"><span class="pre">clip()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.download_aba_image_labels"><code class="docutils literal notranslate"><span class="pre">download_aba_image_labels()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.download_aba_ontology"><code class="docutils literal notranslate"><span class="pre">download_aba_ontology()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.extent_from_x"><code class="docutils literal notranslate"><span class="pre">extent_from_x()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.interp"><code class="docutils literal notranslate"><span class="pre">interp()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.interp3D"><code class="docutils literal notranslate"><span class="pre">interp3D()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.make_scree"><code class="docutils literal notranslate"><span class="pre">make_scree()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.normalize"><code class="docutils literal notranslate"><span class="pre">normalize()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.plot_brain_regions"><code class="docutils literal notranslate"><span class="pre">plot_brain_regions()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.plot_subset_brain_regions"><code class="docutils literal notranslate"><span class="pre">plot_subset_brain_regions()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.rasterize"><code class="docutils literal notranslate"><span class="pre">rasterize()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.rasterizePCA"><code class="docutils literal notranslate"><span class="pre">rasterizePCA()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.rasterize_with_signal"><code class="docutils literal notranslate"><span class="pre">rasterize_with_signal()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.saveRasters"><code class="docutils literal notranslate"><span class="pre">saveRasters()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.to_A"><code class="docutils literal notranslate"><span class="pre">to_A()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.to_A_3D"><code class="docutils literal notranslate"><span class="pre">to_A_3D()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.transform_image_atlas_to_target"><code class="docutils literal notranslate"><span class="pre">transform_image_atlas_to_target()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.transform_image_target_to_atlas"><code class="docutils literal notranslate"><span class="pre">transform_image_target_to_atlas()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.transform_points_atlas_to_target"><code class="docutils literal notranslate"><span class="pre">transform_points_atlas_to_target()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.transform_points_target_to_atlas"><code class="docutils literal notranslate"><span class="pre">transform_points_target_to_atlas()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.v_to_phii"><code class="docutils literal notranslate"><span class="pre">v_to_phii()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="STalign.html#STalign.STalign.v_to_phii_3D"><code class="docutils literal notranslate"><span class="pre">v_to_phii_3D()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -128,13 +135,13 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="overview.html" class="btn btn-neutral float-right" title="STalign Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="overview.html" class="btn btn-neutral float-right" title="Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2023, Manjari Anant.</p>
+    <p>&#169; Copyright 2023, JEFworks Lab.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
