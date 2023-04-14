@@ -32,7 +32,7 @@ To use this tool, you will need provide the following information:
 ## Usage
 
 To use `STalign`, please refer to our [tutorials](jef.works/STalign/tutorials.html) with usage examples.
-=======
+
 ### single-cell and spot-resolution ST alignment
 - Source: Arrays of x and y positions of cells from single-cell resolution ST data
 - Target: Registered H&E image from spot-resolution ST data
