@@ -28,11 +28,6 @@ To use this tool, you will need provide the following information:
 - Source: Arrays of x and y positions of cells
 - Target: Arrays of x and y positions of cells
 
-<<<<<<< HEAD
-## Usage
-
-To use `STalign`, please refer to our [tutorials](jef.works/STalign/tutorials.html) with usage examples.
-
 ### single-cell and spot-resolution ST alignment
 - Source: Arrays of x and y positions of cells from single-cell resolution ST data
 - Target: Registered H&E image from spot-resolution ST data
@@ -40,6 +35,10 @@ To use `STalign`, please refer to our [tutorials](jef.works/STalign/tutorials.ht
 ### 3D-2D alignment
 - Source: (Default: Adult mouse Allen Brain Altas CCFv3) 3D Matrix with voxels corresponding to (1) cell intensity and (2) annotated tissue regions
 - Target: Arrays of x and y positions of cells
+
+## Usage
+
+To use `STalign`, please refer to our [tutorials](jef.works/STalign/tutorials.html) with usage examples.
 
 ## Tutorials
 To use `STalign`, please refer to the following Jupyter Notebooks with usage examples: <br />
