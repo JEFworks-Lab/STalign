@@ -1,6 +1,6 @@
 Functions
 =================
 
-.. automodule:: STalign
+.. automodule:: STalign.STalign
 	:autosummary:
 	:members:
