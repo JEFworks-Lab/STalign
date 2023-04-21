@@ -1734,6 +1734,42 @@ def build_transform3D(xv,v,A,direction='b',XJ=None):
         raise Exception(f'Direction must be "f" or "b" but you input {direction}')
     return Xs 
 
+def transform_image_atlas_with_A(A, XI, I, XJ):
+    '''
+    Transform an image with an affine matrix
+    
+    Parameters
+    
+    ----------
+    
+    A  : torch tensor
+         Affine transform matrix
+        
+    XI : list of numpy arrays
+         List of arrays storing the pixel location in image I along each image axis. 
+         convention is row column order not xy. i.e, 
+         locations of pixels along the y axis (rows) followed by
+         locations of pixels along the x axis (columns)  
+    
+    I  : numpy array
+         A rasterized image with len(blur) channels along the first axis
+        
+    XJ : list of numpy arrays
+         List of arrays storing the pixel location in image I along each image axis. 
+         convention is row column order not xy. i.e, 
+         locations of pixels along the y axis (rows) followed by
+         locations of pixels along the x axis (columns)         
+    
+    Returns
+    -------
+    AI : torch tensor
+        image I after affine transformation A, with channels along first axis
+              
+    '''
+    xv = None
+    v = None
+    AI= STalign.transform_image_atlas_to_target(xv, v, A, XI, I, XJ=XJ)
+    return AI
 
 def transform_image_atlas_to_target(xv,v,A,xI,I,XJ=None):
     '''
