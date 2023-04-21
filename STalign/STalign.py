@@ -1768,7 +1768,7 @@ def transform_image_atlas_with_A(A, XI, I, XJ):
     '''
     xv = None
     v = None
-    AI= STalign.transform_image_atlas_to_target(xv, v, A, XI, I, XJ=XJ)
+    AI= transform_image_atlas_to_target(xv, v, A, XI, I, XJ=XJ)
     return AI
 
 def transform_image_atlas_to_target(xv,v,A,xI,I,XJ=None):
