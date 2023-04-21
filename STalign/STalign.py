@@ -1634,7 +1634,7 @@ def build_transform(xv,v,A,direction='b',XJ=None):
     '''
     
     A = torch.tensor(A)
-    v = torch.tensor(v)
+    if v is not None: v = torch.tensor(v) 
     if XJ is not None:
         # check some types here
         if isinstance(XJ,list):
@@ -1655,14 +1655,16 @@ def build_transform(xv,v,A,direction='b',XJ=None):
         # transform sample points
         Xs = (Ai[:-1,:-1]@XJ[...,None])[...,0] + Ai[:-1,-1]    
         # now diffeo, not semilagrange here
-        nt = v.shape[0]
-        for t in range(nt-1,-1,-1):
-            Xs = Xs + interp(xv,-v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
+        if v is not None:
+            nt = v.shape[0]
+            for t in range(nt-1,-1,-1):
+                Xs = Xs + interp(xv,-v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
     elif direction == 'f':
         Xs = torch.clone(XJ)
-        nt = v.shape[0]
-        for t in range(nt):
-            Xs = Xs + interp(xv,v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
+        if v is not None:
+            nt = v.shape[0]
+            for t in range(nt):
+                Xs = Xs + interp(xv,v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
         Xs = (A[:2,:2]@Xs[...,None])[...,0] + A[:2,-1]    
             
     else:
