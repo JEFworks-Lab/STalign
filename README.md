@@ -38,10 +38,11 @@ To use this tool, you will need provide the following information:
 
 ## Usage
 
-To use `STalign`, please refer to our [tutorials](jef.works/STalign/tutorials.html) with usage examples.
+To use `STalign`, please refer to our [tutorials](https://jef.works/STalign/tutorials.html) with usage examples.
 
 ## Tutorials
 To use `STalign`, please refer to the following Jupyter Notebooks with usage examples: <br />
+- [MERFISH-MERFISH Alignment](https://jef.works/STalign/notebooks/merfish-merfish-alignment.html) <br />
 - [Xenium-Xenium Alignment](https://jef.works/STalign/notebooks/xenium-xenium-alignment.html) <br />
 - [Xenium-H&E Image Alignment](https://jef.works/STalign/notebooks/xenium-heimage-alignment.html) <br />
 - [3D alignment to the Allen Brain Atlas](https://jef.works/STalign/notebooks/merfish-allen3Datlas-alignment.html) <br />

@@ -1739,7 +1739,6 @@ def transform_image_atlas_with_A(A, XI, I, XJ):
     Transform an image with an affine matrix
     
     Parameters
-    
     ----------
     
     A  : torch tensor
