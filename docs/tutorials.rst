@@ -5,6 +5,10 @@ Tutorials
    :maxdepth: 1
    :caption: Contents:
    
+   Alignment across tissue samples treated with same ST technology MERFISH
+   ------------------------------------------------
+   notebooks/merfish-merfish-alignment
+
    Alignment across tissue samples treated with same ST technology
    ------------------------------------------------
    notebooks/xenium-xenium-alignment
