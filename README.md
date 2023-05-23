@@ -18,8 +18,12 @@ STalign enables:
 - alignment of ST datasets across technologies
 - alignment of ST datasets to a 3D common coordinate framework 
 
-## Installation
+## Installation & Import
 `pip install "git+https://github.com/JEFworks-Lab/STalign.git"`
+
+*All dependencies will be installed with the above command. Dependencies can be found in the requirements.txt file.*
+
+To import STalign into your Python script, use: `from STalign import STalign`
 
 ## Input Data
 To use this tool, you will need provide the following information:
