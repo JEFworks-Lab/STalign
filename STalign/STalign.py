@@ -1897,7 +1897,7 @@ def download_aba_image_labels(imageurl, labelurl, imagefile, labelfile):
 	labelfile = labelfile
 	return imagefile, labelfile
 
-def analyze3Dalign(labelfile, xv,v,A, XJ, dx, scale_x, scale_y, x, y, X_, Y_, namesdict, device='cpu'):
+def analyze3Dalign(labelfile, xv,v,mat, xJ, dx, scale_x, scale_y, x, y, X_, Y_, namesdict, device='cpu'):
 	''' Create dataframe with region annotations and 3D coordinates of target brain slice
 		    
 		    Parameters
