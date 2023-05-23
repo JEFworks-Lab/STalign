@@ -20,7 +20,8 @@ STalign enables:
 
 ## Installation & Import
 `pip install "git+https://github.com/JEFworks-Lab/STalign.git"`
-All dependencies will be installed with the above command. Dependencies can be found in the requirements.txt file.
+
+*All dependencies will be installed with the above command. Dependencies can be found in the requirements.txt file.*
 
 To import STalign into your Python script, use: `from STalign import STalign`
 
