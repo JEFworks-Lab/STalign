@@ -24,3 +24,7 @@ Tutorials
    Alignment of 2D ST tissue slice with a 3D atlas
    ------------------------------------------------
    notebooks/merfish-allen3Datlas-alignment
+   
+   Alignment across samples with different ST technologies & partial tissue sections with landmark points
+   ------------------------------------------------
+   notebooks/merfish-visium-alignment-with-point-annotator
