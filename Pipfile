@@ -13,8 +13,9 @@ scipy = "*"
 pynrrd = "*"
 requests = "*"
 plotly = "*"
+ipython = "<=8.13.0"
+tk = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.10"
