@@ -2029,6 +2029,5 @@ def plot_subset_brain_regions(df, brain_regions):
 	ax.scatter(df['x'], df['y'],color = 'grey',s= 0.1)   
 	for i in range(len(brain_regions)):
         	region_df = df[df['acronym']==brain_regions[i]]
-
-	ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
+		ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
 	ax.legend()
