@@ -25,7 +25,7 @@ Tutorials
    ------------------------------------------------
    notebooks/merfish-allen3Datlas-alignment
    
-    Alignment of partial 2D ST tissue slice with a 3D atlas
+   Alignment of partial 2D ST tissue slice with a 3D atlas
    ------------------------------------------------
    notebooks/starmap-allen3Datlas-alignment
    
