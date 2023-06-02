@@ -2003,10 +2003,10 @@ def plot_brain_regions(df):
 	brain_regions = np.unique(df['acronym'])
 	fig,ax = plt.subplots()
 	for i in range(len(brain_regions)):
-        	region_df = df[df['acronym']==brain_regions[i]]
+            region_df = df[df['acronym']==brain_regions[i]]
 
-        	ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
-        	ax.legend()
+            ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
+            ax.legend()
 
 def plot_subset_brain_regions(df, brain_regions):
 	''' Plot subset of brain regions in target brain slice with different color.
@@ -2028,7 +2028,6 @@ def plot_subset_brain_regions(df, brain_regions):
 	fig,ax = plt.subplots()
 	ax.scatter(df['x'], df['y'],color = 'grey',s= 0.1)   
 	for i in range(len(brain_regions)):
-        	region_df = df[df['acronym']==brain_regions[i]]
-
-	ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
-	ax.legend()
+	    region_df = df[df['acronym']==brain_regions[i]]
+	    ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
+	    ax.legend()
