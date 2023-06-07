@@ -19,10 +19,36 @@ STalign enables:
 - alignment of ST datasets to a 3D common coordinate framework 
 
 ## Installation & Import
-`pip install "git+https://github.com/JEFworks-Lab/STalign.git"`
+
+### Installation using pip
+
+This installation method is intended for users who sets up a Python environment without `pipenv`.
+
+`$ pip install "git+https://github.com/JEFworks-Lab/STalign.git"`
 
 *All dependencies will be installed with the above command. Dependencies can be found in the requirements.txt file.*
 
+### Installation using Pipfile from source
+
+This installation method is intended for users who sets up a Python environment with `pipenv`. `pipenv` allows users to create and activate a virtual environment with all dependencies within the Python project. More information and installation method for `pipenv` can be found here: https://pipenv.pypa.io/en/latest/.
+
+Fork and `git clone` the `STalign` github repository.
+
+From the base directory of your local `STalign` git repo. create a `Pipfile.lock` file from `Pipfile` using:
+`$ pipenv lock`
+
+> **_NOTE:_** Since `Pipfile.lock` is platform-dependent and different across operating systems, do not commit `Pipfile.lock` to the git repo if contributing to `STalign` or collaborating with other people.
+
+Install `PyTorch` dependency using:
+`pipenv install torch==2.0.0`
+
+Activate the virtual environment using:
+`pipenv shell`
+
+Deactivate the virtual environment using:
+`exit`
+
+### Import
 To import STalign into your Python script, use: `from STalign import STalign`
 
 ## Input Data
