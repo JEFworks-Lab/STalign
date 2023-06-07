@@ -36,7 +36,7 @@ This installation method is intended for users who sets up a Python environment 
 
 Fork and `git clone` the `STalign` github repository.
 
-From the base directory of your local `STalign` git repo. create a `Pipfile.lock` file from `Pipfile` using:
+From the base directory of your local `STalign` git repo, create a `Pipfile.lock` file from `Pipfile` using:
 
 ```
 $ pipenv lock
