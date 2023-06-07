@@ -63,7 +63,11 @@ $ exit
 ```
 
 ### Import
-To import STalign into your Python script, use: `from STalign import STalign`
+To import STalign into your Python script, use: 
+
+```python
+from STalign import STalign
+```
 
 ## Input Data
 To use this tool, you will need provide the following information:
