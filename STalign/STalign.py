@@ -996,15 +996,22 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     muB: torch tensor whose dimension is the same as the target image
         Defaults to None, which means we estimate this. If you provide a value, we will not estimate it.
         
-    Returns
+    Returns a dictionary
     -------
-    A : torch tensor
+    {
+    'A': torch tensor
         Affine transform
-    v : torch tensor
+    'v': torch tensor
         Velocity field
-    xv : list of torch tensor
+    'xv': list of torch tensor
         Pixel locations in v
-        
+    'WM': torch tensor
+        Resulting weight matrix (matching)
+    'WB': torch tensor
+        Resulting weight matrix (background)
+    'WA': torch tensor
+        Resulting weight matrix (artifact)
+    }
     
     '''
     
@@ -1298,7 +1305,14 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             fig.canvas.draw()
             figE.canvas.draw()
             
-    return A.clone().detach(),v.clone().detach(),xv
+    return {
+        'A': A.clone().detach(), 
+        'v': v.clone().detach(), 
+        'xv': xv, 
+        'WM': WM.clone().detach(),
+        'WB': WB.clone().detach(),
+        'WA': WA.clone().detach()
+    }
 
 
 def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
