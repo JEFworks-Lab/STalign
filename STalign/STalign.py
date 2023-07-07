@@ -1006,12 +1006,11 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     'xv': list of torch tensor
         Pixel locations in v
     'WM': torch tensor
-        Resulting weight matrix (matching)
+        Resulting weight 2D array (matching)
     'WB': torch tensor
-        Resulting weight matrix (background)
+        Resulting weight 2D array (background)
     'WA': torch tensor
-        Resulting weight matrix (artifact)
-    
+        Resulting weight 2D array (artifact)
     }
     
     '''
