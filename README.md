@@ -25,7 +25,7 @@ STalign enables:
 This installation method is intended for users who sets up a Python environment without `pipenv`.
 
 ```
-$ pip install "git+https://github.com/JEFworks-Lab/STalign.git"
+$ pip install --upgrade "git+https://github.com/JEFworks-Lab/STalign.git"
 ```
 
 *All dependencies will be installed into your selected environment with the above command. Dependencies can be found in the requirements.txt file.*
