@@ -39,16 +39,10 @@ Fork and `git clone` the `STalign` github repository.
 From the base directory of your local `STalign` git repo, create a `Pipfile.lock` file from `Pipfile` using:
 
 ```
-pipenv lock
+pipenv install requests
 ```
 
 > **_NOTE:_** Since `Pipfile.lock` is platform-dependent and different across operating systems, do not commit `Pipfile.lock` to the git repo if contributing to `STalign` or collaborating with other people.
-
-Install `PyTorch` dependency using:
-
-```
-pipenv install torch==2.0.0
-```
 
 Activate the virtual environment using:
 
