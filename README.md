@@ -39,7 +39,7 @@ Fork and `git clone` the `STalign` github repository.
 From the base directory of your local `STalign` git repo, create a `Pipfile.lock` file from `Pipfile` using:
 
 ```
-$ pipenv lock
+pipenv lock
 ```
 
 > **_NOTE:_** Since `Pipfile.lock` is platform-dependent and different across operating systems, do not commit `Pipfile.lock` to the git repo if contributing to `STalign` or collaborating with other people.
