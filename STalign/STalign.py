@@ -1618,7 +1618,17 @@ def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
 
             fig.canvas.draw()
             figE.canvas.draw()
-    return  A.clone().detach(),v.clone().detach(),xv, Xs
+            
+    return {
+        'A': A.clone().detach(), 
+        'v': v.clone().detach(), 
+        'xv': xv, 
+        'WM': WM.clone().detach(),
+        'WB': WB.clone().detach(),
+        'WA': WA.clone().detach(),
+        'Xs': Xs.clone().detach()
+    }
+
 
 
 def build_transform(xv,v,A,direction='b',XJ=None):
