@@ -25,7 +25,7 @@ STalign enables:
 This installation method is intended for users who sets up a Python environment without `pipenv`.
 
 ```
-$ pip install --upgrade "git+https://github.com/JEFworks-Lab/STalign.git"
+pip install --upgrade "git+https://github.com/JEFworks-Lab/STalign.git"
 ```
 
 *All dependencies will be installed into your selected environment with the above command. Dependencies can be found in the requirements.txt file.*
@@ -47,19 +47,19 @@ $ pipenv lock
 Install `PyTorch` dependency using:
 
 ```
-$ pipenv install torch==2.0.0
+pipenv install torch==2.0.0
 ```
 
 Activate the virtual environment using:
 
 ```
-$ pipenv shell
+pipenv shell
 ```
 
 Deactivate the virtual environment using:
 
 ```
-$ exit
+exit
 ```
 
 ### Import
