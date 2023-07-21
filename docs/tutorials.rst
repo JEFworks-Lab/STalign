@@ -32,3 +32,7 @@ Tutorials
    Alignment across samples with different ST technologies & partial tissue sections with landmark points
    ------------------------------------------------
    notebooks/merfish-visium-alignment-with-point-annotator
+
+   Alignment across serial sections of heart tissue
+   ------------------------------------------------
+   notebooks/heart-alignment
