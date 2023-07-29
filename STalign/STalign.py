@@ -945,7 +945,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     xv : torch tensor
         pixel locations for velocity field
     a : float
-        Smoothness scale of velocity field (default 200.0)
+        Smoothness scale of velocity field (default 500.0)
     p : float
         Power of Laplacian in velocity regularization (default 2.0)
     expand : float
