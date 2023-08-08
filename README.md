@@ -19,11 +19,49 @@ STalign enables:
 - alignment of ST datasets to a 3D common coordinate framework 
 
 ## Installation & Import
-`pip install "git+https://github.com/JEFworks-Lab/STalign.git"`
 
-*All dependencies will be installed with the above command. Dependencies can be found in the requirements.txt file.*
+### Installation using pip
 
-To import STalign into your Python script, use: `from STalign import STalign`
+This installation method is intended for users who sets up a Python environment without `pipenv`.
+
+```
+pip install --upgrade "git+https://github.com/JEFworks-Lab/STalign.git"
+```
+
+*All dependencies will be installed into your selected environment with the above command. Dependencies can be found in the requirements.txt file.*
+
+### Installation using Pipfile from source
+
+This installation method is intended for users who sets up a Python environment with `pipenv`. `pipenv` allows users to create and activate a virtual environment with all dependencies within the Python project. For more information and installation instructions for `pipenv`, see https://pipenv.pypa.io/en/latest/.
+
+Fork and `git clone` the `STalign` github repository.
+
+From the base directory of your local `STalign` git repo, create a `Pipfile.lock` file from `Pipfile` using:
+
+```
+pipenv install requests
+```
+
+> **_NOTE:_** Since `Pipfile.lock` is platform-dependent and different across operating systems, do not commit `Pipfile.lock` to the git repo if contributing to `STalign` or collaborating with other people.
+
+Activate the virtual environment using:
+
+```
+pipenv shell
+```
+
+Deactivate the virtual environment using:
+
+```
+exit
+```
+
+### Import
+To import STalign into your Python script, use: 
+
+```python
+from STalign import STalign
+```
 
 ## Input Data
 To use this tool, you will need provide the following information:
@@ -43,13 +81,4 @@ To use this tool, you will need provide the following information:
 ## Usage
 
 To use `STalign`, please refer to our [tutorials](https://jef.works/STalign/tutorials.html) with usage examples.
-
-## Tutorials
-To use `STalign`, please refer to the following Jupyter Notebooks with usage examples: <br />
-- [MERFISH-MERFISH Alignment](https://jef.works/STalign/notebooks/merfish-merfish-alignment.html) <br />
-- [Xenium-Xenium Alignment](https://jef.works/STalign/notebooks/xenium-xenium-alignment.html) <br />
-- [Xenium-H&E Image Alignment](https://jef.works/STalign/notebooks/xenium-heimage-alignment.html) <br />
-- [3D alignment to the Allen Brain Atlas](https://jef.works/STalign/notebooks/merfish-allen3Datlas-alignment.html) <br />
-- [MERFISH-Visium Alignment](https://jef.works/STalign/notebooks/merfish-visium-alignment-with-point-annotator.html) <br />
->>>>>>> 9b545f80abee4a6eeca7a99fcb969dae996cf74a
 

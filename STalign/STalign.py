@@ -945,7 +945,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     xv : torch tensor
         pixel locations for velocity field
     a : float
-        Smoothness scale of velocity field (default 200.0)
+        Smoothness scale of velocity field (default 500.0)
     p : float
         Power of Laplacian in velocity regularization (default 2.0)
     expand : float
@@ -996,15 +996,22 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     muB: torch tensor whose dimension is the same as the target image
         Defaults to None, which means we estimate this. If you provide a value, we will not estimate it.
         
-    Returns
+    Returns a dictionary
     -------
-    A : torch tensor
+    {
+    'A': torch tensor
         Affine transform
-    v : torch tensor
+    'v': torch tensor
         Velocity field
-    xv : list of torch tensor
+    'xv': list of torch tensor
         Pixel locations in v
-        
+    'WM': torch tensor
+        Resulting weight 2D array (matching)
+    'WB': torch tensor
+        Resulting weight 2D array (background)
+    'WA': torch tensor
+        Resulting weight 2D array (artifact)
+    }
     
     '''
     
@@ -1298,7 +1305,14 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             fig.canvas.draw()
             figE.canvas.draw()
             
-    return A.clone().detach(),v.clone().detach(),xv
+    return {
+        'A': A.clone().detach(), 
+        'v': v.clone().detach(), 
+        'xv': xv, 
+        'WM': WM.clone().detach(),
+        'WB': WB.clone().detach(),
+        'WA': WA.clone().detach()
+    }
 
 
 def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
@@ -1604,7 +1618,17 @@ def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
 
             fig.canvas.draw()
             figE.canvas.draw()
-    return  A.clone().detach(),v.clone().detach(),xv, Xs
+            
+    return {
+        'A': A.clone().detach(), 
+        'v': v.clone().detach(), 
+        'xv': xv, 
+        'WM': WM.clone().detach(),
+        'WB': WB.clone().detach(),
+        'WA': WA.clone().detach(),
+        'Xs': Xs.clone().detach()
+    }
+
 
 
 def build_transform(xv,v,A,direction='b',XJ=None):
@@ -2003,10 +2027,10 @@ def plot_brain_regions(df):
 	brain_regions = np.unique(df['acronym'])
 	fig,ax = plt.subplots()
 	for i in range(len(brain_regions)):
-        	region_df = df[df['acronym']==brain_regions[i]]
+            region_df = df[df['acronym']==brain_regions[i]]
 
-        	ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
-        	ax.legend()
+            ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
+            ax.legend()
 
 def plot_subset_brain_regions(df, brain_regions):
 	''' Plot subset of brain regions in target brain slice with different color.
@@ -2028,7 +2052,6 @@ def plot_subset_brain_regions(df, brain_regions):
 	fig,ax = plt.subplots()
 	ax.scatter(df['x'], df['y'],color = 'grey',s= 0.1)   
 	for i in range(len(brain_regions)):
-        	region_df = df[df['acronym']==brain_regions[i]]
-
-	ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
-	ax.legend()
+	    region_df = df[df['acronym']==brain_regions[i]]
+	    ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
+	    ax.legend()
