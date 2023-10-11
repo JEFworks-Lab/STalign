@@ -37,5 +37,5 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-html_logo = 'https://github.com/JEFworks-Lab/STalign/blob/ede36ce5ce3f7151251c271a56811b31c7bde908/STalign_logos_fin.png'
+html_logo = 'https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png'
 
