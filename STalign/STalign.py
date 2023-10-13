@@ -872,7 +872,7 @@ def L_T_from_points(pointsI,pointsJ):
     Parameters
     ----------
     pointsI : array
-        An Nx2 array of floating point numbers describing atlas points in ROW COL order (not xy)
+        An Nx2 array of floating point numbers describing source points in ROW COL order (not xy)
     pointsJ : array
         An Nx2 array of floating point numbers describing target points in ROW COL order (not xy)
     
@@ -926,9 +926,9 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     Parameters
     ----------
     xI : list of torch tensor
-        Location of voxels in atlas image I
+        Location of voxels in source image I
     I : torch tensor
-        Atlas image I, with channels along first axis        
+        source image I, with channels along first axis        
     xJ : list of torch tensor
         Location of voxels in target image J
     J : torch tensor
@@ -953,7 +953,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
     nt : int
         Number of timesteps for integrating velocity field (default 3). Ignored if you input v.
     pointsI : torch tensor
-        N x 2 set of corresponding points for matching in atlas image. Default None (no points).
+        N x 2 set of corresponding points for matching in source image. Default None (no points).
     pointsJ : torch tensor
         N x 2 set of corresponding points for matching in target image. Default None (no points).
     niter : int
@@ -984,7 +984,7 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
         Regularization is of the form: 0.5/sigmaR^2 int_0^1 int_X |Lv|^2 dx dt. 
     sigmaP: float
         Standard deviation for matching of points.  
-        Cost is of the form 0.5/sigmaP^2 sum_i (atlas_point_i - target_point_i)^2
+        Cost is of the form 0.5/sigmaP^2 sum_i (source_point_i - target_point_i)^2
     device: str
         torch device. defaults to 'cpu'. Can also be 'cuda:0' for example.
     dtype: torch dtype
@@ -1256,12 +1256,12 @@ def LDDMM(xI,I,xJ,J,pointsI=None,pointsJ=None,
             ax[0].cla()
             ax[0].imshow(   ((AI-torch.amin(AI,(1,2))[...,None,None])/(torch.amax(AI,(1,2))-torch.amin(AI,(1,2)))[...,None,None]).permute(1,2,0).clone().detach().cpu(),extent=extentJ)
             ax[0].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
-            ax[0].set_title('space tformed atlas')
+            ax[0].set_title('space tformed source')
             
             ax[1].cla()    
             ax[1].imshow(clip(fAI.permute(1,2,0).clone().detach()/torch.max(J).item()).cpu(),extent=extentJ)
             ax[1].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
-            ax[1].set_title('contrast tformed atlas')
+            ax[1].set_title('contrast tformed source')
             
             ax[5].cla()
             ax[5].imshow(clip( (fAI - J)/(torch.max(J).item())*3.0  ).permute(1,2,0).clone().detach().cpu()*0.5+0.5,extent=extentJ)
@@ -1568,13 +1568,13 @@ def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
             Ishow = ((AI-torch.amin(AI,(1,2,3))[...,None,None])/(torch.amax(AI,(1,2,3))-torch.amin(AI,(1,2,3)))[...,None,None,None]).permute(1,2,3,0).clone().detach().cpu()
             ax[0].imshow(  Ishow[0,...,0] ,extent=extentJ)
             #ax[0].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
-            ax[0].set_title('space tformed atlas')
+            ax[0].set_title('space tformed source')
 
             ax[1].cla()    
             Ishow = clip(fAI.permute(1,2,3,0).clone().detach()/torch.max(J).item()).cpu()
             ax[1].imshow(Ishow[0,...,0],extent=extentJ,vmin=0,vmax=1)
             #ax[1].scatter(pointsIt[:,1].clone().detach().cpu(),pointsIt[:,0].clone().detach().cpu())
-            ax[1].set_title('contrast tformed atlas')
+            ax[1].set_title('contrast tformed source')
             
             ax[5].cla()
             Ishow = clip( (fAI - J)/(torch.max(J).item())*3.0  ).permute(1,2,3,0).clone().detach().cpu()*0.5+0.5
@@ -1632,7 +1632,7 @@ def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
 
 
 def build_transform(xv,v,A,direction='b',XJ=None):
-    ''' Create sample points to transform atlas to target from affine and velocity.
+    ''' Create sample points to transform source to target from affine and velocity.
     
     Parameters
     ----------
@@ -1696,7 +1696,7 @@ def build_transform(xv,v,A,direction='b',XJ=None):
     return Xs 
 
 def build_transform3D(xv,v,A,direction='b',XJ=None):
-    ''' Create sample points to transform atlas to target from affine and velocity.
+    ''' Create sample points to transform source to target from affine and velocity.
     
     Parameters
     ----------
@@ -1758,7 +1758,7 @@ def build_transform3D(xv,v,A,direction='b',XJ=None):
         raise Exception(f'Direction must be "f" or "b" but you input {direction}')
     return Xs 
 
-def transform_image_atlas_with_A(A, XI, I, XJ):
+def transform_image_source_with_A(A, XI, I, XJ):
     '''
     Transform an image with an affine matrix
     
@@ -1791,10 +1791,10 @@ def transform_image_atlas_with_A(A, XI, I, XJ):
     '''
     xv = None
     v = None
-    AI= transform_image_atlas_to_target(xv, v, A, XI, I, XJ=XJ)
+    AI= transform_image_source_to_target(xv, v, A, XI, I, XJ=XJ)
     return AI
 
-def transform_image_atlas_to_target(xv,v,A,xI,I,XJ=None):
+def transform_image_source_to_target(xv,v,A,xI,I,XJ=None):
     '''
     Transform an image
     '''
@@ -1803,7 +1803,7 @@ def transform_image_atlas_to_target(xv,v,A,xI,I,XJ=None):
     return phiI
     
     
-def transform_image_target_to_atlas(xv,v,A,xJ,J,XI=None):
+def transform_image_target_to_source(xv,v,A,xJ,J,XI=None):
     '''
     Transform an image
     '''
@@ -1811,7 +1811,7 @@ def transform_image_target_to_atlas(xv,v,A,xJ,J,XI=None):
     phiiJ = interp(xJ,J,phi.permute(2,0,1),padding_mode="border")
     return phiiJ
     
-def transform_points_atlas_to_target(xv,v,A,pointsI):
+def transform_points_source_to_target(xv,v,A,pointsI):
     '''
     Transform points.  Note points are in row column order, not xy.
     '''
@@ -1825,7 +1825,7 @@ def transform_points_atlas_to_target(xv,v,A,pointsI):
         pointsIt += interp(xv,v[t].permute(2,0,1),pointsIt.T[...,None])[...,0].T/nt
     pointsIt = (A[:2,:2]@pointsIt.T + A[:2,-1][...,None]).T
     return pointsIt
-def transform_points_target_to_atlas(xv,v,A,pointsI):
+def transform_points_target_to_source(xv,v,A,pointsI):
     '''
     Transform points.  Note points are in row column order, not xy.
     '''
