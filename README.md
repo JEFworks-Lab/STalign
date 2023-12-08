@@ -2,9 +2,9 @@
 
 `STalign` aligns spatial transcriptomics (ST) tissue sections to each other and to 3D atlases like the Allen Brain Atlas using algorithms that build upon diffeomorphic metric mapping. 
 
-More information regarding the overall approach, methods and validations can be found on the bioRxiv preprint:
-<a href="https://www.biorxiv.org/content/10.1101/2023.04.11.534630v2">
-<b>Alignment of spatial transcriptomics data using diffeomorphic metric mapping</b>
+More information regarding the overall approach, methods and validations can be found in our publication:
+<a href="https://www.nature.com/articles/s41467-023-43915-7">
+<b>STalign: Alignment of spatial transcriptomics data using diffeomorphic metric mapping</b>
 Kalen Clifton*, Manjari Anant*, Gohta Aihara, Lyla Atta, Osagie K Aimiuwu, Justus M Kebschull, Michael I Miller, Daniel Tward^, Jean Fan^
 </a>
 
