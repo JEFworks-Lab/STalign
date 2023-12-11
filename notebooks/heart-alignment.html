@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aligning heart ST data from ISS &mdash; STalign 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Functions" href="../STalign.html" />
+    <link rel="prev" title="Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium" href="merfish-visium-alignment-with-point-annotator.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#installation-import">Installation &amp; Import</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#usage">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="merfish-merfish-alignment.html">Aligning two coronal sections of adult mouse brain from MERFISH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-xenium-alignment.html">Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-heimage-alignment.html">Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-starmap-alignment.html">Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merfish-allen3Datlas-alignment.html">Aligning adult mouse coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starmap-allen3Datlas-alignment.html">Aligning partial coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merfish-visium-alignment-with-point-annotator.html">Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Aligning heart ST data from ISS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../STalign.html">Functions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Aligning heart ST data from ISS</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/heart-alignment.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Aligning-heart-ST-data-from-ISS">
+<h1>Aligning heart ST data from ISS<a class="headerlink" href="#Aligning-heart-ST-data-from-ISS" title="Link to this heading"></a></h1>
+<p>Serial sections of 6.5 PCW human heart from the Human Cell Atlas <a class="reference external" href="https://doi.org/10.1016/j.cell.2019.11.025">https://doi.org/10.1016/j.cell.2019.11.025</a></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># import dependencies
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import torch
+
+# make plots bigger
+plt.rcParams[&quot;figure.figsize&quot;] = (12,10)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># OPTION A: import STalign after pip or pipenv install
+from STalign import STalign
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>## OPTION B: skip cell if installed STalign with pip or pipenv
+import sys
+sys.path.append(&quot;../../STalign&quot;)
+
+## import STalign from upper directory
+import STalign
+</pre></div>
+</div>
+</div>
+<p>We have already downloaded single cell spatial transcriptomics datasets and placed the files in a folder called <code class="docutils literal notranslate"><span class="pre">data_data</span></code>.</p>
+<p>We can read in the cell information for the first dataset using <code class="docutils literal notranslate"><span class="pre">pandas</span></code> as <code class="docutils literal notranslate"><span class="pre">pd</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Single cell data 1
+# read in data
+fname = &#39;../heart_data/CN73_E1.csv.gz&#39;
+df1 = pd.read_csv(fname)
+print(df1.head())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+   Unnamed: 0             x             y   intensity  area  id    color  \
+0           1   9220.548828  27954.275391  126.357140    34 NaN  #000000
+1           2  16412.062500  27723.751953  170.324326    86 NaN  #000000
+2           3  16451.130859  27567.246094  170.600006    46 NaN  #000000
+3           4  18739.607422  27238.117188  170.125000    34 NaN  #000000
+4           5  18713.855469  27219.013672  171.300003    46 NaN  #000000
+
+  acronym  right.left  rostral.caudal  spot.id    image
+0     NaN  -58.104428      775.168105      NaN  CN73_E1
+1     NaN  127.199485      775.176714      NaN  CN73_E1
+2     NaN  132.844121      775.176714      NaN  CN73_E1
+3     NaN  216.521727      775.176714      NaN  CN73_E1
+4     NaN  216.521080      775.176714      NaN  CN73_E1
+</pre></div></div>
+</div>
+<p>For alignment with <code class="docutils literal notranslate"><span class="pre">STalign</span></code>, we only need the cell centroid information. So we can pull out this information. We can further visualize the cell centroids to get a sense of the variation in cell density that we will be relying on for our alignment by plotting using <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> as <code class="docutils literal notranslate"><span class="pre">plt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get cell centroid coordinates
+xI = np.array(df1[&#39;x&#39;])
+yI = np.array(df1[&#39;y&#39;])
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.2)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7f2ad9a0d7f0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_7_1.png" src="../_images/notebooks_heart-alignment_7_1.png" />
+</div>
+</div>
+<p>We will first use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to rasterize the single cell centroid positions into an image. Assuming the single-cell centroid coordinates are in microns, we will perform this rasterization at a 100 micron resolution. We can visualize the resulting rasterized image.</p>
+<p>Note that points are plotting with the origin at bottom left while images are typically plotted with origin at top left so we’ve used <code class="docutils literal notranslate"><span class="pre">invert_yaxis()</span></code> to invert the yaxis for visualization consistency.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># rasterize at 100um resolution so image looks smooth
+XI,YI,I,fig = STalign.rasterize(xI,yI,dx=100)
+
+# plot
+ax = fig.axes[0]
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 12183
+10000 of 12183
+12182 of 12183
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_9_1.png" src="../_images/notebooks_heart-alignment_9_1.png" />
+</div>
+</div>
+<p>Now, we can repeat this for the cell information from the second dataset.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Single cell data 2
+# read in data
+fname = &#39;../heart_data/CN73_E2.csv.gz&#39;
+df2 = pd.read_csv(fname, skiprows=[1]) # first row is data type
+print(df2.head())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+   Unnamed: 0             x             y   intensity  area  id    color  \
+0       12185   3965.500000  26604.583984  178.437500    32 NaN  #000000
+1       12186    902.051270  26600.513672  151.615387    26 NaN  #000000
+2       12187   3949.748047  26560.296875  156.199997    90 NaN  #000000
+3       12188   6231.878906  26551.273438  152.812500    22 NaN  #000000
+4       12189  12881.071289  26510.095703  197.307693   112 NaN  #000000
+
+  acronym  right.left  rostral.caudal  spot.id    image
+0     NaN -459.896378     1097.377561      NaN  CN73_E2
+1     NaN -643.887328     1104.877930      NaN  CN73_E2
+2     NaN -461.396305     1094.377414      NaN  CN73_E2
+3     NaN -324.403043     1089.877192     31.0  CN73_E2
+4     NaN   95.076323     1098.877635     10.0  CN73_E2
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get cell centroids
+xJ = np.array(df2[&#39;x&#39;])
+yJ = np.array(df2[&#39;y&#39;])
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xJ,yJ,s=1,alpha=0.2,c=&#39;#ff7f0e&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7f2ad996c490&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_12_1.png" src="../_images/notebooks_heart-alignment_12_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># rasterize and plot
+XJ,YJ,J,fig = STalign.rasterize(xJ,yJ,dx=100)
+ax = fig.axes[0]
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 11770
+10000 of 11770
+11769 of 11770
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_13_1.png" src="../_images/notebooks_heart-alignment_13_1.png" />
+</div>
+</div>
+<p>Note that plotting the cell centroid positions from both datasets shows that non-linear local alignment is needed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.1)
+ax.scatter(xJ,yJ,s=1,alpha=0.2)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7f2ad9863ca0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_15_1.png" src="../_images/notebooks_heart-alignment_15_1.png" />
+</div>
+</div>
+<p>We can also plot the rasterized images next to each other.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get extent of images
+extentI = STalign.extent_from_x((YI,XI))
+extentJ = STalign.extent_from_x((YJ,XJ))
+
+# plot rasterized images
+fig,ax = plt.subplots(2,1)
+ax[0].imshow((I.transpose(1,2,0).squeeze()), extent=extentI)
+ax[1].imshow((J.transpose(1,2,0).squeeze()), extent=extentJ)
+ax[0].invert_yaxis()
+ax[1].invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_17_0.png" src="../_images/notebooks_heart-alignment_17_0.png" />
+</div>
+</div>
+<p>Now we will perform our alignment. There are many parameters that can be tuned for performing this alignment. If we don’t specify parameters, defaults will be used.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># set device for building tensors
+if torch.cuda.is_available():
+    torch.set_default_device(&#39;cuda:0&#39;)
+else:
+    torch.set_default_device(&#39;cpu&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%time
+
+# run LDDMM
+# specify device (default device for STalign.LDDMM is cpu)
+if torch.cuda.is_available():
+    device = &#39;cuda:0&#39;
+else:
+    device = &#39;cpu&#39;
+
+# keep all other parameters default
+params = {
+          &#39;niter&#39;:1000,
+          &#39;device&#39;:device,
+          &#39;diffeo_start&#39;:100,
+          &#39;a&#39;:250,
+          &#39;epV&#39;:1000,
+          &#39;sigmaB&#39;:0.1,
+          &#39;muB&#39;: torch.tensor([0,0,0]), # black is background in target
+          }
+
+Ifoo = np.vstack((I, I, I)) # make RGB instead of greyscale
+Jfoo = np.vstack((J, J, J)) # make RGB instead of greyscale
+out = STalign.LDDMM([YI,XI],Ifoo,[YJ,XJ],Jfoo,**params)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/home/kalen/.local/share/virtualenvs/STalign-VWNsoi3D/lib/python3.8/site-packages/torch/utils/_device.py:62: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  return func(*args, **kwargs)
+/home/kalen/.local/share/virtualenvs/STalign-VWNsoi3D/lib/python3.8/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at ../aten/src/ATen/native/TensorShape.cpp:3483.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/kalen/STalign/docs/notebooks/../../STalign/STalign.py:1301: UserWarning: Data has no positive values, and therefore cannot be log-scaled.
+  axE[2].set_yscale(&#39;log&#39;)
+/home/kalen/.local/share/virtualenvs/STalign-VWNsoi3D/lib/python3.8/site-packages/matplotlib/cm.py:478: RuntimeWarning: invalid value encountered in cast
+  xx = (xx * 255).astype(np.uint8)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 3min 42s, sys: 35 s, total: 4min 17s
+Wall time: 2min 4s
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_20_2.png" src="../_images/notebooks_heart-alignment_20_2.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_20_3.png" src="../_images/notebooks_heart-alignment_20_3.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_20_4.png" src="../_images/notebooks_heart-alignment_20_4.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get necessary output variables
+A = out[&#39;A&#39;]
+v = out[&#39;v&#39;]
+xv = out[&#39;xv&#39;]
+</pre></div>
+</div>
+</div>
+<p>Plots generated throughout the alignment can be used to give you a sense of whether the parameter choices are appropriate and whether your alignment is converging on a solution.</p>
+<p>We can also evaluate the resulting alignment by applying the transformation to visualize how our source and target images were deformed to achieve the alignment.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># apply transform
+phii = STalign.build_transform(xv,v,A,XJ=[YJ,XJ],direction=&#39;b&#39;)
+phiI = STalign.transform_image_source_to_target(xv,v,A,[YI,XI],Ifoo,[YJ,XJ])
+
+
+#switch tensor from cuda to cpu for plotting with numpy
+if phii.is_cuda:
+    phii = phii.cpu()
+if phiI.is_cuda:
+    phiI = phiI.cpu()
+
+# plot with grids
+fig,ax = plt.subplots()
+levels = np.arange(-100000,100000,1000)
+ax.contour(XJ,YJ,phii[...,0],colors=&#39;r&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.contour(XJ,YJ,phii[...,1],colors=&#39;g&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.set_aspect(&#39;equal&#39;)
+ax.set_title(&#39;source to target&#39;)
+ax.imshow(phiI.permute(1,2,0)/torch.max(phiI),extent=extentJ)
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_23_0.png" src="../_images/notebooks_heart-alignment_23_0.png" />
+</div>
+</div>
+<p>Note that because of our use of LDDMM, the resulting transformation is invertible.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># transform is invertible
+phi = STalign.build_transform(xv,v,A,XJ=[YI,XI],direction=&#39;f&#39;)
+phiiJ = STalign.transform_image_target_to_source(xv,v,A,[YJ,XJ],Jfoo,[YI,XI])
+
+#switch tensor from cuda to cpu for plotting with numpy
+if phi.is_cuda:
+    phi = phi.cpu()
+if phiiJ.is_cuda:
+    phiiJ = phiiJ.cpu()
+
+# plot with grids
+fig,ax = plt.subplots()
+levels = np.arange(-100000,100000,1000)
+ax.contour(XI,YI,phi[...,0],colors=&#39;r&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.contour(XI,YI,phi[...,1],colors=&#39;g&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.set_aspect(&#39;equal&#39;)
+ax.set_title(&#39;target to source&#39;)
+ax.imshow(phiiJ.permute(1,2,0)/torch.max(phiiJ),extent=extentI)
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_25_0.png" src="../_images/notebooks_heart-alignment_25_0.png" />
+</div>
+</div>
+<p>Finally, we can apply our transform to the original sets of single cell centroid positions to achieve their new aligned positions.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># apply transform to original points
+tpointsJ = STalign.transform_points_target_to_source(xv,v,A, np.stack([yJ, xJ], 1))
+
+#switch tensor from cuda to cpu for plotting with numpy
+if tpointsJ.is_cuda:
+    tpointsJ = tpointsJ.cpu()
+
+# just original points for visualizing later
+tpointsI = np.stack([xI, yI])
+</pre></div>
+</div>
+</div>
+<p>And we can visualize the results.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot results
+fig,ax = plt.subplots()
+ax.scatter(tpointsI[0,:],tpointsI[1,:],s=1,alpha=0.1)
+ax.scatter(tpointsJ[:,1],tpointsJ[:,0],s=1,alpha=0.2) # also needs to plot as y,x not x,y
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7f2ad70c8f40&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_heart-alignment_29_1.png" src="../_images/notebooks_heart-alignment_29_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># save results
+results = tpointsJ.numpy()
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>results.to_csv(&#39;../heart_data/CN73_E1_to_CN73_E2.csv.gz&#39;,
+               compression=&#39;gzip&#39;)
+</pre></div>
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="merfish-visium-alignment-with-point-annotator.html" class="btn btn-neutral float-left" title="Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../STalign.html" class="btn btn-neutral float-right" title="Functions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

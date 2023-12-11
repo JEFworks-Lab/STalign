@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aligning single-cell spatial transcriptomics datasets simulated with non-linear disortions &mdash; STalign 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#installation-import">Installation &amp; Import</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../STalign.html">Functions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Aligning single-cell spatial transcriptomics datasets simulated with non-linear disortions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/merfish-merfish-alignment-simulation.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Aligning-single-cell-spatial-transcriptomics-datasets-simulated-with-non-linear-disortions">
+<h1>Aligning single-cell spatial transcriptomics datasets simulated with non-linear disortions<a class="headerlink" href="#Aligning-single-cell-spatial-transcriptomics-datasets-simulated-with-non-linear-disortions" title="Link to this heading"></a></h1>
+<p>In this blog post, I will use our recently developed tool <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to align two single-cell resolution spatial transcriptomic datasets of coronal sections of the mouse brain assayed by MERFISH and provided by <a class="reference external" href="https://vizgen.com/applications/neuroscience-showcase/">Vizgen</a>.</p>
+<section id="Introduction">
+<h2>Introduction<a class="headerlink" href="#Introduction" title="Link to this heading"></a></h2>
+<p>As we’ve <a class="reference external" href="https://jef.works/blog/2023/04/16/aligning-spatial-transcriptomics-data-with-stalign/">explored in a previous blog post</a>, spatial transcriptomics (ST) allow us to measure how genes are expressed within thin tissue slices. Particularly as we begin applying ST to tissues like brain, kidney, heart, and so forth in both healthy and diseased settings, we may be interested in comparing gene expression and cell-type compositional differences at matched spatial locations within similar
+tissue structures. Such spatial comparisons demand alignment of these ST datasets.</p>
+<p>As described in our <a class="reference external" href="https://www.biorxiv.org/content/10.1101/2023.04.11.534630v2">recently updated bioRxiv preprint</a>, such spatial comparisons are challenging because of both technical challenges such as in sample collection, where the experimental process may induce tissue warps and other structural distortions but also biological variation such as natural inter-individual tissue structural differences.</p>
+<p>Here, I will simulate an ST dataset of a brain tissue section that has been warped during the experimental data collection process and evaluate how well <code class="docutils literal notranslate"><span class="pre">STalign</span></code> is able to align it to the original un-warped brain tissue section. A successful alignment should recover the original cell positions within some reasonable amount of error.</p>
+</section>
+<section id="Simulation">
+<h2>Simulation<a class="headerlink" href="#Simulation" title="Link to this heading"></a></h2>
+<p>I have already installed <code class="docutils literal notranslate"><span class="pre">STalign</span></code> using the tutorials available on our <a class="reference external" href="https://github.com/JEFworks-Lab/STalign">Github repo: https://github.com/JEFworks-Lab/STalign</a>. I am using a <code class="docutils literal notranslate"><span class="pre">jupyter</span> <span class="pre">notebook</span></code> to run <code class="docutils literal notranslate"><span class="pre">STalign</span></code>. A copy of this notebook is available here for you to follow along and also modify as you explore for yourself:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># import STalign
+from STalign import STalign
+</pre></div>
+</div>
+</div>
+<p>On our <a class="reference external" href="https://github.com/JEFworks-Lab/STalign">STalign Github repo</a>, we have already downloaded single cell spatial transcriptomics datasets assayed by MERFISH and provided by <a class="reference external" href="https://vizgen.com/applications/neuroscience-showcase/">Vizgen</a> and placed the files in a folder called <code class="docutils literal notranslate"><span class="pre">merfish_data</span></code>.</p>
+<p>Clone the repo or just download the relevant file (<code class="docutils literal notranslate"><span class="pre">datasets_mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_cell_metadata_S2R3.csv.gz</span></code>) so you can read in the cell information for the first dataset using <code class="docutils literal notranslate"><span class="pre">pandas</span></code> as <code class="docutils literal notranslate"><span class="pre">pd</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import pandas as pd
+
+# Single cell data 1
+# read in data
+fname = &#39;../merfish_data/datasets_mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_cell_metadata_S2R3.csv.gz&#39;
+df1 = pd.read_csv(fname)
+print(df1.head())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+                                Unnamed: 0  fov       volume    center_x
+0  158338042824236264719696604356349910479   33   532.778772  617.916619  \
+1  260594727341160372355976405428092853003   33  1004.430016  596.808018
+2  307643940700812339199503248604719950662   33  1267.183208  578.880018
+3   30863303465976316429997331474071348973   33  1403.401822  572.616017
+4  313162718584097621688679244357302162401   33   507.949497  608.364018
+
+      center_y       min_x       max_x        min_y        max_y
+0  2666.520010  614.725219  621.108019  2657.545209  2675.494810
+1  2763.450012  589.669218  603.946818  2757.013212  2769.886812
+2  2748.978012  570.877217  586.882818  2740.489211  2757.466812
+3  2766.690012  564.937217  580.294818  2756.581212  2776.798812
+4  2687.418010  603.061218  613.666818  2682.493210  2692.342810
+</pre></div></div>
+</div>
+<p>For alignment with <code class="docutils literal notranslate"><span class="pre">STalign</span></code>, we only need the cell centroid information so we can pull out this information. We can further visualize the cell centroids to get a sense of the variation in cell density that we will be relying on for our alignment by plotting using <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> as <code class="docutils literal notranslate"><span class="pre">plt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import matplotlib.pyplot as plt
+import numpy as np
+
+# make plots bigger
+plt.rcParams[&quot;figure.figsize&quot;] = (12,10)
+
+# get cell centroid coordinates
+xI0 = np.array(df1[&#39;center_x&#39;])
+yI0 = np.array(df1[&#39;center_y&#39;])
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xI0,yI0,s=1,alpha=0.2, label=&#39;source init&#39;)
+ax.legend(markerscale = 10)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x14ce09190&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_6_1.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_6_1.png" />
+</div>
+</div>
+<p>Now let’s warp the cell coordinates as if we had squished the tissue during the experimental data collection process. If you are curious whether such simulated warps are realistic, think about how tissues are inherently 3D so in order to make these thin, effectively 2D tissue sections, we need to make slices (typically via a technique called cryosectioning). And in making these slices, we may squish the tissue or even cause tears! In this simulation, we will focus on simulation a scenario where
+the tissue and all the cell positions get squished a little in both the x and y direction.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># warp
+xI = pow(xI0,1.25)/10+500
+yI = pow(yI0,1.25)/10+500
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.2, label=&#39;source warped&#39;)
+ax.legend(markerscale = 10)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x14d75f400&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_8_1.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_8_1.png" />
+</div>
+</div>
+<p>Now let’s say we have a second ST dataset of the same tissue. In this case, we will just use the original cell coordinates for this second ST dataset.</p>
+<p>This represents, in my opinion, a somewhat overly idealistic scenario since, in reality, two real ST datasets will never have perfect single-cell resolution correspondence. This is because real ST datasets can come from different individuals/animals with their own biological variation. Real ST datasets can also come from serial sections of the same tissue block from the same individual/animal but even in that case, there is still generally not a perfect one-to-one match for every cell at every
+location across the tissue (particularly for mamallian tissues). But let’s try it anyway.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Single cell data 1
+# just original coordinates
+xJ = xI0
+yJ = yI0
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xJ,yJ,s=1,alpha=0.2,c=&#39;#ff7f0e&#39;, label=&#39;target&#39;)
+ax.legend(markerscale = 10)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x14d7e5e50&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_10_1.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_10_1.png" />
+</div>
+</div>
+<p>Now that’s see what our two ST datasets look like when they are overlayed. As you might expect, linear “affine” adjustments such as rotations and translations will not be sufficient to align these two ST datasets. A non-linear alignment is needed due to our induced non-linear warping.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.2, label=&#39;source warped&#39;)
+ax.scatter(xJ,yJ,s=1,alpha=0.1, label= &#39;target&#39;)
+ax.legend(markerscale = 10)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x14d77f4c0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_12_1.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_12_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plt.rcParams[&quot;figure.figsize&quot;] = (12,5)
+fig,ax = plt.subplots(1,2)
+ax[0].scatter(xI,yI,s=0.5,alpha=0.1, label=&#39;source warped&#39;)
+ax[1].scatter(xJ,yJ,s=0.5,alpha=0.1, c=&#39;#ff7f0e&#39;,label=&#39;target&#39;)
+ax[0].legend(markerscale = 10, loc = &#39;lower left&#39;)
+ax[1].legend(markerscale = 10, loc = &#39;lower left&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x14d3b6340&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_13_1.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_13_1.png" />
+</div>
+</div>
+<p>Again, ST gives us not only positions of cells but also what genes these cells express. From these gene expression information, we may also infer cell-types. We may be interested in asking questions about how cells within a particular small spatial region of the tissue compare in terms of their gene expression or cell-type identity across these two ST datasets. In order to ask such questions, we need to perform spatial alignment in order to compare apples to apples.</p>
+</section>
+<section id="Performing-spatial-alignment-with-STalign">
+<h2>Performing spatial alignment with <code class="docutils literal notranslate"><span class="pre">STalign</span></code><a class="headerlink" href="#Performing-spatial-alignment-with-STalign" title="Link to this heading"></a></h2>
+<p>So we will use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to align these two ST datasets using image varifolds and diffeomorphic metric mapping. I encourage you to check out the Online Methods section of our <a class="reference external" href="https://www.biorxiv.org/content/10.1101/2023.04.11.534630v2">bioRxiv preprint</a> if you are interested in learning more about how this is done methodologically speaking. For now, let’s just focus on running <code class="docutils literal notranslate"><span class="pre">STalign</span></code>. We will start with rasterizing the ST datasets.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># rasterize at 15um resolution (assuming positions are in um units) and plot
+XI,YI,I,fig = STalign.rasterize(xI,yI,dx=15,blur=1.5)
+
+# plot
+ax = fig.axes[0]
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 85958
+10000 of 85958
+20000 of 85958
+30000 of 85958
+40000 of 85958
+50000 of 85958
+60000 of 85958
+70000 of 85958
+80000 of 85958
+85957 of 85958
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_16_1.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_16_1.png" />
+</div>
+</div>
+<p>Repeat rasterization for target dataset.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># rasterize and plot
+XJ,YJ,J,fig = STalign.rasterize(xJ,yJ,dx=15, blur=1.5)
+ax = fig.axes[0]
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 85958
+10000 of 85958
+20000 of 85958
+30000 of 85958
+40000 of 85958
+50000 of 85958
+60000 of 85958
+70000 of 85958
+80000 of 85958
+85957 of 85958
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_18_1.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_18_1.png" />
+</div>
+</div>
+<p>We can also plot the rasterized images next to each other.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get extent of images
+extentI = STalign.extent_from_x((YI,XI))
+extentJ = STalign.extent_from_x((YJ,XJ))
+
+# plot rasterized images
+fig,ax = plt.subplots(1,2)
+ax[0].imshow(I[0], extent=extentI)
+ax[1].imshow(J[0], extent=extentJ)
+ax[0].invert_yaxis()
+ax[1].invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_20_0.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_20_0.png" />
+</div>
+</div>
+<p>Now we will perform our alignment. There are many parameters that can be tuned for performing this alignment. If we don’t specify parameters, defaults will be used.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%time
+
+# run LDDMM
+# keep all other parameters default
+params = {
+            &#39;niter&#39;: 1000
+          }
+
+out = STalign.LDDMM([YI,XI],I,[YJ,XJ],J,**params)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/jeanfan/mambaforge/lib/python3.9/site-packages/STalign/STalign.py:1036: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  L = torch.tensor(L,device=device,dtype=dtype,requires_grad=True)
+/Users/jeanfan/mambaforge/lib/python3.9/site-packages/STalign/STalign.py:1037: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  T = torch.tensor(T,device=device,dtype=dtype,requires_grad=True)
+/Users/jeanfan/mambaforge/lib/python3.9/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/TensorShape.cpp:3484.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/Users/jeanfan/mambaforge/lib/python3.9/site-packages/STalign/STalign.py:1294: UserWarning: Data has no positive values, and therefore cannot be log-scaled.
+  axE[2].set_yscale(&#39;log&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 3min 47s, sys: 2min 13s, total: 6min
+Wall time: 3min 11s
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_22_2.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_22_2.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_22_3.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_22_3.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_22_4.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_22_4.png" />
+</div>
+</div>
+<p>I am running this on my Macbook laptop using the CPU. This alignment would be much faster on the GPU but not everyone may have access to such GPU computers. We can still complete an alignment with <code class="docutils literal notranslate"><span class="pre">STalign</span></code> in a reasonable amount of time on the CPU (with “reasonable” defined as the time it takes for me to make a cup of tea ;P). In this case, it takes &lt; 5 minutes to run 1000 iterations with the default step sizes and other settings.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get necessary output variables
+A = out[0]
+v = out[1]
+xv = out[2]
+</pre></div>
+</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">STalign</span></code> has learned a diffeomorphic mapping needed to align the two image representations of the ST datasets. Given this, we can now apply our learned transform to the original sets of single cell centroid positions to achieve their new aligned positions.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># apply transform to original points
+tpointsI= STalign.transform_points_atlas_to_target(xv,v,A, np.stack([yI, xI], 1))
+
+# switch from row column coordinates (y,x) to (x,y)
+xI_LDDMM = np.array(tpointsI[:,1])
+yI_LDDMM = np.array(tpointsI[:,0])
+</pre></div>
+</div>
+</div>
+<p>Now that’s see what our two ST datasets look like when they are overlayed after the warped ST dataset has been aligned.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot results
+fig,ax = plt.subplots()
+#ax.scatter(xI,yI,s=1,alpha=0.1, label=&#39;source&#39;)
+ax.scatter(xI_LDDMM,yI_LDDMM,s=1,alpha=0.1, label = &#39;source warped aligned&#39;)
+ax.scatter(xJ,yJ,s=1,alpha=0.1, label=&#39;target&#39;)
+ax.legend(markerscale = 10)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x14d331f40&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_28_1.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_28_1.png" />
+</div>
+</div>
+<p>We can also compare before and after alignment side by side. Looks pretty good! The cell positions in the two ST datasets effectively overlap!</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plt.rcParams[&quot;figure.figsize&quot;] = (12,5)
+fig,ax = plt.subplots(1,2)
+ax[0].scatter(xI,yI,s=0.5,alpha=0.1, label=&#39;source warped&#39;)
+ax[0].scatter(xJ,yJ,s=0.5,alpha=0.1, label=&#39;target&#39;)
+ax[1].scatter(xI_LDDMM,yI_LDDMM,s=0.5,alpha=0.1, label = &#39;source warped aligned&#39;)
+ax[1].scatter(xJ,yJ,s=0.5,alpha=0.1, label=&#39;target&#39;)
+ax[0].legend(markerscale = 10, loc = &#39;lower left&#39;)
+ax[1].legend(markerscale = 10, loc = &#39;lower left&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x14dc77e80&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-simulation_30_1.png" src="../_images/notebooks_merfish-merfish-alignment-simulation_30_1.png" />
+</div>
+</div>
+</section>
+<section id="Evaluating-performance">
+<h2>Evaluating performance<a class="headerlink" href="#Evaluating-performance" title="Link to this heading"></a></h2>
+<p>Let’s quantify performance beyond just visual inspection. How far off are our aligned cell coordinates compared to the original? A successful alignment should effectively recover the original cell coordinates before warping within some reasonable error range. Let’s calculate a mean-squared-error between the coordinates before and after alignment.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from sklearn.metrics import mean_squared_error
+
+err_init = mean_squared_error([xI0, yI0], [xI, yI], squared=False)
+print(err_init)
+
+err_aligned = mean_squared_error([xI0, yI0], [xI_LDDMM, yI_LDDMM], squared=False)
+print(err_aligned)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+229.1068166826202
+9.679364699685218
+</pre></div></div>
+</div>
+<p>Note these units are in microns. We are effectively on average within 1 cell (10 microns) away from the true original cell positions. Given that we aligned with <code class="docutils literal notranslate"><span class="pre">dx=15</span></code> or 15 micron resolution, this is a reasonable degree of error. Such error may be further decreased with longer iterations or stricter penalties for mismatching. However, this exploration will be left as an exercise for the reader.</p>
+</section>
+</section>
+<section id="Try-it-out-for-yourself!">
+<h1>Try it out for yourself!<a class="headerlink" href="#Try-it-out-for-yourself!" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p>What happens if you run for more iterations? What about 2000 iterations? What if you change the default parameters to have larger step sizes, etc?</p></li>
+<li><p>What happens if you warp the data in other ways?</p></li>
+<li><p>What happens if you try a different dataset?</p></li>
+<li><p>What happens if you use this simulation approach to compare to other methods?</p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

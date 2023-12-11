@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Functions &mdash; STalign 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Aligning heart ST data from ISS" href="notebooks/heart-alignment.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#installation-import">Installation &amp; Import</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.LDDMM"><code class="docutils literal notranslate"><span class="pre">LDDMM()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.LDDMM_3D_to_slice"><code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.L_T_from_points"><code class="docutils literal notranslate"><span class="pre">L_T_from_points()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.analyze3Dalign"><code class="docutils literal notranslate"><span class="pre">analyze3Dalign()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.build_transform"><code class="docutils literal notranslate"><span class="pre">build_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.build_transform3D"><code class="docutils literal notranslate"><span class="pre">build_transform3D()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.clip"><code class="docutils literal notranslate"><span class="pre">clip()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.download_aba_image_labels"><code class="docutils literal notranslate"><span class="pre">download_aba_image_labels()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.download_aba_ontology"><code class="docutils literal notranslate"><span class="pre">download_aba_ontology()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.extent_from_x"><code class="docutils literal notranslate"><span class="pre">extent_from_x()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.interp"><code class="docutils literal notranslate"><span class="pre">interp()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.interp3D"><code class="docutils literal notranslate"><span class="pre">interp3D()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.make_scree"><code class="docutils literal notranslate"><span class="pre">make_scree()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.normalize"><code class="docutils literal notranslate"><span class="pre">normalize()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.plot_brain_regions"><code class="docutils literal notranslate"><span class="pre">plot_brain_regions()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.plot_subset_brain_regions"><code class="docutils literal notranslate"><span class="pre">plot_subset_brain_regions()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.rasterize"><code class="docutils literal notranslate"><span class="pre">rasterize()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.rasterizePCA"><code class="docutils literal notranslate"><span class="pre">rasterizePCA()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.rasterize_with_signal"><code class="docutils literal notranslate"><span class="pre">rasterize_with_signal()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.saveRasters"><code class="docutils literal notranslate"><span class="pre">saveRasters()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.to_A"><code class="docutils literal notranslate"><span class="pre">to_A()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.to_A_3D"><code class="docutils literal notranslate"><span class="pre">to_A_3D()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.transform_image_source_to_target"><code class="docutils literal notranslate"><span class="pre">transform_image_source_to_target()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.transform_image_source_with_A"><code class="docutils literal notranslate"><span class="pre">transform_image_source_with_A()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.transform_image_target_to_source"><code class="docutils literal notranslate"><span class="pre">transform_image_target_to_source()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.transform_points_source_to_target"><code class="docutils literal notranslate"><span class="pre">transform_points_source_to_target()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.transform_points_target_to_source"><code class="docutils literal notranslate"><span class="pre">transform_points_target_to_source()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.v_to_phii"><code class="docutils literal notranslate"><span class="pre">v_to_phii()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#STalign.STalign.v_to_phii_3D"><code class="docutils literal notranslate"><span class="pre">v_to_phii_3D()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Functions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/STalign.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-STalign.STalign">
+<span id="functions"></span><h1>Functions<a class="headerlink" href="#module-STalign.STalign" title="Link to this heading"></a></h1>
+<p>Tools for aligning spatial transcriptomics data</p>
+<p><strong>Functions:</strong></p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.LDDMM" title="STalign.STalign.LDDMM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LDDMM</span></code></a>(xI, I, xJ, J[, pointsI, pointsJ, L, ...])</p></td>
+<td><p>Run LDDMM between a pair of images.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.LDDMM_3D_to_slice" title="STalign.STalign.LDDMM_3D_to_slice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code></a>(xI, I, xJ, J[, pointsI, ...])</p></td>
+<td><p>LDDMM for 3D to 2D slice mapping.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.L_T_from_points" title="STalign.STalign.L_T_from_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">L_T_from_points</span></code></a>(pointsI, pointsJ)</p></td>
+<td><p>Compute an affine transformation from points.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.analyze3Dalign" title="STalign.STalign.analyze3Dalign"><code class="xref py py-obj docutils literal notranslate"><span class="pre">analyze3Dalign</span></code></a>(labelfile, xv, v, mat, xJ, ...)</p></td>
+<td><p>Create dataframe with region annotations and 3D coordinates of target brain slice</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.build_transform" title="STalign.STalign.build_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_transform</span></code></a>(xv, v, A[, direction, XJ])</p></td>
+<td><p>Create sample points to transform source to target from affine and velocity.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.build_transform3D" title="STalign.STalign.build_transform3D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_transform3D</span></code></a>(xv, v, A[, direction, XJ])</p></td>
+<td><p>Create sample points to transform source to target from affine and velocity.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.clip" title="STalign.STalign.clip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clip</span></code></a>(I)</p></td>
+<td><p>clip an arrays values between 0 and 1.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.download_aba_image_labels" title="STalign.STalign.download_aba_image_labels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">download_aba_image_labels</span></code></a>(imageurl, ...)</p></td>
+<td><p>Create 3D altas image and region annotations</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.download_aba_ontology" title="STalign.STalign.download_aba_ontology"><code class="xref py py-obj docutils literal notranslate"><span class="pre">download_aba_ontology</span></code></a>(url, file_name)</p></td>
+<td><p>Create 3D altas ontology</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.extent_from_x" title="STalign.STalign.extent_from_x"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extent_from_x</span></code></a>(xJ)</p></td>
+<td><p>Given a set of pixel locations, returns an extent 4-tuple for use with np.imshow.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.interp" title="STalign.STalign.interp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp</span></code></a>(x, I, phii, **kwargs)</p></td>
+<td><p>Interpolate the 2D image I, with regular grid positions stored in x (1d arrays), at the positions stored in phii (3D arrays with first channel storing component)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.interp3D" title="STalign.STalign.interp3D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp3D</span></code></a>(x, I, phii, **kwargs)</p></td>
+<td><p>Interpolate the 3D image I, with regular grid positions stored in x (1d arrays), at the positions stored in phii (4D arrays with first channel storing component)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.make_scree" title="STalign.STalign.make_scree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_scree</span></code></a>(W, name[, p])</p></td>
+<td><p>Create a scree plot for a given set of eigenvalues.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.normalize" title="STalign.STalign.normalize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize</span></code></a>(arr[, t_min, t_max])</p></td>
+<td><p>Linearly normalizes an array between two specifed values.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.plot_brain_regions" title="STalign.STalign.plot_brain_regions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_brain_regions</span></code></a>(df)</p></td>
+<td><p>Plot all brain regions in target brain slice with different color.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.plot_subset_brain_regions" title="STalign.STalign.plot_subset_brain_regions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_subset_brain_regions</span></code></a>(df, brain_regions)</p></td>
+<td><p>Plot subset of brain regions in target brain slice with different color.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.rasterize" title="STalign.STalign.rasterize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rasterize</span></code></a>(x, y[, g, dx, blur, expand, draw, ...])</p></td>
+<td><p>Rasterize a spatial transcriptomics dataset into a density image</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.rasterizePCA" title="STalign.STalign.rasterizePCA"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rasterizePCA</span></code></a>(x, y, G)</p></td>
+<td><p>Rasterize a spatial transcriptomics dataset into a density image and perform PCA on it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.rasterize_with_signal" title="STalign.STalign.rasterize_with_signal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rasterize_with_signal</span></code></a>(x, y[, s, dx, blur, ...])</p></td>
+<td><p>Rasterize a spatial transcriptomics dataset into a density image</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.saveRasters" title="STalign.STalign.saveRasters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">saveRasters</span></code></a>(X, Y, W, V, Z, scree_fig, nrows, ...)</p></td>
+<td><p>Create an RGB image principal components 1-3 and 4-6.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.to_A" title="STalign.STalign.to_A"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_A</span></code></a>(L, T)</p></td>
+<td><p>Convert a linear transform matrix and a translation vector into an affine matrix.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.to_A_3D" title="STalign.STalign.to_A_3D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_A_3D</span></code></a>(L, T)</p></td>
+<td><p>Convert a linear transform matrix and a translation vector into an affine matrix.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.transform_image_source_to_target" title="STalign.STalign.transform_image_source_to_target"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_image_source_to_target</span></code></a>(xv, v, A, xI, I)</p></td>
+<td><p>Transform an image</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.transform_image_source_with_A" title="STalign.STalign.transform_image_source_with_A"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_image_source_with_A</span></code></a>(A, XI, I, XJ)</p></td>
+<td><p>Transform an image with an affine matrix</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.transform_image_target_to_source" title="STalign.STalign.transform_image_target_to_source"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_image_target_to_source</span></code></a>(xv, v, A, xJ, J)</p></td>
+<td><p>Transform an image</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.transform_points_source_to_target" title="STalign.STalign.transform_points_source_to_target"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_points_source_to_target</span></code></a>(xv, v, A, ...)</p></td>
+<td><p>Transform points.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.transform_points_target_to_source" title="STalign.STalign.transform_points_target_to_source"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_points_target_to_source</span></code></a>(xv, v, A, ...)</p></td>
+<td><p>Transform points.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#STalign.STalign.v_to_phii" title="STalign.STalign.v_to_phii"><code class="xref py py-obj docutils literal notranslate"><span class="pre">v_to_phii</span></code></a>(xv, v)</p></td>
+<td><p>Integrate a velocity field over time to return a position field (diffeomorphism).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#STalign.STalign.v_to_phii_3D" title="STalign.STalign.v_to_phii_3D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">v_to_phii_3D</span></code></a>(xv, v)</p></td>
+<td><p>Integrate a 3D velocity field over time to return a 3D position field (diffeomorphism).</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.LDDMM">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">LDDMM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xJ</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointsI</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointsJ</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">niter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diffeo_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epL</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epV</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmaM</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmaB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmaA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmaR</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmaP</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">torch.float64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">muB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">muA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.LDDMM" title="Link to this definition"></a></dt>
+<dd><p>Run LDDMM between a pair of images.</p>
+<p>This jointly estimates an affine transform A, and a diffeomorphism phi.
+The map is off the form x -&gt; A phi x</p>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>xI<span class="classifier">list of torch tensor</span></dt><dd><p>Location of voxels in source image I</p>
+</dd>
+<dt>I<span class="classifier">torch tensor</span></dt><dd><p>source image I, with channels along first axis</p>
+</dd>
+<dt>xJ<span class="classifier">list of torch tensor</span></dt><dd><p>Location of voxels in target image J</p>
+</dd>
+<dt>J<span class="classifier">torch tensor</span></dt><dd><p>Target image J, with channels along first axis</p>
+</dd>
+<dt>L<span class="classifier">torch tensor</span></dt><dd><p>Initial guess for linear transform (2x2 torch tensor). Defaults to None (identity).</p>
+</dd>
+<dt>T<span class="classifier">torch tensor</span></dt><dd><p>Initial guess for translation (2 element torch tensor). Defaults to None (identity)</p>
+</dd>
+<dt>A<span class="classifier">torch tensor</span></dt><dd><p>Initial guess for affine matrix.  Either L and T can be specified, or A, but not both.
+Defaults to None (identity).</p>
+</dd>
+<dt>v<span class="classifier">torch tensor</span></dt><dd><p>Initial guess for velocity field</p>
+</dd>
+<dt>xv<span class="classifier">torch tensor</span></dt><dd><p>pixel locations for velocity field</p>
+</dd>
+<dt>a<span class="classifier">float</span></dt><dd><p>Smoothness scale of velocity field (default 500.0)</p>
+</dd>
+<dt>p<span class="classifier">float</span></dt><dd><p>Power of Laplacian in velocity regularization (default 2.0)</p>
+</dd>
+<dt>expand<span class="classifier">float</span></dt><dd><p>Factor to expand size of velocity field around image boundaries (default 2.0)</p>
+</dd>
+<dt>nt<span class="classifier">int</span></dt><dd><p>Number of timesteps for integrating velocity field (default 3). Ignored if you input v.</p>
+</dd>
+<dt>pointsI<span class="classifier">torch tensor</span></dt><dd><p>N x 2 set of corresponding points for matching in source image. Default None (no points).</p>
+</dd>
+<dt>pointsJ<span class="classifier">torch tensor</span></dt><dd><p>N x 2 set of corresponding points for matching in target image. Default None (no points).</p>
+</dd>
+<dt>niter<span class="classifier">int</span></dt><dd><p>Number of iterations of gradient descent optimization</p>
+</dd>
+<dt>diffeo_start<span class="classifier">int</span></dt><dd><p>Number of iterations of gradient descent optimization for affine only, before nonlinear deformation.</p>
+</dd>
+<dt>epL<span class="classifier">float</span></dt><dd><p>Gradient descent step size for linear part of affine.</p>
+</dd>
+<dt>epT<span class="classifier">float</span></dt><dd><p>Gradient descent step size of translation part of affine.</p>
+</dd>
+<dt>epV<span class="classifier">float</span></dt><dd><p>Gradient descent step size for velocity field.</p>
+</dd>
+<dt>sigmaM<span class="classifier">float</span></dt><dd><p>Standard deviation of image matching term for Gaussian mixture modeling in cost function. 
+This term generally controls matching accuracy with smaller corresponding to more accurate.
+As an common example (rule of thumb), you could chose this parameter to be the variance of the pixels
+in your target image.</p>
+</dd>
+<dt>sigmaB<span class="classifier">float</span></dt><dd><p>Standard deviation of backtround term for Gaussian mixture modeling in cost function. 
+If there is missing tissue in target, we may label some pixels in target as background,
+and not enforce matching here.</p>
+</dd>
+<dt>sigmaA<span class="classifier">float</span></dt><dd><p>Standard deviation of artifact term for Gaussian mixture modeling in cost function. 
+If there are artifacts in target or other lack of corresponding between template and target, 
+we may label some pixels in target as artifact, and not enforce matching here.</p>
+</dd>
+<dt>sigmaR: float</dt><dd><p>Standard deviation for regularization. Smaller sigmaR means a smoother resulting transformation. 
+Regularization is of the form: 0.5/sigmaR^2 int_0^1 int_X <a href="#id1"><span class="problematic" id="id2">|</span></a>Lv|^2 dx dt.</p>
+</dd>
+<dt>sigmaP: float</dt><dd><p>Standard deviation for matching of points.  
+Cost is of the form 0.5/sigmaP^2 sum_i (source_point_i - target_point_i)^2</p>
+</dd>
+<dt>device: str</dt><dd><p>torch device. defaults to ‘cpu’. Can also be ‘cuda:0’ for example.</p>
+</dd>
+<dt>dtype: torch dtype</dt><dd><p>torch data type. defaults to torch.float64</p>
+</dd>
+<dt>muA: torch tensor whose dimension is the same as the target image</dt><dd><p>Defaults to None, which means we estimate this. If you provide a value, we will not estimate it.
+If the target is a RGB image, this should be a tensor of size 3.
+If the target is a grayscale image, this should be a tensor of size 1.</p>
+</dd>
+<dt>muB: torch tensor whose dimension is the same as the target image</dt><dd><p>Defaults to None, which means we estimate this. If you provide a value, we will not estimate it.</p>
+</dd>
+</dl>
+</section>
+<section id="returns-a-dictionary">
+<h2>Returns a dictionary<a class="headerlink" href="#returns-a-dictionary" title="Link to this heading"></a></h2>
+<p>{
+‘A’: torch tensor</p>
+<blockquote>
+<div><p>Affine transform</p>
+</div></blockquote>
+<dl class="simple">
+<dt>‘v’: torch tensor</dt><dd><p>Velocity field</p>
+</dd>
+<dt>‘xv’: list of torch tensor</dt><dd><p>Pixel locations in v</p>
+</dd>
+<dt>‘WM’: torch tensor</dt><dd><p>Resulting weight 2D array (matching)</p>
+</dd>
+<dt>‘WB’: torch tensor</dt><dd><p>Resulting weight 2D array (background)</p>
+</dd>
+<dt>‘WA’: torch tensor</dt><dd><p>Resulting weight 2D array (artifact)</p>
+</dd>
+</dl>
+<p>}</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.LDDMM_3D_to_slice">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">LDDMM_3D_to_slice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xJ</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointsI</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointsJ</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">niter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diffeo_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epL</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epV</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmaM</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmaB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmaA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmaR</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigmaP</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">torch.float64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">muA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">muB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.LDDMM_3D_to_slice" title="Link to this definition"></a></dt>
+<dd><p>LDDMM for 3D to 2D slice mapping.</p>
+<dl class="simple">
+<dt>muA: torch tensor whose dimension is the same as the target image</dt><dd><p>Defaults to None, which means we estimate this. If you provide a value, we will not estimate it.
+If the target is a RGB image, this should be a tensor of size 3.
+If the target is a grayscale image, this should be a tensor of size 1.</p>
+</dd>
+<dt>muB: torch tensor whose dimension is the same as the target image</dt><dd><p>Defaults to None, which means we estimate this. If you provide a value, we will not estimate it.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.L_T_from_points">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">L_T_from_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pointsI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointsJ</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.L_T_from_points" title="Link to this definition"></a></dt>
+<dd><p>Compute an affine transformation from points.</p>
+<p>Note for an affine transformation (6dof) we need 3 points.</p>
+<p>Outputs, L,T should be rconstructed blockwize like [L,T;0,0,1]</p>
+<section id="id3">
+<h2>Parameters<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pointsI<span class="classifier">array</span></dt><dd><p>An Nx2 array of floating point numbers describing source points in ROW COL order (not xy)</p>
+</dd>
+<dt>pointsJ<span class="classifier">array</span></dt><dd><p>An Nx2 array of floating point numbers describing target points in ROW COL order (not xy)</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h2>Returns<a class="headerlink" href="#returns" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>L<span class="classifier">array</span></dt><dd><p>A 2x2 linear transform array.</p>
+</dd>
+<dt>T<span class="classifier">array</span></dt><dd><p>A 2 element translation vector</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.analyze3Dalign">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">analyze3Dalign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">labelfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xJ</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namesdict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.analyze3Dalign" title="Link to this definition"></a></dt>
+<dd><p>Create dataframe with region annotations and 3D coordinates of target brain slice</p>
+<blockquote>
+<div><dl class="simple">
+<dt>labelfile<span class="classifier">array</span></dt><dd><p>File name of 3D atlas with region annotations.</p>
+</dd>
+<dt>xv<span class="classifier">list of array</span></dt><dd><p>Sample points for velocity</p>
+</dd>
+<dt>v<span class="classifier">array</span></dt><dd><p>time dependent velocity field</p>
+</dd>
+<dt>A<span class="classifier">array</span></dt><dd><p>Affine transformation matrix</p>
+</dd>
+<dt>direction<span class="classifier">char</span></dt><dd><p>‘f’ for forward and ‘b’ for backward. ‘b’ is default and is used for transforming images.
+‘f’ is used for transforming points.</p>
+</dd>
+<dt>XJ<span class="classifier">array</span></dt><dd><p>Sample points for target (meshgrid with ij index style).  Defaults to None</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>to keep sampling on the xv.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>dx<span class="classifier">int</span></dt><dd><p>Step of rasterized image.</p>
+</dd>
+<dt>scale_x<span class="classifier">double</span></dt><dd><p>Value that x positions of atlas were scaled by</p>
+</dd>
+<dt>scale_y<span class="classifier">double</span></dt><dd><p>Value that y positions of atlas were scaled by</p>
+</dd>
+<dt>x<span class="classifier">array</span></dt><dd><p>X positions of target brain slice</p>
+</dd>
+<dt>y<span class="classifier">array</span></dt><dd><p>Y positions of target brain slice</p>
+</dd>
+<dt><a href="#id55"><span class="problematic" id="id56">X_</span></a><span class="classifier">array</span></dt><dd><ul class="simple">
+<li></li>
+</ul>
+</dd>
+<dt><a href="#id57"><span class="problematic" id="id58">Y_</span></a><span class="classifier">array</span></dt><dd><ul class="simple">
+<li></li>
+</ul>
+</dd>
+<dt>namesdict<span class="classifier">Dictionary</span></dt><dd><p>Dictionary of brain regions corresponding to region numbers</p>
+</dd>
+</dl>
+<p>df : Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.build_transform">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">build_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">XJ</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.build_transform" title="Link to this definition"></a></dt>
+<dd><p>Create sample points to transform source to target from affine and velocity.</p>
+<section id="id4">
+<h2>Parameters<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>xv<span class="classifier">list of array</span></dt><dd><p>Sample points for velocity</p>
+</dd>
+<dt>v<span class="classifier">array</span></dt><dd><p>time dependent velocity field</p>
+</dd>
+<dt>A<span class="classifier">array</span></dt><dd><p>Affine transformation matrix</p>
+</dd>
+<dt>direction<span class="classifier">char</span></dt><dd><p>‘f’ for forward and ‘b’ for backward. ‘b’ is default and is used for transforming images.
+‘f’ is used for transforming points.</p>
+</dd>
+<dt>XJ<span class="classifier">array</span></dt><dd><p>Sample points for target (meshgrid with ij index style).  Defaults to None 
+to keep sampling on the xv.</p>
+</dd>
+</dl>
+</section>
+<section id="id5">
+<h2>Returns<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>Xs<span class="classifier">array</span></dt><dd><p>Sample points in mehsgrid format.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.build_transform3D">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">build_transform3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">XJ</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.build_transform3D" title="Link to this definition"></a></dt>
+<dd><p>Create sample points to transform source to target from affine and velocity.</p>
+<section id="id6">
+<h2>Parameters<a class="headerlink" href="#id6" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>xv<span class="classifier">list of array</span></dt><dd><p>Sample points for velocity</p>
+</dd>
+<dt>v<span class="classifier">array</span></dt><dd><p>time dependent velocity field</p>
+</dd>
+<dt>A<span class="classifier">array</span></dt><dd><p>Affine transformation matrix</p>
+</dd>
+<dt>direction<span class="classifier">char</span></dt><dd><p>‘f’ for forward and ‘b’ for backward. ‘b’ is default and is used for transforming images.
+‘f’ is used for transforming points.</p>
+</dd>
+<dt>XJ<span class="classifier">array</span></dt><dd><p>Sample points for target (meshgrid with ij index style).  Defaults to None 
+to keep sampling on the xv.</p>
+</dd>
+</dl>
+</section>
+<section id="id7">
+<h2>Returns<a class="headerlink" href="#id7" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>Xs<span class="classifier">array</span></dt><dd><p>Sample points in mehsgrid format.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.clip">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">clip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">I</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.clip" title="Link to this definition"></a></dt>
+<dd><p>clip an arrays values between 0 and 1.  Useful for visualizing</p>
+<section id="id8">
+<h2>Parameters<a class="headerlink" href="#id8" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>I<span class="classifier">torch tensor</span></dt><dd><p>A torch tensor to clip.</p>
+</dd>
+</dl>
+</section>
+<section id="id9">
+<h2>Returns<a class="headerlink" href="#id9" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>Ic<span class="classifier">torch tensor</span></dt><dd><p>Clipped torch tensor.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.download_aba_image_labels">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">download_aba_image_labels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imageurl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labelurl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imagefile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labelfile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.download_aba_image_labels" title="Link to this definition"></a></dt>
+<dd><p>Create 3D altas image and region annotations</p>
+<section id="id10">
+<h2>Parameters<a class="headerlink" href="#id10" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>imageurl<span class="classifier">array</span></dt><dd><p>Link containing atlas cell stained image.</p>
+</dd>
+<dt>labelurl<span class="classifier">array</span></dt><dd><p>Link containing atlas altas images for each voxel in imageurl.</p>
+</dd>
+<dt>imagefile<span class="classifier">array</span></dt><dd><p>File location to save imageurl information.</p>
+</dd>
+<dt>labelfile<span class="classifier">array</span></dt><dd><p>File location to save labelurl information.</p>
+</dd>
+</dl>
+</section>
+<section id="id11">
+<h2>Returns<a class="headerlink" href="#id11" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>imagefile<span class="classifier">array</span></dt><dd><p>File location to save imageurl information.</p>
+</dd>
+<dt>labelfile<span class="classifier">array</span></dt><dd><p>File location to save labelurl information.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.download_aba_ontology">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">download_aba_ontology</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.download_aba_ontology" title="Link to this definition"></a></dt>
+<dd><p>Create 3D altas ontology</p>
+<section id="id12">
+<h2>Parameters<a class="headerlink" href="#id12" title="Link to this heading"></a></h2>
+<p>url : Link to url contain atlas ontology
+file_name : File name to save atlas ontology</p>
+</section>
+<section id="id13">
+<h2>Returns<a class="headerlink" href="#id13" title="Link to this heading"></a></h2>
+<p>ontology_name : File name to store ontologies
+namesdict : Dictionary of all brain rgeion names</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.extent_from_x">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">extent_from_x</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xJ</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.extent_from_x" title="Link to this definition"></a></dt>
+<dd><p>Given a set of pixel locations, returns an extent 4-tuple for use with np.imshow.</p>
+<p>Note inputs are locations of pixels along each axis, i.e. row column not xy.</p>
+<section id="id14">
+<h2>Parameters<a class="headerlink" href="#id14" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>xJ<span class="classifier">list of torch tensors</span></dt><dd><p>Location of pixels along each axis</p>
+</dd>
+</dl>
+</section>
+<section id="id15">
+<h2>Returns<a class="headerlink" href="#id15" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>extent<span class="classifier">tuple</span></dt><dd><p>(xmin, xmax, ymin, ymax) tuple</p>
+</dd>
+</dl>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">extent_from_x</span><span class="p">(</span><span class="n">xJ</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">J</span><span class="p">,</span><span class="n">extent</span><span class="o">=</span><span class="n">extentJ</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.interp">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">interp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phii</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.interp" title="Link to this definition"></a></dt>
+<dd><p>Interpolate the 2D image I, with regular grid positions stored in x (1d arrays),
+at the positions stored in phii (3D arrays with first channel storing component)</p>
+<section id="id16">
+<h2>Parameters<a class="headerlink" href="#id16" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>x<span class="classifier">list of arrays</span></dt><dd><p>List of arrays storing the pixel locations along each image axis. convention is row column order not xy.</p>
+</dd>
+<dt>I<span class="classifier">array</span></dt><dd><p>Image array. First axis should contain different channels.</p>
+</dd>
+<dt>phii<span class="classifier">array</span></dt><dd><p>Sampling array. First axis should contain sample locations corresponding to each axis.</p>
+</dd>
+<dt><a href="#id17"><span class="problematic" id="id18">**</span></a>kwargs<span class="classifier">dict</span></dt><dd><p>Other arguments fed into the torch interpolation function torch.nn.grid_sample</p>
+</dd>
+</dl>
+</section>
+<section id="id19">
+<h2>Returns<a class="headerlink" href="#id19" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>out<span class="classifier">torch tensor</span></dt><dd><p>The image I resampled on the points defined in phii.</p>
+</dd>
+</dl>
+</section>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading"></a></h2>
+<p>Convention is to use align_corners=True.</p>
+<p>This uses the torch library.</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.interp3D">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">interp3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phii</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.interp3D" title="Link to this definition"></a></dt>
+<dd><p>Interpolate the 3D image I, with regular grid positions stored in x (1d arrays),
+at the positions stored in phii (4D arrays with first channel storing component)</p>
+<section id="id20">
+<h2>Parameters<a class="headerlink" href="#id20" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>x<span class="classifier">list of arrays</span></dt><dd><p>List of arrays storing the pixel locations along each image axis. convention is row column order not xy.</p>
+</dd>
+<dt>I<span class="classifier">array</span></dt><dd><p>Image array. First axis should contain different channels.</p>
+</dd>
+<dt>phii<span class="classifier">array</span></dt><dd><p>Sampling array. First axis should contain sample locations corresponding to each axis.</p>
+</dd>
+<dt><a href="#id21"><span class="problematic" id="id22">**</span></a>kwargs<span class="classifier">dict</span></dt><dd><p>Other arguments fed into the torch interpolation function torch.nn.grid_sample</p>
+</dd>
+</dl>
+</section>
+<section id="id23">
+<h2>Returns<a class="headerlink" href="#id23" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>out<span class="classifier">torch tensor</span></dt><dd><p>The image I resampled on the points defined in phii.</p>
+</dd>
+</dl>
+</section>
+<section id="id24">
+<h2>Notes<a class="headerlink" href="#id24" title="Link to this heading"></a></h2>
+<p>Convention is to use align_corners=True.</p>
+<p>This uses the torch library.</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.make_scree">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">make_scree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">W</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.make_scree" title="Link to this definition"></a></dt>
+<dd><p>Create a scree plot for a given set of eigenvalues.</p>
+<section id="id25">
+<h2>Parameters<a class="headerlink" href="#id25" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>W<span class="classifier">numpy array</span></dt><dd><p>Eigenvalues in descending order</p>
+</dd>
+<dt>name<span class="classifier">str</span></dt><dd><p>Name of the dataset the eigenvalue originate from
+Will be included in plot title</p>
+</dd>
+<dt>p<span class="classifier">int</span></dt><dd><p>Number of eigenvalue from W to plot. Defaults to 6</p>
+</dd>
+</dl>
+</section>
+<section id="id26">
+<h2>Returns<a class="headerlink" href="#id26" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>fig<span class="classifier">matplotlib Figure</span></dt><dd><p>Figure handle for scree plot</p>
+</dd>
+</dl>
+</section>
+<section id="raises">
+<h2>Raises<a class="headerlink" href="#raises" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If p is larger than the number to eigenvalues in W.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.normalize">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.normalize" title="Link to this definition"></a></dt>
+<dd><p>Linearly normalizes an array between two specifed values.</p>
+<section id="id27">
+<h2>Parameters<a class="headerlink" href="#id27" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>arr<span class="classifier">numpy array</span></dt><dd><p>array to be normalized</p>
+</dd>
+<dt>t_min<span class="classifier">int or float</span></dt><dd><p>Lower bound of normalization range</p>
+</dd>
+<dt>t_max<span class="classifier">int or float</span></dt><dd><p>Upper bound of normalization range</p>
+</dd>
+</dl>
+</section>
+<section id="id28">
+<h2>Returns<a class="headerlink" href="#id28" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>norm_arr<span class="classifier">numpy array</span></dt><dd><p>1D array with normalized arr values</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.plot_brain_regions">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">plot_brain_regions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.plot_brain_regions" title="Link to this definition"></a></dt>
+<dd><p>Plot all brain regions in target brain slice with different color.</p>
+<section id="id29">
+<h2>Parameters<a class="headerlink" href="#id29" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">DataFrame</span></dt><dd><p>Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.</p>
+</dd>
+</dl>
+</section>
+<section id="id30">
+<h2>Returns<a class="headerlink" href="#id30" title="Link to this heading"></a></h2>
+<p>None</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.plot_subset_brain_regions">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">plot_subset_brain_regions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">brain_regions</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.plot_subset_brain_regions" title="Link to this definition"></a></dt>
+<dd><p>Plot subset of brain regions in target brain slice with different color.</p>
+<section id="id31">
+<h2>Parameters<a class="headerlink" href="#id31" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">DataFrame</span></dt><dd><p>Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.</p>
+</dd>
+<dt>brain_regions<span class="classifier">array</span></dt><dd><p>Subset of brain regions of interest (i.e. [‘CA1’, ‘CP’, ‘DG-sg’])</p>
+</dd>
+</dl>
+</section>
+<section id="id32">
+<h2>Returns<a class="headerlink" href="#id32" title="Link to this heading"></a></h2>
+<p>None</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.rasterize">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">rasterize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">array([1.])</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_magnitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_windowing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.rasterize" title="Link to this definition"></a></dt>
+<dd><p>Rasterize a spatial transcriptomics dataset into a density image</p>
+<section id="paramters">
+<h2>Paramters<a class="headerlink" href="#paramters" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>x<span class="classifier">numpy array of length N</span></dt><dd><p>x location of cells</p>
+</dd>
+<dt>y<span class="classifier">numpy array of length N</span></dt><dd><p>y location of cells</p>
+</dd>
+<dt>g<span class="classifier">numpy array of length N</span></dt><dd><p>RNA count of cells
+If not given, density image is created</p>
+</dd>
+<dt>dx<span class="classifier">float</span></dt><dd><p>Pixel size to rasterize data (default 30.0, in same units as x and y)</p>
+</dd>
+<dt>blur<span class="classifier">float or list of floats</span></dt><dd><p>Standard deviation of Gaussian interpolation kernel.  Units are in 
+number of pixels.  Can be aUse a list to do multi scale.</p>
+</dd>
+<dt>expand<span class="classifier">float</span></dt><dd><p>Factor to expand sampled area beyond cells. Defaults to 1.1.</p>
+</dd>
+<dt>draw<span class="classifier">int</span></dt><dd><p>If True, draw a figure every draw points return its handle. Defaults to False (0).</p>
+</dd>
+<dt>wavelet_magnitude<span class="classifier">bool</span></dt><dd><p>If True, take the absolute value of difference between scales for raster images.
+When using this option blur should be sorted from greatest to least.</p>
+</dd>
+</dl>
+</section>
+<section id="id33">
+<h2>Returns<a class="headerlink" href="#id33" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>X<span class="classifier">numpy array</span></dt><dd><p>Locations of pixels along the x axis</p>
+</dd>
+<dt>Y<span class="classifier">numpy array</span></dt><dd><p>Locations of pixels along the y axis</p>
+</dd>
+<dt>M<span class="classifier">numpy array</span></dt><dd><p>A rasterized image with len(blur) channels along the first axis</p>
+</dd>
+<dt>fig<span class="classifier">matplotlib figure handle</span></dt><dd><p>If draw=True, returns a figure handle to the drawn figure.</p>
+</dd>
+</dl>
+</section>
+<section id="id34">
+<h2>Raises<a class="headerlink" href="#id34" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>Exception </dt><dd><p>If wavelet_magnitude is set to true but blur is not sorted from greatest to least.</p>
+</dd>
+</dl>
+</section>
+<section id="id35">
+<h2>Examples<a class="headerlink" href="#id35" title="Link to this heading"></a></h2>
+<p>Rasterize a dataset at 30 micron pixel size, with three kernels.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">fig</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">rasterize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">dx</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span><span class="n">blur</span><span class="o">=</span><span class="p">[</span><span class="mf">2.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">0.5</span><span class="p">],</span><span class="n">draw</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Rasterize a dataset at 30 micron pixel size, with three kernels, using difference between scales.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">fig</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">rasterize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">dx</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span><span class="n">blur</span><span class="o">=</span><span class="p">[</span><span class="mf">2.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">0.5</span><span class="p">],</span><span class="n">draw</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">wavelet_magnitude</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.rasterizePCA">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">rasterizePCA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.rasterizePCA" title="Link to this definition"></a></dt>
+<dd><p>Rasterize a spatial transcriptomics dataset into a density image and perform PCA on it.</p>
+<section id="id36">
+<h2>Parameters<a class="headerlink" href="#id36" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>x<span class="classifier">numpy array of length N</span></dt><dd><p>x location of cells</p>
+</dd>
+<dt>y<span class="classifier">numpy array of length N</span></dt><dd><p>y location of cells</p>
+</dd>
+<dt>G<span class="classifier">pandas Dataframe of shape (N,M)</span></dt><dd><p>gene expression level of cells for M genes</p>
+</dd>
+</dl>
+</section>
+<section id="id37">
+<h2>Returns<a class="headerlink" href="#id37" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>X<span class="classifier">numpy array</span></dt><dd><p>A rasterized image for each gene with the channel along the first axis</p>
+</dd>
+<dt>Y<span class="classifier">numpy array</span></dt><dd><p>A rasterized image unraveled to 1-D for each gene; data is centered</p>
+</dd>
+<dt>W<span class="classifier">numpy array</span></dt><dd><p>The eigenvalues for the principal components in descending order</p>
+</dd>
+<dt>V<span class="classifier">numpy array</span></dt><dd><p>The normalized eigenvectors for the principal components
+V[:, i] corresponds to eigenvalue at W[i]</p>
+</dd>
+<dt>Z<span class="classifier">numpy array</span></dt><dd><p>X rotated to align with the principal component axes</p>
+</dd>
+<dt>nrows<span class="classifier">int</span></dt><dd><p>Row dimension of rasterized image</p>
+</dd>
+<dt>ncols<span class="classifier">int</span></dt><dd><p>Column dimension of rasterized image</p>
+</dd>
+</dl>
+</section>
+<section id="id38">
+<h2>Notes<a class="headerlink" href="#id38" title="Link to this heading"></a></h2>
+<p>Each value/row at the same index in x, y, and G should all correspond to the same cell.
+x[i] &lt;-&gt; y[i] &lt;-&gt; G[i,:]</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.rasterize_with_signal">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">rasterize_with_signal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_magnitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_windowing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.rasterize_with_signal" title="Link to this definition"></a></dt>
+<dd><p>Rasterize a spatial transcriptomics dataset into a density image</p>
+<section id="id39">
+<h2>Paramters<a class="headerlink" href="#id39" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>x<span class="classifier">numpy array of length N</span></dt><dd><p>x location of cells</p>
+</dd>
+<dt>y<span class="classifier">numpy array of length N</span></dt><dd><p>y location of cells</p>
+</dd>
+<dt>s<span class="classifier">numpy array of length N by M for M signals</span></dt><dd><p>signal value should be length NxM</p>
+</dd>
+<dt>dx<span class="classifier">float</span></dt><dd><p>Pixel size to rasterize data (default 30.0, in same units as x and y)</p>
+</dd>
+<dt>blur<span class="classifier">float or list of floats</span></dt><dd><p>Standard deviation of Gaussian interpolation kernel.  Units are in 
+number of pixels.  Can be aUse a list to do multi scale.</p>
+</dd>
+<dt>expand<span class="classifier">float</span></dt><dd><p>Factor to expand sampled area beyond cells. Defaults to 1.1.</p>
+</dd>
+<dt>draw<span class="classifier">int</span></dt><dd><p>If True, draw a figure every draw points return its handle. Defaults to False (0).</p>
+</dd>
+<dt>wavelet_magnitude<span class="classifier">bool</span></dt><dd><p>If True, take the absolute value of difference between scales for raster images.
+When using this option blur should be sorted from greatest to least.</p>
+</dd>
+</dl>
+</section>
+<section id="id40">
+<h2>Returns<a class="headerlink" href="#id40" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>X<span class="classifier">numpy array</span></dt><dd><p>Locations of pixels along the x axis</p>
+</dd>
+<dt>Y<span class="classifier">numpy array</span></dt><dd><p>Locations of pixels along the y axis</p>
+</dd>
+<dt>M<span class="classifier">numpy array</span></dt><dd><p>A rasterized image with len(blur) channels along the last axis</p>
+</dd>
+<dt>fig<span class="classifier">matplotlib figure handle</span></dt><dd><p>If draw=True, returns a figure handle to the drawn figure.</p>
+</dd>
+</dl>
+</section>
+<section id="id41">
+<h2>Raises<a class="headerlink" href="#id41" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>Exception </dt><dd><p>If wavelet_magnitude is set to true but blur is not sorted from greatest to least.</p>
+</dd>
+</dl>
+</section>
+<section id="id42">
+<h2>Examples<a class="headerlink" href="#id42" title="Link to this heading"></a></h2>
+<p>Rasterize a dataset at 30 micron pixel size, with three kernels.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">fig</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">rasterize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">dx</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span><span class="n">blur</span><span class="o">=</span><span class="p">[</span><span class="mf">2.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">0.5</span><span class="p">],</span><span class="n">draw</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Rasterize a dataset at 30 micron pixel size, with three kernels, using difference between scales.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">fig</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">rasterize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">dx</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span><span class="n">blur</span><span class="o">=</span><span class="p">[</span><span class="mf">2.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">0.5</span><span class="p">],</span><span class="n">draw</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">wavelet_magnitude</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.saveRasters">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">saveRasters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">W</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scree_fig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nrows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.saveRasters" title="Link to this definition"></a></dt>
+<dd><p>Create an RGB image principal components 1-3 and 4-6.
+Save numpy arrays necessary for rasterizing and performing PCA.
+Save scree plot and RGB image as jpeg, and their figure handles.</p>
+<section id="id43">
+<h2>Parameters<a class="headerlink" href="#id43" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>X<span class="classifier">numpy array</span></dt><dd><p>A rasterized image for each gene with the channel along the first axis</p>
+</dd>
+<dt>Y<span class="classifier">numpy array</span></dt><dd><p>A rasterized image unraveled to 1-D for each gene; data is centered</p>
+</dd>
+<dt>W<span class="classifier">numpy array</span></dt><dd><p>The eigenvalues for the principal components in descending order</p>
+</dd>
+<dt>V<span class="classifier">numpy array</span></dt><dd><p>The normalized eigenvectors for the principal components
+V[:, i] corresponds to eigenvalue at W[i]</p>
+</dd>
+<dt>Z<span class="classifier">numpy array</span></dt><dd><p>X rotated to align with the principal component axes</p>
+</dd>
+<dt>scree_fig<span class="classifier">matplotlib Figure</span></dt><dd><p>Figure handle for scree plot</p>
+</dd>
+<dt>nrows<span class="classifier">int</span></dt><dd><p>Row dimension of rasterized image</p>
+</dd>
+<dt>ncols<span class="classifier">int</span></dt><dd><p>Column dimension of rasterized image</p>
+</dd>
+<dt>name<span class="classifier">str</span></dt><dd><p>Name of the dataset the arrays originate from</p>
+</dd>
+<dt>path<span class="classifier">str</span></dt><dd><p>Absolute path to folder where files should be saved</p>
+</dd>
+</dl>
+</section>
+<section id="id44">
+<h2>Returns<a class="headerlink" href="#id44" title="Link to this heading"></a></h2>
+<p>None</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.to_A">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">to_A</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.to_A" title="Link to this definition"></a></dt>
+<dd><p>Convert a linear transform matrix and a translation vector into an affine matrix.</p>
+<section id="id45">
+<h2>Parameters<a class="headerlink" href="#id45" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>L<span class="classifier">torch tensor</span></dt><dd><p>2x2 linear transform matrix</p>
+</dd>
+<dt>T<span class="classifier">torch tensor</span></dt><dd><p>2 element translation vector (note NOT 2x1)</p>
+</dd>
+</dl>
+</section>
+<section id="id46">
+<h2>Returns<a class="headerlink" href="#id46" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>A<span class="classifier">torch tensor</span></dt><dd><p>Affine transform matrix</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.to_A_3D">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">to_A_3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.to_A_3D" title="Link to this definition"></a></dt>
+<dd><p>Convert a linear transform matrix and a translation vector into an affine matrix.</p>
+<section id="id47">
+<h2>Parameters<a class="headerlink" href="#id47" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>L<span class="classifier">torch tensor</span></dt><dd><p>3x3 linear transform matrix</p>
+</dd>
+<dt>T<span class="classifier">torch tensor</span></dt><dd><p>3 element translation vector (note NOT 2x1)</p>
+</dd>
+</dl>
+</section>
+<section id="id48">
+<h2>Returns<a class="headerlink" href="#id48" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>A<span class="classifier">torch tensor</span></dt><dd><p>Affine transform matrix</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.transform_image_source_to_target">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">transform_image_source_to_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">XJ</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.transform_image_source_to_target" title="Link to this definition"></a></dt>
+<dd><p>Transform an image</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.transform_image_source_with_A">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">transform_image_source_with_A</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">XI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">XJ</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.transform_image_source_with_A" title="Link to this definition"></a></dt>
+<dd><p>Transform an image with an affine matrix</p>
+<section id="id49">
+<h2>Parameters<a class="headerlink" href="#id49" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>A<span class="classifier">torch tensor</span></dt><dd><p>Affine transform matrix</p>
+</dd>
+<dt>XI<span class="classifier">list of numpy arrays</span></dt><dd><p>List of arrays storing the pixel location in image I along each image axis. 
+convention is row column order not xy. i.e, 
+locations of pixels along the y axis (rows) followed by
+locations of pixels along the x axis (columns)</p>
+</dd>
+<dt>I<span class="classifier">numpy array</span></dt><dd><p>A rasterized image with len(blur) channels along the first axis</p>
+</dd>
+<dt>XJ<span class="classifier">list of numpy arrays</span></dt><dd><p>List of arrays storing the pixel location in image I along each image axis. 
+convention is row column order not xy. i.e, 
+locations of pixels along the y axis (rows) followed by
+locations of pixels along the x axis (columns)</p>
+</dd>
+</dl>
+</section>
+<section id="id50">
+<h2>Returns<a class="headerlink" href="#id50" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>AI<span class="classifier">torch tensor</span></dt><dd><p>image I after affine transformation A, with channels along first axis</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.transform_image_target_to_source">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">transform_image_target_to_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xJ</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">XI</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.transform_image_target_to_source" title="Link to this definition"></a></dt>
+<dd><p>Transform an image</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.transform_points_source_to_target">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">transform_points_source_to_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointsI</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.transform_points_source_to_target" title="Link to this definition"></a></dt>
+<dd><p>Transform points.  Note points are in row column order, not xy.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.transform_points_target_to_source">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">transform_points_target_to_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointsI</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.transform_points_target_to_source" title="Link to this definition"></a></dt>
+<dd><p>Transform points.  Note points are in row column order, not xy.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.v_to_phii">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">v_to_phii</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.v_to_phii" title="Link to this definition"></a></dt>
+<dd><p>Integrate a velocity field over time to return a position field (diffeomorphism).</p>
+<section id="id51">
+<h2>Parameters<a class="headerlink" href="#id51" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>xv<span class="classifier">list of torch tensor </span></dt><dd><p>List of 1D tensors describing locations of sample points in v</p>
+</dd>
+<dt>v<span class="classifier">torch tensor</span></dt><dd><p>5D (nt,2,v0,v1) velocity field</p>
+</dd>
+</dl>
+</section>
+<section id="id52">
+<h2>Returns<a class="headerlink" href="#id52" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>phii: torch tensor</dt><dd><p>Inverse map (position field) computed by method of characteristics</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="STalign.STalign.v_to_phii_3D">
+<span class="sig-prename descclassname"><span class="pre">STalign.STalign.</span></span><span class="sig-name descname"><span class="pre">v_to_phii_3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#STalign.STalign.v_to_phii_3D" title="Link to this definition"></a></dt>
+<dd><p>Integrate a 3D velocity field over time to return a 3D position field (diffeomorphism).</p>
+<section id="id53">
+<h2>Parameters<a class="headerlink" href="#id53" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>xv<span class="classifier">list of torch tensor </span></dt><dd><p>List of 1D tensors describing locations of sample points in v</p>
+</dd>
+<dt>v<span class="classifier">torch tensor</span></dt><dd><p>5D (nt,3,v0,v1,v2) velocity field</p>
+</dd>
+</dl>
+</section>
+<section id="id54">
+<h2>Returns<a class="headerlink" href="#id54" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>phii: torch tensor</dt><dd><p>Inverse map (position field) computed by method of characteristics</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="notebooks/heart-alignment.html" class="btn btn-neutral float-left" title="Aligning heart ST data from ISS" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

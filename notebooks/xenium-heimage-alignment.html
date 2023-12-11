@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium &mdash; STalign 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS" href="xenium-starmap-alignment.html" />
+    <link rel="prev" title="Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium" href="xenium-xenium-alignment.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#installation-import">Installation &amp; Import</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#usage">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="merfish-merfish-alignment.html">Aligning two coronal sections of adult mouse brain from MERFISH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-xenium-alignment.html">Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-starmap-alignment.html">Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merfish-allen3Datlas-alignment.html">Aligning adult mouse coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starmap-allen3Datlas-alignment.html">Aligning partial coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merfish-visium-alignment-with-point-annotator.html">Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="heart-alignment.html">Aligning heart ST data from ISS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../STalign.html">Functions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/xenium-heimage-alignment.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Aligning-single-cell-resolution-breast-cancer-spatial-transcriptomics-data-to-corresponding-H&amp;E-staining-image-from-Xenium">
+<h1>Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium<a class="headerlink" href="#Aligning-single-cell-resolution-breast-cancer-spatial-transcriptomics-data-to-corresponding-H&E-staining-image-from-Xenium" title="Link to this heading"></a></h1>
+<p>In this notebook, we take a single cell resolution spatial transcriptomics datasets of a breast cancer section profiled by the Xenium technology and align it to a corresponding H&amp;E staining image of the same tissue section. See the bioRxiv preprint for more details about this data: <a class="reference external" href="https://www.biorxiv.org/content/10.1101/2022.10.06.510405v2">https://www.biorxiv.org/content/10.1101/2022.10.06.510405v2</a></p>
+<p>According to the authors, “Due to the non-destructive nature of the Xenium workflow, we were able to perform H&amp;E staining…on the same section post-processing.” However, as the H&amp;E staining and imaging was done seprately to the spatial transcriptomics data collection, alignment is still needed to register the H&amp;E staining image with the single cell positions from the spatial transcriptomics data.</p>
+<p>We will use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to achieve this alignment. We will first load the relevant code libraries.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># import dependencies
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import torch
+
+# make plots bigger
+plt.rcParams[&quot;figure.figsize&quot;] = (12,10)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># OPTION A: import STalign after pip or pipenv install
+from STalign import STalign
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>## OPTION B: skip cell if installed STalign with pip or pipenv
+import sys
+sys.path.append(&quot;../../STalign&quot;)
+
+## import STalign from upper directory
+import STalign
+</pre></div>
+</div>
+</div>
+<p>To obtain the single cell spatial transcriptomics data, we can download the <code class="docutils literal notranslate"><span class="pre">Xenium</span> <span class="pre">Output</span> <span class="pre">Bundle</span></code> from the 10X website: <a class="reference external" href="https://www.10xgenomics.com/products/xenium-in-situ/preview-dataset-human-breast">https://www.10xgenomics.com/products/xenium-in-situ/preview-dataset-human-breast</a> Expanding the downloaded <code class="docutils literal notranslate"><span class="pre">Xenium_FFPE_Human_Breast_Cancer_Rep1_outs.zip</span></code>, we will use the single cell positions stored in <code class="docutils literal notranslate"><span class="pre">cells.csv.gz</span></code>. Likewise, we can download the accompanying H&amp;E staining image <code class="docutils literal notranslate"><span class="pre">Supplemental:</span> <span class="pre">Post-Xenium</span> <span class="pre">H&amp;E</span> <span class="pre">image</span> <span class="pre">(TIFF)</span></code> as
+<code class="docutils literal notranslate"><span class="pre">Xenium_FFPE_Human_Breast_Cancer_Rep1_he_image.tif</span></code>.</p>
+<p>To reproduce this tutorial, we have placed these files in a folder called <code class="docutils literal notranslate"><span class="pre">`xenium_data/</span></code> &lt;<a class="reference external" href="https://github.com/JEFworks-Lab/STalign/tree/main/docs/xenium_data">https://github.com/JEFworks-Lab/STalign/tree/main/docs/xenium_data</a>&gt;`__ with <code class="docutils literal notranslate"><span class="pre">cells.csv.gz</span></code> renamed as <code class="docutils literal notranslate"><span class="pre">Xenium_FFPE_Human_Breast_Cancer_Rep1_cells.csv.gz</span></code> for organizational purposes. Likewise, to minimize storage, we have resized the high resolution H&amp;E TIF image into a smaller PNG image as <code class="docutils literal notranslate"><span class="pre">Xenium_FFPE_Human_Breast_Cancer_Rep1_he_image.png</span></code></p>
+<p>We can read in the H&amp;E staining image using <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> as <code class="docutils literal notranslate"><span class="pre">plt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Target is H&amp;E staining image
+image_file = &#39;../xenium_data/Xenium_FFPE_Human_Breast_Cancer_Rep1_he_image.png&#39;
+V = plt.imread(image_file)
+
+# plot
+fig,ax = plt.subplots()
+ax.imshow(V)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.image.AxesImage at 0x17e205e10&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_6_1.png" src="../_images/notebooks_xenium-heimage-alignment_6_1.png" />
+</div>
+</div>
+<p>Note that this is an RGB image that <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> had read in as an NxMx3 matrix with values ranging from 0 to 1.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>print(V.shape)
+print(V.min())
+print(V.max())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(2051, 2759, 3)
+0.0
+1.0
+</pre></div></div>
+</div>
+<p>We will use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to normalize the image in case there are any outlier intensities.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>Inorm = STalign.normalize(V)
+
+print(Inorm.min())
+print(Inorm.max())
+
+fig,ax = plt.subplots()
+ax.imshow(Inorm)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0.0
+1.0
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.image.AxesImage at 0x17e03e3e0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_10_2.png" src="../_images/notebooks_xenium-heimage-alignment_10_2.png" />
+</div>
+</div>
+<p>We will transpose <code class="docutils literal notranslate"><span class="pre">Inorm</span></code> to be a 3xNxM matrix for downstream analyses. We will also create some variances <code class="docutils literal notranslate"><span class="pre">YI</span></code> and <code class="docutils literal notranslate"><span class="pre">XI</span></code> to keep track of the image size.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>I = Inorm.transpose(2,0,1)
+print(I.shape)
+
+YI = np.array(range(I.shape[1]))*1. # needs to be longs not doubles for STalign.transform later so multiply by 1.
+XI = np.array(range(I.shape[2]))*1. # needs to be longs not doubles for STalign.transform later so multiply by 1.
+extentI = STalign.extent_from_x((YI,XI))
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(3, 2051, 2759)
+</pre></div></div>
+</div>
+<p>We can also now read in the corresponding single cell information using <code class="docutils literal notranslate"><span class="pre">pandas</span></code> as <code class="docutils literal notranslate"><span class="pre">pd</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Single cell data to be aligned
+fname = &#39;../xenium_data/Xenium_FFPE_Human_Breast_Cancer_Rep1_cells.csv.gz&#39;
+df = pd.read_csv(fname)
+df.head()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cell_id</th>
+      <th>x_centroid</th>
+      <th>y_centroid</th>
+      <th>transcript_counts</th>
+      <th>control_probe_counts</th>
+      <th>control_codeword_counts</th>
+      <th>total_counts</th>
+      <th>cell_area</th>
+      <th>nucleus_area</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>377.663005</td>
+      <td>843.541888</td>
+      <td>154</td>
+      <td>0</td>
+      <td>0</td>
+      <td>154</td>
+      <td>110.361875</td>
+      <td>45.562656</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>382.078658</td>
+      <td>858.944818</td>
+      <td>64</td>
+      <td>0</td>
+      <td>0</td>
+      <td>64</td>
+      <td>87.919219</td>
+      <td>24.248906</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>319.839529</td>
+      <td>869.196542</td>
+      <td>57</td>
+      <td>0</td>
+      <td>0</td>
+      <td>57</td>
+      <td>52.561875</td>
+      <td>23.526406</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>259.304707</td>
+      <td>851.797949</td>
+      <td>120</td>
+      <td>0</td>
+      <td>0</td>
+      <td>120</td>
+      <td>75.230312</td>
+      <td>35.176719</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>370.576291</td>
+      <td>865.193024</td>
+      <td>120</td>
+      <td>0</td>
+      <td>0</td>
+      <td>120</td>
+      <td>180.218594</td>
+      <td>34.499375</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>For alignment with <code class="docutils literal notranslate"><span class="pre">STalign</span></code>, we only need the cell centroid information. So we can pull out this information. We can further visualize the cell centroids to get a sense of the variation in cell density that we will be relying on for our alignment by plotting using <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> as <code class="docutils literal notranslate"><span class="pre">plt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get cell centroid coordinates
+xM = np.array(df[&#39;x_centroid&#39;])
+yM = np.array(df[&#39;y_centroid&#39;])
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xM,yM,s=1,alpha=0.2)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x17f527ac0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_16_1.png" src="../_images/notebooks_xenium-heimage-alignment_16_1.png" />
+</div>
+</div>
+<p>Note that plotting the cell centroid positions on the corresponding H&amp;E image shows that alignment is still needed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot
+fig,ax = plt.subplots()
+ax.imshow((I).transpose(1,2,0),extent=extentI)
+ax.scatter(xM,yM,s=1,alpha=0.1)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x17f3eba00&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_18_1.png" src="../_images/notebooks_xenium-heimage-alignment_18_1.png" />
+</div>
+</div>
+<p>To begin our alignment, we will use STalign to rasterize the single cell centroid positions into an image. Assuming the single-cell centroid coordinates are in microns, we will perform this rasterization at a 30 micron resolution. We can visualize the resulting rasterized image.</p>
+<p>Note that points are plotting with the origin at bottom left while images are typically plotted with origin at top left so we’ve used <code class="docutils literal notranslate"><span class="pre">invert_yaxis()</span></code> to invert the yaxis for visualization consistency.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># rasterize at 30um resolution (assuming positions are in um units) and plot
+XJ,YJ,M,fig = STalign.rasterize(xM, yM, dx=30)
+
+ax = fig.axes[0]
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 167782
+10000 of 167782
+20000 of 167782
+30000 of 167782
+40000 of 167782
+50000 of 167782
+60000 of 167782
+70000 of 167782
+80000 of 167782
+90000 of 167782
+100000 of 167782
+110000 of 167782
+120000 of 167782
+130000 of 167782
+140000 of 167782
+150000 of 167782
+160000 of 167782
+167781 of 167782
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_20_1.png" src="../_images/notebooks_xenium-heimage-alignment_20_1.png" />
+</div>
+</div>
+<p>Note that this is a 1D greyscale image. To align with an RGB H&amp;E image, we will need to make our greyscale image into RGB by simply stacking the 1D values 3 times. We will also normalize to get intensity values between 0 to 1. We now have an H&amp;E image and a rasterized image corresponding to the single cell positions from the spatial transcriptomics data that we can align.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>print(M.shape)
+J = np.vstack((M, M, M)) # make into 3xNxM
+print(J.min())
+print(J.max())
+
+# normalize
+J = STalign.normalize(J)
+print(J.min())
+print(J.max())
+
+# double check size of things
+print(I.shape)
+print(M.shape)
+print(J.shape)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(1, 201, 276)
+0.0
+16.134067631252954
+0.0
+1.0
+(3, 2051, 2759)
+(1, 201, 276)
+(3, 201, 276)
+</pre></div></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">STalign</span></code> relies on an interative gradient descent to align these two images. This can be somewhat slow. We manually created 3 points that visually mark similar landmarks across the two datasets that we will use to initialize a simple affine alignment from the landmark points.</p>
+<p>We can double check that our landmark points look sensible by plotting them along with the rasterized image we created.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># manually make corresponding points
+pointsI = np.array([[1050.,950.], [700., 2200.], [500., 1550.], [1550., 1840.]])
+pointsJ = np.array([[3108.,2100.], [4480., 6440.], [5040., 4200.], [1260., 5320.]])
+
+# plot
+extentJ = STalign.extent_from_x((YJ,XJ))
+
+fig,ax = plt.subplots(1,2)
+ax[0].imshow((I.transpose(1,2,0).squeeze()), extent=extentI)
+ax[1].imshow((J.transpose(1,2,0).squeeze()), extent=extentJ)
+
+ax[0].scatter(pointsI[:,1],pointsI[:,0], c=&#39;red&#39;)
+ax[1].scatter(pointsJ[:,1],pointsJ[:,0], c=&#39;red&#39;)
+for i in range(pointsI.shape[0]):
+    ax[0].text(pointsI[i,1],pointsI[i,0],f&#39;{i}&#39;, c=&#39;red&#39;)
+    ax[1].text(pointsJ[i,1],pointsJ[i,0],f&#39;{i}&#39;, c=&#39;red&#39;)
+
+# invert only rasterized image
+ax[1].invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_24_0.png" src="../_images/notebooks_xenium-heimage-alignment_24_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># compute initial affine transformation from points
+L,T = STalign.L_T_from_points(pointsI,pointsJ)
+</pre></div>
+</div>
+</div>
+<p>From this simple affine transformation based on landmark points, we can already apply the resulting lineared linear transformation (L) and translation (T) to align the single-cell spatial transcriptomics dataset to the H&amp;E staining image. Note that the derived affine transformation is the transformation and translation needed to align the H&amp;E staining image to the single-cell positions. To align the single-cell positions, we will need to invert the linear transformation matrix using
+<code class="docutils literal notranslate"><span class="pre">linalg.inv</span></code> and shift in the negative direction by subtracting instead of adding.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>print(L)
+print(T)
+print(L.shape)
+print(T.shape)
+
+# note points are as y,x
+affine = np.dot(np.linalg.inv(L), [yM - T[0], xM - T[1]])
+print(affine.shape)
+xMaffine = affine[0,:]
+yMaffine = affine[1,:]
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(yMaffine,xMaffine,s=1,alpha=0.1)
+ax.imshow((I).transpose(1,2,0))
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[-3.65041156  0.06574554]
+ [ 0.11365427  3.50866925]]
+[ 6832.39702429 -1329.64577839]
+(2, 2)
+(2,)
+(2, 167782)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.image.AxesImage at 0x17f3eb9a0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_27_2.png" src="../_images/notebooks_xenium-heimage-alignment_27_2.png" />
+</div>
+</div>
+<p>In this case, it seems like either due to the accuracy of our landmark points and/or distortions in the tissue sample introduced during the H&amp;E staining, a simple affine alignment is not sufficient to align the single-cell spatial transcriptomics dataset to the H&amp;E staining image. So we will need to perform non-linear local alignments via LDDMM.</p>
+<p>There are many parameters that can be tuned for performing this alignment.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># set device for building tensors
+if torch.cuda.is_available():
+    torch.set_default_device(&#39;cuda:0&#39;)
+else:
+    torch.set_default_device(&#39;cpu&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%time
+
+# run LDDMM
+# specify device (default device for STalign.LDDMM is cpu)
+if torch.cuda.is_available():
+    device = &#39;cuda:0&#39;
+else:
+    device = &#39;cpu&#39;
+
+# keep all other parameters default
+params = {&#39;L&#39;:L,&#39;T&#39;:T,
+          &#39;niter&#39;:2000,
+          &#39;pointsI&#39;:pointsI,
+          &#39;pointsJ&#39;:pointsJ,
+          &#39;device&#39;:device,
+          &#39;sigmaM&#39;:0.15,
+          &#39;sigmaB&#39;:0.10,
+          &#39;sigmaA&#39;:0.11,
+          &#39;epV&#39;: 10,
+          &#39;muB&#39;: torch.tensor([0,0,0]), # black is background in target
+          &#39;muA&#39;: torch.tensor([1,1,1]) # use white as artifact
+          }
+
+out = STalign.LDDMM([YI,XI],I,[YJ,XJ],J,**params)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/kalenclifton/.local/share/virtualenvs/STalign-wXTCUYXW/lib/python3.10/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/TensorShape.cpp:3484.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/Users/kalenclifton/STalign/docs/notebooks/../../STalign/STalign.py:1301: UserWarning: Data has no positive values, and therefore cannot be log-scaled.
+  axE[2].set_yscale(&#39;log&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 1min 48s, sys: 13.6 s, total: 2min 2s
+Wall time: 1min 47s
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_30_2.png" src="../_images/notebooks_xenium-heimage-alignment_30_2.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_30_3.png" src="../_images/notebooks_xenium-heimage-alignment_30_3.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_30_4.png" src="../_images/notebooks_xenium-heimage-alignment_30_4.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get necessary output variables
+A = out[&#39;A&#39;]
+v = out[&#39;v&#39;]
+xv = out[&#39;xv&#39;]
+</pre></div>
+</div>
+</div>
+<p>Plots generated throughout the alignment can be used to give you a sense of whether the parameter choices are appropriate and whether your alignment is converging on a solution.</p>
+<p>We can also evaluate the resulting alignment by applying the transformation to visualize how our source and target images were deformed to achieve the alignment.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># now transform the points
+phi = STalign.build_transform(xv,v,A,XJ=[YI,XI],direction=&#39;f&#39;)
+phiiJ = STalign.transform_image_target_to_source(xv,v,A,[YJ,XJ],J,[YI,XI])
+phiipointsJ = STalign.transform_points_target_to_source(xv,v,A,pointsJ)
+
+#switch tensor from cuda to cpu for plotting with numpy
+if phi.is_cuda:
+    phi = phi.cpu()
+if phiiJ.is_cuda:
+    phiiJ = phiiJ.cpu()
+if phiipointsJ.is_cuda:
+    phiipointsJ = phiipointsJ.cpu()
+
+# plot
+fig,ax = plt.subplots()
+
+levels = np.arange(-50000,50000,500)
+
+ax.contour(XI,YI,phi[...,0],colors=&#39;r&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.contour(XI,YI,phi[...,1],colors=&#39;g&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.set_aspect(&#39;equal&#39;)
+ax.set_title(&#39;target to source&#39;)
+
+ax.imshow(phiiJ.permute(1,2,0),extent=extentI)
+ax.scatter(phiipointsJ[:,1].detach(),phiipointsJ[:,0].detach(),c=&quot;m&quot;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/kalenclifton/.local/share/virtualenvs/STalign-wXTCUYXW/lib/python3.10/site-packages/torch/utils/_device.py:62: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  return func(*args, **kwargs)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x17e3f1930&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_33_2.png" src="../_images/notebooks_xenium-heimage-alignment_33_2.png" />
+</div>
+</div>
+<p>Finally, we can apply our transform to the original sets of single cell centroid positions to achieve their new aligned positions.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Now apply to points
+tpointsJ = STalign.transform_points_target_to_source(xv,v,A,np.stack([yM, xM], -1))
+
+#switch tensor from cuda to cpu for plotting with numpy
+if tpointsJ.is_cuda:
+    tpointsJ = tpointsJ.cpu()
+</pre></div>
+</div>
+</div>
+<p>And we can visualize the results.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot
+
+fig,ax = plt.subplots()
+ax.imshow((I).transpose(1,2,0),extent=extentI)
+ax.scatter(phiipointsJ[:,1].detach(),phiipointsJ[:,0].detach(),c=&quot;g&quot;)
+ax.scatter(pointsI[:,1],pointsI[:,0], c=&#39;r&#39;)
+ax.scatter(tpointsJ[:,1].detach(),tpointsJ[:,0].detach(),s=1,alpha=0.1)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x17f883160&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_xenium-heimage-alignment_37_1.png" src="../_images/notebooks_xenium-heimage-alignment_37_1.png" />
+</div>
+</div>
+<p>And save the new aligned positions by appending to our original data using <code class="docutils literal notranslate"><span class="pre">numpy</span></code> with <code class="docutils literal notranslate"><span class="pre">np.hstack</span></code></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># save results by appending
+results = np.hstack((df, tpointsI.numpy()))
+</pre></div>
+</div>
+</div>
+<p>We will finally create a compressed <code class="docutils literal notranslate"><span class="pre">.csv.gz</span></code> file to create <code class="docutils literal notranslate"><span class="pre">Xenium_Breast_Cancer_Rep1_STalign_to_HE.csv.gz</span></code></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>results.to_csv(&#39;../xenium_data/Xenium_Breast_Cancer_Rep1_STalign_to_HE.csv.gz&#39;,
+               compression=&#39;gzip&#39;)
+</pre></div>
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="xenium-xenium-alignment.html" class="btn btn-neutral float-left" title="Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="xenium-starmap-alignment.html" class="btn btn-neutral float-right" title="Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

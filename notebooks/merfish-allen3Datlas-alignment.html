@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aligning adult mouse coronal brain sections with the Allen Brain Altas &mdash; STalign 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Aligning partial coronal brain sections with the Allen Brain Altas" href="starmap-allen3Datlas-alignment.html" />
+    <link rel="prev" title="Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS" href="xenium-starmap-alignment.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#installation-import">Installation &amp; Import</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#usage">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="merfish-merfish-alignment.html">Aligning two coronal sections of adult mouse brain from MERFISH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-xenium-alignment.html">Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-heimage-alignment.html">Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-starmap-alignment.html">Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Aligning adult mouse coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starmap-allen3Datlas-alignment.html">Aligning partial coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merfish-visium-alignment-with-point-annotator.html">Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="heart-alignment.html">Aligning heart ST data from ISS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../STalign.html">Functions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Aligning adult mouse coronal brain sections with the Allen Brain Altas</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/merfish-allen3Datlas-alignment.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Aligning-adult-mouse-coronal-brain-sections-with-the-Allen-Brain-Altas">
+<h1>Aligning adult mouse coronal brain sections with the Allen Brain Altas<a class="headerlink" href="#Aligning-adult-mouse-coronal-brain-sections-with-the-Allen-Brain-Altas" title="Link to this heading"></a></h1>
+<p>In this notebook, we will align a MERFISH dataset of an adult mouse coronal brain section to the Allen Brain Atlas. You can download additional MERFISH datasets and find more details about this data here: <a class="reference external" href="https://info.vizgen.com/mouse-brain-data">https://info.vizgen.com/mouse-brain-data</a></p>
+<p>We will use STalign to achieve this alignment. We will first load the relevant code libraries.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>#Import dependencies
+
+import numpy as np
+#%matplotlib notebook
+import matplotlib.pyplot as plt
+import pandas as pd # for csv.
+from matplotlib import cm
+from matplotlib.lines import Line2D
+import os
+from os.path import exists,split,join,splitext
+from os import makedirs
+import glob
+import requests
+from collections import defaultdict
+import nrrd
+import torch
+from torch.nn.functional import grid_sample
+import tornado
+import copy
+import skimage
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import pandas as pd
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># OPTION A: import STalign after pip or pipenv install
+from STalign import STalign
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>## OPTION B: skip cell if installed STalign with pip or pipenv
+import sys
+sys.path.append(&quot;../../STalign&quot;)
+
+## import STalign from upper directory
+import STalign
+</pre></div>
+</div>
+</div>
+<p>We have already downloaded MERFISH datasets (link found above) and stored them in a folder called merfish_data</p>
+<p>Now, we can read in the cell infomation using pandas as pd.</p>
+<p>We must load all cell x and y positions into the variable x and y respectively. Importantly, the <em>scale</em> of the loaded data must approximately match the Allen Brain Atlas, where ~1 pixel unit is ~1 um</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>#Load file
+
+filename = &#39;__&#39;
+df = pd.read_csv(&#39;../merfish_data/s1r1_metadata.csv.gz&#39;)
+
+#Load x position
+x = np.array(df[&#39;center_x&#39;]) #change to x positions of cells
+
+#Load y position
+y = np.array(df[&#39;center_y&#39;]) #change to column y positions of cells
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>dx=10
+blur = 1
+</pre></div>
+</div>
+</div>
+<p>Now we can load in data from the Allen Brain Altas.</p>
+<p>We need to load in and save files containing the ontology of regions, a 3D cell density atlas, and annotations of brain regions in the aforementioned 3D atlas.</p>
+<p>Depending on which Allen Atlas you would like to use, you can change the url that you download these files from. In this example, we are aligning the adult mouse (P56) Allen Atlas.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>url = &#39;http://api.brain-map.org/api/v2/data/query.csv?criteria=model::Structure,rma::criteria,[ontology_id$eq1],rma::options[order$eq%27structures.graph_order%27][num_rows$eqall]&#39;
+
+ontology_name,namesdict = STalign.download_aba_ontology(url, &#39;allen_ontology.csv&#39;) #url for adult mouse
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;Response [200]&gt;
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>imageurl = &#39;http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/ara_nissl/ara_nissl_50.nrrd&#39;
+labelurl = &#39;http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/annotation/ccf_2017/annotation_50.nrrd&#39;
+imagefile, labelfile = STalign.download_aba_image_labels(imageurl, labelurl, &#39;aba_nissl.nrrd&#39;, &#39;aba_annotation.nrrd&#39;)
+</pre></div>
+</div>
+</div>
+<p>Our first step in this alignment will be to rasterize the single cell centroid positions into an image. This converts our x and y arrays of cells into a pixelated image. For this example, we choose to rasterize at a resolution of 10 (um).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>#Rasterize Image
+X_,Y_,W = STalign.rasterize(x,y,dx=dx, blur = blur,draw=False)
+</pre></div>
+</div>
+</div>
+<p>We can visualize the resulting rasterized image.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>#Plot unrasterized/rasterized images
+fig,ax = plt.subplots(1,2)
+ax[0].scatter(x,y,s=0.5,alpha=0.25)
+ax[0].invert_yaxis()
+ax[0].set_title(&#39;List of cells&#39;)
+ax[0].set_aspect(&#39;equal&#39;)
+
+W = W[0]
+extent = (X_[0],X_[-1],Y_[0],Y_[-1])
+ax[1].imshow(W,  origin=&#39;lower&#39;)
+ax[1].invert_yaxis()
+ax[1].set_title(&#39;Rasterized&#39;)
+
+# save figure
+#fig.canvas.draw()
+#fig.savefig(outname[:-4]+&#39;_image.png&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;Rasterized&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_16_1.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_16_1.png" />
+</div>
+</div>
+<p>Now we need to find an approximate slice number in the Allen Atlas to initialize the alignment. Evaluate whether the value of slice is similar to the target image by viewing a side by side comparison of the ABA slice and the target image. If not, change the value of slice. In this example, slice = 0 is anterior and slice = 264 is posterior.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>#find slice
+#peruse through images in atlas
+# Loading the atlas
+slice = 177
+
+vol,hdr = nrrd.read(imagefile)
+A = vol
+vol,hdr = nrrd.read(labelfile)
+L = vol
+
+dxA = np.diag(hdr[&#39;space directions&#39;])
+nxA = A.shape
+xA = [np.arange(n)*d - (n-1)*d/2.0 for n,d in zip(nxA,dxA)]
+XA = np.meshgrid(*xA,indexing=&#39;ij&#39;)
+
+fig,ax = plt.subplots(1,2)
+extentA = STalign.extent_from_x(xA[1:])
+ax[0].imshow(A[slice],extent=extentA)
+ax[0].set_title(&#39;Atlas Slice&#39;)
+
+ax[1].imshow(W,extent=extentA)
+ax[1].set_title(&#39;Target Image&#39;)
+fig.canvas.draw()
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_18_0.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_18_0.png" />
+</div>
+</div>
+<p>Next, we need to find an approximate rotation angle of the Allen Atlas to initialize the alignment. Evaluate whether the rotation of the atlas is similar to the target image by viewing a side by side comparison of the ABA slice and the target image. If not, change the value of theta_deg. Note: the rotation here is defined in degrees.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from scipy.ndimage import rotate
+
+theta_deg = 0
+
+fig,ax = plt.subplots(1,2)
+extentA = STalign.extent_from_x(xA[1:])
+ax[0].imshow(rotate(A[slice], angle=theta_deg),extent=extentA)
+ax[0].set_title(&#39;Atlas Slice&#39;)
+
+ax[1].imshow(W,extent=extentA)
+ax[1].set_title(&#39;Target Image&#39;)
+fig.canvas.draw()
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_20_0.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_20_0.png" />
+</div>
+</div>
+<p>Next, specify if there are any points on the image above that can be approximately matched with eachother and add them in the following format. This helps speed up alignment. (OPTIONAL)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>points_atlas = np.array([[0,2580]])
+points_target = np.array([[8,2533]])
+Li,Ti = STalign.L_T_from_points(points_atlas,points_target)
+</pre></div>
+</div>
+</div>
+<p>We can define atlas and target points, xI and xJ, as well as atlas and target images, I and J.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>xJ = [Y_,X_]
+J = W[None]/np.mean(np.abs(W))
+xI = xA
+I = A[None] / np.mean(np.abs(A),keepdims=True)
+I = np.concatenate((I,(I-np.mean(I))**2))
+</pre></div>
+</div>
+</div>
+<p>Now that we can chosen the slice number and rotation angle, we are ready to initialize parameters related to our alignment.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>sigmaA = 2 #standard deviation of artifact intensities
+sigmaB = 2 #standard deviation of background intensities
+sigmaM = 2 #standard deviation of matching tissue intenities
+muA = torch.tensor([3,3,3],device=&#39;cpu&#39;) #average of artifact intensities
+muB = torch.tensor([0,0,0],device=&#39;cpu&#39;) #average of background intensities
+<br/></pre></div>
+</div>
+</div>
+<p>We can change the parameters above by looking at the intensity histogram of our target image (below). We need to consider intensities of artifacts (tissue that is present in the target image and absent in the atlas), which is usually in the upper range of intensity values. We also need to find the intensity of the background values that does not correspond to any tissue, usually around 0, and standard deviations for these values. The matching tissue intensities are regions that should have
+tissue that can be aligned in both the atlas and the target image.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fig,ax = plt.subplots()
+ax.hist(J.ravel())
+plt.xlabel(&#39;Intensity&#39;)
+plt.ylabel(&#39;Number of Pixels&#39;)
+plt.title(&#39;Intensity Histogram of Target Image&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;Intensity Histogram of Target Image&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_28_1.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_28_1.png" />
+</div>
+</div>
+<p>The following parameters vary depending on your target image and the duration &amp; accuracy of the alignment. The scale parameters refer to a scaling of the atlas in (x, y, z) to match the size of the target image. The nt parameter ensures smoothness and invertibility of the image transformation. The niter refers to the number of iteration steps in gradient descent to achieve minimum error between the altas and the target image.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># initialize variables
+scale_x = 0.9 #default = 0.9
+scale_y = 0.9 #default = 0.9
+scale_z = 0.9 #default = 0.9
+theta0 = (np.pi/180)*theta_deg
+
+# get an initial guess
+if &#39;Ti&#39; in locals():
+    T = np.array([-xI[0][slice],np.mean(xJ[0])-(Ti[0]*scale_y),np.mean(xJ[1])-(Ti[1]*scale_x)])
+else:
+    T = np.array([-xI[0][slice],np.mean(xJ[0]),np.mean(xJ[1])])
+
+scale_atlas = np.array([[scale_z,0,0],
+                        [0,scale_x,0],
+                        [0,0,scale_y]])
+L = np.array([[1.0,0.0,0.0],
+             [0.0,np.cos(theta0),-np.sin(theta0)],
+              [0.0,np.sin(theta0),np.cos(theta0)]])
+L = np.matmul(L,scale_atlas)#np.identity(3)
+</pre></div>
+</div>
+</div>
+<p>Now, we can perform alignment of the atlas to our target slice.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%time
+
+# run LDDMM
+# specify device (default device for STalign.LDDMM is cpu)
+if torch.cuda.is_available():
+    device = &#39;cuda:0&#39;
+else:
+    device = &#39;cpu&#39;
+
+#returns mat = affine transform, v = velocity, xv = pixel locations of velocity points
+transform = STalign.LDDMM_3D_to_slice(
+    xI,I,xJ,J,
+    T=T,L=L,
+    nt=4,niter=2000,
+    device=&#39;cpu&#39;,
+    sigmaA = sigmaA, #standard deviation of artifact intensities
+    sigmaB = sigmaB, #standard deviation of background intensities
+    sigmaM = sigmaM, #standard deviation of matching tissue intenities
+    muA = muA, #average of artifact intensities
+    muB = muB #average of background intensities
+)
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/kalenclifton/.local/share/virtualenvs/STalign-wXTCUYXW/lib/python3.10/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/TensorShape.cpp:3527.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/Users/kalenclifton/STalign/docs/notebooks/../../STalign/STalign.py:1616: UserWarning: Data has no positive values, and therefore cannot be log-scaled.
+  axE[2].set_yscale(&#39;log&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 32min 16s, sys: 17min 22s, total: 49min 39s
+Wall time: 24min 32s
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_32_2.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_32_2.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_32_3.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_32_3.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_32_4.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_32_4.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>A = transform[&#39;A&#39;]
+v = transform[&#39;v&#39;]
+xv = transform[&#39;xv&#39;]
+Xs = transform[&#39;Xs&#39;]
+</pre></div>
+</div>
+</div>
+<p>Once we have aligned the atlas to our target image, we can project the brain regions defined in the atlas to our target image and export these annotations, along with information about the positions of the atlas that align with the slice.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>df = STalign.analyze3Dalign(labelfile,  xv,v,A, xJ, dx, scale_x=scale_x, scale_y=scale_y,x=x,y=y, X_=X_, Y_=Y_, namesdict=namesdict,device=&#39;cpu&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/kalenclifton/STalign/docs/notebooks/../../STalign/STalign.py:1725: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  A = torch.tensor(A)
+/Users/kalenclifton/STalign/docs/notebooks/../../STalign/STalign.py:1726: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  v = torch.tensor(v)
+/Users/kalenclifton/STalign/docs/notebooks/../../STalign/STalign.py:1738: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  XJ = torch.tensor(XJ)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>df
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>coord0</th>
+      <th>coord1</th>
+      <th>coord2</th>
+      <th>x</th>
+      <th>y</th>
+      <th>struct_id</th>
+      <th>acronym</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2400.920672</td>
+      <td>590.914510</td>
+      <td>-5191.190533</td>
+      <td>156.563284</td>
+      <td>4271.326432</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2400.787913</td>
+      <td>579.836458</td>
+      <td>-5191.778278</td>
+      <td>156.509284</td>
+      <td>4256.962431</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2400.392034</td>
+      <td>546.602489</td>
+      <td>-5193.539680</td>
+      <td>159.965284</td>
+      <td>4228.180431</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2401.540063</td>
+      <td>656.669570</td>
+      <td>-5175.261835</td>
+      <td>167.579284</td>
+      <td>4323.868433</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2401.455700</td>
+      <td>635.227030</td>
+      <td>-5188.836504</td>
+      <td>160.559284</td>
+      <td>4308.802433</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>78324</th>
+      <td>2381.469307</td>
+      <td>538.424275</td>
+      <td>5210.772240</td>
+      <td>9154.007886</td>
+      <td>4445.528506</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>78325</th>
+      <td>2380.424358</td>
+      <td>517.317267</td>
+      <td>5138.578401</td>
+      <td>9088.829884</td>
+      <td>4423.712505</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>78326</th>
+      <td>2381.278031</td>
+      <td>515.380913</td>
+      <td>5231.900009</td>
+      <td>9170.261887</td>
+      <td>4431.758506</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>78327</th>
+      <td>2380.219083</td>
+      <td>506.093842</td>
+      <td>5137.498692</td>
+      <td>9086.183884</td>
+      <td>4417.016505</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>78328</th>
+      <td>2380.015031</td>
+      <td>506.231228</td>
+      <td>5114.004041</td>
+      <td>9073.169884</td>
+      <td>4419.770505</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+  </tbody>
+</table>
+<p>78329 rows × 7 columns</p>
+</div></div>
+</div>
+<p>Now, we can explore our alignment and brain region annotations!</p>
+<p>We can visualize the MERFISH slice overlayed with the matched section in the Allen Brain Atlas.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>It = torch.tensor(I,device=&#39;cpu&#39;,dtype=torch.float64)
+AI = STalign.interp3D(xI,It,Xs.permute(3,0,1,2),padding_mode=&quot;border&quot;)
+Ishow_source = ((AI-torch.amin(AI,(1,2,3))[...,None,None])/(torch.amax(AI,(1,2,3))-torch.amin(AI,(1,2,3)))[...,None,None,None]).permute(1,2,3,0).clone().detach().cpu()
+Jt = torch.tensor(J,device=&#39;cpu&#39;,dtype=torch.float64)
+Ishow_target = Jt.permute(1,2,0).cpu()/torch.max(Jt).item()
+
+import matplotlib as mpl
+fig,ax = plt.subplots(1,3, figsize=(15,5))
+ax0 = ax[0].imshow(Ishow_target, cmap = mpl.cm.Blues,alpha=0.9)
+ax[0].set_title(&#39;MERFISH Slice&#39;)
+ax1 = ax[1].imshow(Ishow_source[0,:,:,0], cmap = mpl.cm.Reds,alpha=0.2)
+ax[1].set_title(&#39;z=0 slice of Aligned 3D Allen Brain Atlas&#39;)
+ax2 = ax[2].imshow(Ishow_target, cmap = mpl.cm.Blues,alpha=0.9)
+ax2 = ax[2].imshow(Ishow_source[0,:,:,0], cmap = mpl.cm.Reds,alpha=0.3)
+ax[2].set_title(&#39;Overlayed&#39;)
+
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_39_0.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_39_0.png" />
+</div>
+</div>
+<p>We can view the slice of the atlas that aligned to the target image. Note that the slice is curved with respect to the Allen Atlas, capturing the <em>not truely coronal</em> nature of the target slice.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>verts, faces, normals, values = skimage.measure.marching_cubes(vol&gt;0,0.8,spacing = dxA)
+verts = verts + np.array([x[0] for x in xA])
+fig = plt.figure(figsize=(10, 10))
+ax = fig.add_subplot(111, projection=&#39;3d&#39;)
+mesh = Poly3DCollection(verts[faces])
+#mesh.set_edgecolor(&#39;k&#39;)
+mesh.set_facecolor(&#39;r&#39;)
+mesh.set_alpha(0.2)
+ax.add_collection3d(mesh)
+ax.set_xlim(-8000, 8000)  # a = 6 (times two for 2nd ellipsoid)
+ax.set_ylim(-8000, 8000)  # b = 10
+ax.set_zlim(-8000, 8000)  # c = 16
+x = df[&#39;coord0&#39;]
+y = df[&#39;coord1&#39;]
+z = df[&#39;coord2&#39;]
+#ax.grid(True)
+#ax.set_xticks([])
+#ax.set_yticks([])
+#ax.set_zticks([])
+#pos1 = ax.get_position()
+#pos = [pos1.x0 +0.3, pos1.y0+0.3, pos1.width/2, pos1.height/2]
+#ax.set_position(pos)
+ax.scatter3D(x,y,z, s= 0.1)
+
+ax.view_init(-240, 90)
+#ax.view_init(-90, 120)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_41_0.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_41_0.png" />
+</div>
+</div>
+<p>We can also plot all of the brain regions that are captured in the slice, as defined by our alignment.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>STalign.plot_brain_regions(df)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_43_0.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_43_0.png" />
+</div>
+</div>
+<p>If we also interested in only a few regions, in this example let’s take VISp4 and VISp5, we can plot those regions using the following function.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>brain_regions = [&#39;VISp4&#39;, &#39;VISp5&#39;]
+STalign.plot_subset_brain_regions(df, brain_regions)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_45_0.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_45_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="xenium-starmap-alignment.html" class="btn btn-neutral float-left" title="Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="starmap-allen3Datlas-alignment.html" class="btn btn-neutral float-right" title="Aligning partial coronal brain sections with the Allen Brain Altas" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

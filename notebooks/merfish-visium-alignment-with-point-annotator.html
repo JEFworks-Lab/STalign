@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium &mdash; STalign 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Aligning heart ST data from ISS" href="heart-alignment.html" />
+    <link rel="prev" title="Aligning partial coronal brain sections with the Allen Brain Altas" href="starmap-allen3Datlas-alignment.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#installation-import">Installation &amp; Import</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#usage">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="merfish-merfish-alignment.html">Aligning two coronal sections of adult mouse brain from MERFISH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-xenium-alignment.html">Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-heimage-alignment.html">Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-starmap-alignment.html">Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merfish-allen3Datlas-alignment.html">Aligning adult mouse coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starmap-allen3Datlas-alignment.html">Aligning partial coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="heart-alignment.html">Aligning heart ST data from ISS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../STalign.html">Functions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/merfish-visium-alignment-with-point-annotator.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Aligning-single-cell-resolution-spatial-transcriptomics-data-to-H&amp;E-staining-image-from-Visium">
+<h1>Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium<a class="headerlink" href="#Aligning-single-cell-resolution-spatial-transcriptomics-data-to-H&E-staining-image-from-Visium" title="Link to this heading"></a></h1>
+<p>In this notebook, we take a single cell resolution spatial transcriptomics datasets of a coronal section of the adult mouse brain profiled by the MERFISH technology and align it to a H&amp;E staining image from a different individual at matched locations with respect to bregma.</p>
+<p>We will use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to achieve this alignment. We will first load the relevant code libraries.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>## import dependencies
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.transforms as mtransforms
+import pandas as pd
+import torch
+import plotly
+import requests
+
+# make plots bigger
+plt.rcParams[&quot;figure.figsize&quot;] = (12,10)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># OPTION A: import STalign after pip or pipenv install
+from STalign import STalign
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>## OPTION B: skip cell if installed STalign with pip or pipenv
+import sys
+sys.path.append(&quot;../../STalign&quot;)
+
+## import STalign from upper directory
+import STalign
+</pre></div>
+</div>
+</div>
+<p>We can read in the single cell information using <code class="docutils literal notranslate"><span class="pre">pandas</span></code> as <code class="docutils literal notranslate"><span class="pre">pd</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Single cell data 1
+# read in data
+fname = &#39;../merfish_data/datasets_mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_cell_metadata_S2R3.csv.gz&#39;
+df1 = pd.read_csv(fname)
+print(df1.head())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+                                Unnamed: 0  fov       volume    center_x
+0  158338042824236264719696604356349910479   33   532.778772  617.916619  \
+1  260594727341160372355976405428092853003   33  1004.430016  596.808018
+2  307643940700812339199503248604719950662   33  1267.183208  578.880018
+3   30863303465976316429997331474071348973   33  1403.401822  572.616017
+4  313162718584097621688679244357302162401   33   507.949497  608.364018
+
+      center_y       min_x       max_x        min_y        max_y
+0  2666.520010  614.725219  621.108019  2657.545209  2675.494810
+1  2763.450012  589.669218  603.946818  2757.013212  2769.886812
+2  2748.978012  570.877217  586.882818  2740.489211  2757.466812
+3  2766.690012  564.937217  580.294818  2756.581212  2776.798812
+4  2687.418010  603.061218  613.666818  2682.493210  2692.342810
+</pre></div></div>
+</div>
+<p>For alignment with <code class="docutils literal notranslate"><span class="pre">STalign</span></code>, we only need the cell centroid information. So we can pull out this information. We can further visualize the cell centroids to get a sense of the variation in cell density that we will be relying on for our alignment by plotting using <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> as <code class="docutils literal notranslate"><span class="pre">plt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get cell centroid coordinates
+xI = np.array(df1[&#39;center_x&#39;])
+yI = np.array(df1[&#39;center_y&#39;])
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.2)
+#ax.set_aspect(&#39;equal&#39;, &#39;box&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x150872380&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_8_1.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_8_1.png" />
+</div>
+</div>
+<p>We will use STalign to rasterize the single cell centroid positions into an image. Assuming the single-cell centroid coordinates are in microns, we will perform this rasterization at a 30 micron resolution. We can visualize the resulting rasterized image.</p>
+<p>Note that points are plotting with the origin at bottom left while images are typically plotted with origin at top left so we’ve used <code class="docutils literal notranslate"><span class="pre">invert_yaxis()</span></code> to invert the yaxis for visualization consistency.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># rasterize at 30um resolution (assuming positions are in um units) and plot
+XI,YI,I,fig = STalign.rasterize(xI, yI, dx=30)
+
+ax = fig.axes[0]
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 85958
+10000 of 85958
+20000 of 85958
+30000 of 85958
+40000 of 85958
+50000 of 85958
+60000 of 85958
+70000 of 85958
+80000 of 85958
+85957 of 85958
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_10_1.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_10_1.png" />
+</div>
+</div>
+<p>Note that this is a 1D greyscale image. To align with an RGB H&amp;E image, we will need to make our greyscale image into RGB by simply stacking the 1D values 3 times. We will also normalize to get intensity values between 0 to 1.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>print(&quot;The initial shape of I is {}&quot;.format(I.shape))
+I = np.vstack((I, I, I)) # make into 3xNxM
+print(&quot;The range of I is {} to {}&quot;.format(I.min(), I.max() ))
+
+# normalize
+I = STalign.normalize(I)
+print(&quot;The range of I after normalization is {} to {}&quot;.format(I.min(), I.max() ))
+
+# double check size of things
+print(&quot;The new shape of I is {}&quot;.format(I.shape))
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The initial shape of I is (1, 256, 336)
+The range of I is 0.0 to 4.715485184477206
+The range of I after normalization is 0.0 to 1.0
+The new shape of I is (3, 256, 336)
+</pre></div></div>
+</div>
+<p>We have already downloaded the H&amp;E staining image from <a class="reference external" href="https://www.10xgenomics.com/resources/datasets/adult-mouse-brain-ffpe-1-standard-1-3-0">https://www.10xgenomics.com/resources/datasets/adult-mouse-brain-ffpe-1-standard-1-3-0</a> and placed the file in a folder called <code class="docutils literal notranslate"><span class="pre">visium_data</span></code></p>
+<p>We can read in the H&amp;E staining image using <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> as <code class="docutils literal notranslate"><span class="pre">plt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>image_file = &#39;../visium_data/tissue_hires_image.png&#39;
+V = plt.imread(image_file)
+
+# plot
+fig,ax = plt.subplots()
+ax.imshow(V)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.image.AxesImage at 0x152520730&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_14_1.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_14_1.png" />
+</div>
+</div>
+<p>Note that this is an RGB image that <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> had read in as an NxMx3 matrix with values ranging from 0 to 1. We will use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to normalize the image in case there are any outlier intensities.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>print(&quot;The initial shape of V is {}&quot;.format(V.shape))
+print(&quot;The range of V is {} to {}&quot;.format(V.min(), V.max() ))
+
+Vnorm = STalign.normalize(V)
+print(&quot;The range of V after normalization is {} to {}&quot;.format(Vnorm.min(), Vnorm.max() ))
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The initial shape of V is (2000, 1838, 3)
+The range of V is 0.10588235408067703 to 1.0
+The range of V after normalization is 0.0 to 1.0
+</pre></div></div>
+</div>
+<p>We will transpose <code class="docutils literal notranslate"><span class="pre">Vnorm</span></code> to be a 3xNxM matrix <code class="docutils literal notranslate"><span class="pre">J</span></code> for downstream analyses. We will also create some variances <code class="docutils literal notranslate"><span class="pre">YJ</span></code> and <code class="docutils literal notranslate"><span class="pre">XJ</span></code> to keep track of the image size.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>J = Vnorm.transpose(2,0,1)
+print(&quot;The new shape of J is {}&quot;.format(J.shape))
+
+YJ = np.array(range(J.shape[1]))*1. # needs to be longs not doubles for STalign.transform later so multiply by 1.
+XJ = np.array(range(J.shape[2]))*1. # needs to be longs not doubles for STalign.transform later so multiply by 1.
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The new shape of J is (3, 2000, 1838)
+</pre></div></div>
+</div>
+<p>We now have a rasterized image corresponding to the single cell positions from the spatial transcriptomics data and an H&amp;E image that we can align. Note, that we have specified the image from cell positions as source <code class="docutils literal notranslate"><span class="pre">I</span></code> and the H&amp;E image as target <code class="docutils literal notranslate"><span class="pre">J</span></code> because the H&amp;E image is only one hemisphere of the brain. We advise choosing the more complete tissue section as the source such that every observation in the target has some correspondence in the source.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot
+
+# get extent of images
+extentJ = STalign.extent_from_x((YJ,XJ))
+extentI = STalign.extent_from_x((YI,XI))
+
+fig,ax = plt.subplots(1,2)
+ax[0].imshow((I.transpose(1,2,0).squeeze()), extent=extentI)
+ax[0].invert_yaxis()
+ax[0].set_title(&#39;source&#39;, fontsize=15)
+ax[1].imshow((J.transpose(1,2,0).squeeze()), extent=extentJ)
+ax[1].set_title(&#39;target&#39;, fontsize=15)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;target&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_20_1.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_20_1.png" />
+</div>
+</div>
+<p>Because we desire a partial matching, we incorporated manually placed landmarks to initialize the alignment and further help steer our gradient descent towards an appropriate solution. A <code class="docutils literal notranslate"><span class="pre">point_annotator.py</span></code> script is provided to assist with this. In order to use the <code class="docutils literal notranslate"><span class="pre">point_annotator.py</span></code> script, we will need to write out our images as <code class="docutils literal notranslate"><span class="pre">.npz</span></code> files.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>np.savez(&#39;../visium_data/Merfish_S2_R3&#39;, x=XI,y=YI,I=I)
+np.savez(&#39;../visium_data/tissue_hires_image&#39;, x=XJ,y=YJ,I=J)
+</pre></div>
+</div>
+</div>
+<p>Given these <code class="docutils literal notranslate"><span class="pre">.npz</span></code> files, we can then run the following code on the command line from inside the <code class="docutils literal notranslate"><span class="pre">notebooks</span></code> folder:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>python ../../STalign/point_annotator.py ../visium_data/Merfish_S2_R3.npz ../visium_data/tissue_hires_image.npz
+</pre></div>
+</div>
+<p>Which will provide a graphical user interface (GUI) to selecting points. Once you run the code, the command line will prompt you to enter the name of a landmark point. Then, you will be prompted on the GUI to select and save the landmark point for both source and target images. You can annotate multiple landmark points with the same name, and each of them would have an index at the end (e.g. “CA0” and “CA1” in this tutorial). However, when doing so, make sure to annotate landmark points
+alternatively on source and target to avoid any error. You can annotate multiple landmark points with different names by repeating the process of entering the name for a landmark point, following the GUI prompts, and returning to the command line to enter the name for the next landmark point.</p>
+<p>Annotated points will saved as <code class="docutils literal notranslate"><span class="pre">Merfish_S2_R3_points.npy</span></code> and <code class="docutils literal notranslate"><span class="pre">tissue_hires_image_points.npy</span></code> respectively. We can then read in these files.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># read from file
+pointsIlist = np.load(&#39;../visium_data/Merfish_S2_R3_points.npy&#39;, allow_pickle=True).tolist()
+print(pointsIlist)
+pointsJlist = np.load(&#39;../visium_data/tissue_hires_image_points.npy&#39;, allow_pickle=True).tolist()
+print(pointsJlist)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;RSP&#39;: [(5095.02260152, 5499.7972588), (4910.8223317, 6628.02391148), (5463.42314117, 7019.44948485)], &#39;DG-sg&#39;: [(5532.49824236, 4901.14638187), (6131.14911929, 4832.07128069), (6223.2492542, 5131.39671915)], &#39;CA&#39;: [(5371.32300626, 5269.54692152), (6154.17415302, 5753.07262981), (6683.74992876, 5591.89739371), (6937.02529977, 5246.52188779)], &#39;PAA&#39;: [(8111.3020199, 641.51514218)], &#39;MEAav&#39;: [(6937.02529977, 963.86561437)]}
+{&#39;RSP&#39;: [(559.82404846, 938.72950082), (463.88640793, 788.82693749), (505.85912566, 674.90098936)], &#39;DG-sg&#39;: [(709.72661179, 1046.65934642), (823.65255993, 1022.67493629), (799.66814979, 956.71780842)], &#39;CA&#39;: [(631.77727886, 1016.67883376), (733.71102193, 860.78016789), (859.62917513, 878.76847549), (949.57071313, 962.71391096)], &#39;PAA&#39;: [(1267.3641474, 1826.15267576)], &#39;MEAav&#39;: [(955.56681566, 1694.23842003)]}
+</pre></div></div>
+</div>
+<p>Note that these landmark points are read in as lists. We will want to convert them to a simple array for downstream usage.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># convert to array
+pointsI = []
+pointsJ = []
+
+for i in pointsIlist.keys():
+    for j in range(len(pointsIlist[i])):
+        pointsI.append([pointsIlist[i][j][1], pointsIlist[i][j][0]])
+for i in pointsJlist.keys():
+    for j in range(len(pointsJlist[i])):
+        pointsJ.append([pointsJlist[i][j][1], pointsJlist[i][j][0]])
+
+pointsI = np.array(pointsI)
+pointsJ = np.array(pointsJ)
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># now arrays
+print(pointsI)
+print(pointsJ)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[5499.7972588  5095.02260152]
+ [6628.02391148 4910.8223317 ]
+ [7019.44948485 5463.42314117]
+ [4901.14638187 5532.49824236]
+ [4832.07128069 6131.14911929]
+ [5131.39671915 6223.2492542 ]
+ [5269.54692152 5371.32300626]
+ [5753.07262981 6154.17415302]
+ [5591.89739371 6683.74992876]
+ [5246.52188779 6937.02529977]
+ [ 641.51514218 8111.3020199 ]
+ [ 963.86561437 6937.02529977]]
+[[ 938.72950082  559.82404846]
+ [ 788.82693749  463.88640793]
+ [ 674.90098936  505.85912566]
+ [1046.65934642  709.72661179]
+ [1022.67493629  823.65255993]
+ [ 956.71780842  799.66814979]
+ [1016.67883376  631.77727886]
+ [ 860.78016789  733.71102193]
+ [ 878.76847549  859.62917513]
+ [ 962.71391096  949.57071313]
+ [1826.15267576 1267.3641474 ]
+ [1694.23842003  955.56681566]]
+</pre></div></div>
+</div>
+<p>We can double check that our landmark points look sensible by plotting them along with the rasterized image we created.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot
+
+fig,ax = plt.subplots(1,2)
+ax[0].imshow((I.transpose(1,2,0).squeeze()), extent=extentI)
+ax[1].imshow((J.transpose(1,2,0).squeeze()), extent=extentJ)
+
+trans_offset_0 = mtransforms.offset_copy(ax[0].transData, fig=fig,
+                                       x=0.05, y=-0.05, units=&#39;inches&#39;)
+trans_offset_1 = mtransforms.offset_copy(ax[1].transData, fig=fig,
+                                       x=0.05, y=-0.05, units=&#39;inches&#39;)
+
+ax[0].scatter(pointsI[:,1],pointsI[:,0], c=&#39;red&#39;, s=10)
+ax[1].scatter(pointsJ[:,1],pointsJ[:,0], c=&#39;red&#39;, s=10)
+
+for i in pointsIlist.keys():
+    for j in range(len(pointsIlist[i])):
+        ax[0].text(pointsIlist[i][j][0], pointsIlist[i][j][1],f&#39;{i}{j}&#39;, c=&#39;red&#39;, transform=trans_offset_0, fontsize= 8)
+for i in pointsJlist.keys():
+    for j in range(len(pointsJlist[i])):
+        ax[1].text(pointsJlist[i][j][0], pointsJlist[i][j][1],f&#39;{i}{j}&#39;, c=&#39;red&#39;, transform=trans_offset_1, fontsize= 8)
+
+ax[0].set_title(&#39;source with pointsI&#39;, fontsize=15)
+ax[1].set_title(&#39;target with pointsJ&#39;, fontsize=15)
+
+# invert only rasterized image
+ax[0].invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_29_0.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_29_0.png" />
+</div>
+</div>
+<p>From the landmark points, we can generate a linear transformation <code class="docutils literal notranslate"><span class="pre">L</span></code> and translation <code class="docutils literal notranslate"><span class="pre">T</span></code> which will produce a simple initial affine transformation <code class="docutils literal notranslate"><span class="pre">A</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># set device for building tensors
+if torch.cuda.is_available():
+    torch.set_default_device(&#39;cuda:0&#39;)
+else:
+    torch.set_default_device(&#39;cpu&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># compute initial affine transformation from points
+L,T = STalign.L_T_from_points(pointsI,pointsJ)
+A = STalign.to_A(torch.tensor(L),torch.tensor(T))
+</pre></div>
+</div>
+</div>
+<p>We can show the results of the simple affine transformation.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># compute initial affine transformation from points
+AI= STalign.transform_image_source_with_A(A, [YI,XI], I, [YJ,XJ])
+
+#switch tensor from cuda to cpu for plotting with numpy
+if AI.is_cuda:
+    AI = AI.cpu()
+
+fig,ax = plt.subplots(1,2)
+
+ax[0].imshow((AI.permute(1,2,0).squeeze()), extent=extentJ)
+ax[1].imshow((J.transpose(1,2,0).squeeze()), extent=extentJ)
+
+ax[0].set_title(&#39;source with affine transformation&#39;, fontsize=15)
+ax[1].set_title(&#39;target&#39;, fontsize=15)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/kalenclifton/.local/share/virtualenvs/STalign-wXTCUYXW/lib/python3.10/site-packages/torch/utils/_device.py:62: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  return func(*args, **kwargs)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;target&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_34_2.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_34_2.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>#apply A to sources points in row, column (y,x) orientation
+affine = np.matmul(np.array(A.cpu()),np.array([yI, xI, np.ones(len(xI))]))
+
+xIaffine = affine[1,:]
+yIaffine = affine[0,:]
+
+
+#apply A to sources landmark points in row, column (y,x) orientation
+ypointsI = pointsI[:,0]
+xpointsI = pointsI[:,1]
+affine = np.matmul(np.array(A.cpu()),np.array([ypointsI, xpointsI, np.ones(len(ypointsI))]))
+
+xpointsIaffine = affine[1,:]
+ypointsIaffine = affine[0,:]
+pointsIaffine = np.column_stack((ypointsIaffine,xpointsIaffine))
+
+
+# plot results
+fig,ax = plt.subplots()
+
+ax.imshow((J).transpose(1,2,0),extent=extentJ)
+
+ax.scatter(xIaffine,yIaffine,s=1,alpha=0.1, label = &#39;source aligned&#39;)
+ax.scatter(pointsIaffine[:,1],pointsIaffine[:,0],c=&quot;blue&quot;, label=&#39;source landmarks aligned&#39;, s=100)
+
+ax.scatter(pointsJ[:,1],pointsJ[:,0], c=&#39;red&#39;, label=&#39;target landmarks&#39;, s=100)
+ax.set_aspect(&#39;equal&#39;)
+
+lgnd = plt.legend(loc=&quot;upper right&quot;, scatterpoints=1, fontsize=10)
+for handle in lgnd.legend_handles:
+    handle.set_sizes([10.0])
+
+ax.set_title(&#39;Landmark-based Affine Alignment&#39;, fontsize=15)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;Landmark-based Affine Alignment&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_35_1.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_35_1.png" />
+</div>
+</div>
+<p>In this case, we can observe that a simple affine alignment is not sufficient to align the single-cell spatial transcriptomics dataset to the H&amp;E staining image. So we will need to perform non-linear local alignments via LDDMM.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%time
+
+# run LDDMM
+# specify device (default device for STalign.LDDMM is cpu)
+if torch.cuda.is_available():
+    device = &#39;cuda:0&#39;
+else:
+    device = &#39;cpu&#39;
+
+# keep all other parameters default
+params = {&#39;L&#39;:L,&#39;T&#39;:T,
+          &#39;niter&#39;: 200,
+          &#39;pointsI&#39;: pointsI,
+          &#39;pointsJ&#39;: pointsJ,
+          &#39;device&#39;: device,
+          &#39;sigmaP&#39;: 2e-1,
+          &#39;sigmaM&#39;: 0.18,
+          &#39;sigmaB&#39;: 0.18,
+          &#39;sigmaA&#39;: 0.18,
+          &#39;diffeo_start&#39; : 100,
+          &#39;epL&#39;: 5e-11,
+          &#39;epT&#39;: 5e-4,
+          &#39;epV&#39;: 5e1
+          }
+
+out = STalign.LDDMM([YI,XI],I,[YJ,XJ],J,**params)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/home/kalen/.local/share/virtualenvs/STalign-VWNsoi3D/lib/python3.8/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at ../aten/src/ATen/native/TensorShape.cpp:3483.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/kalen/STalign/docs/notebooks/../../STalign/STalign.py:1301: UserWarning: Data has no positive values, and therefore cannot be log-scaled.
+  axE[2].set_yscale(&#39;log&#39;)
+/home/kalen/.local/share/virtualenvs/STalign-VWNsoi3D/lib/python3.8/site-packages/matplotlib/cm.py:478: RuntimeWarning: invalid value encountered in cast
+  xx = (xx * 255).astype(np.uint8)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 5min 26s, sys: 29.5 s, total: 5min 55s
+Wall time: 5min 28s
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_37_2.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_37_2.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_37_3.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_37_3.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_37_4.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_37_4.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>#### get necessary output variables
+A = out[&#39;A&#39;]
+v = out[&#39;v&#39;]
+xv = out[&#39;xv&#39;]
+WM = out[&#39;WM&#39;]
+</pre></div>
+</div>
+</div>
+<p>Plots generated throughout the alignment can be used to give you a sense of whether the parameter choices are appropriate and whether your alignment is converging on a solution.</p>
+<p>We can also evaluate the resulting alignment by applying the transformation to visualize how our source and target images were deformed to achieve the alignment.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># apply transform
+phii = STalign.build_transform(xv,v,A,XJ=[YJ,XJ],direction=&#39;b&#39;)
+phiI = STalign.transform_image_source_to_target(xv,v,A,[YI,XI],I,[YJ,XJ])
+phiipointsI = STalign.transform_points_source_to_target(xv,v,A,pointsI)
+
+#switch tensor from cuda to cpu for plotting with numpy
+if phii.is_cuda:
+    phii = phii.cpu()
+if phiI.is_cuda:
+    phiI = phiI.cpu()
+if phiipointsI.is_cuda:
+    phiipointsI = phiipointsI.cpu()
+
+
+# plot with grids
+fig,ax = plt.subplots()
+levels = np.arange(-100000,100000,1000)
+
+ax.contour(XJ,YJ,phii[...,0],colors=&#39;r&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.contour(XJ,YJ,phii[...,1],colors=&#39;g&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.set_aspect(&#39;equal&#39;)
+ax.set_title(&#39;source to target&#39;)
+
+ax.imshow(phiI.permute(1,2,0)/torch.max(phiI),extent=extentJ)
+ax.scatter(phiipointsI[:,1].detach(),phiipointsI[:,0].detach(),c=&quot;m&quot;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7fb0605682b0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_40_1.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_40_1.png" />
+</div>
+</div>
+<p>Finally, we can apply our transform to the original sets of single cell centroid positions to achieve their new aligned positions.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># apply transform to original points
+tpointsI= STalign.transform_points_source_to_target(xv,v,A, np.stack([yI, xI], 1))
+
+#switch tensor from cuda to cpu for plotting with numpy
+if tpointsI.is_cuda:
+    tpointsI = tpointsI.cpu()
+
+# switch from row column coordinates (y,x) to (x,y)
+xI_LDDMM = tpointsI[:,1]
+yI_LDDMM = tpointsI[:,0]
+</pre></div>
+</div>
+</div>
+<p>And we can visualize the results.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot results
+fig,ax = plt.subplots()
+
+ax.imshow((J).transpose(1,2,0),extent=extentJ)
+
+ax.scatter(xI_LDDMM,yI_LDDMM,s=1,alpha=0.1, label = &#39;source aligned&#39;)
+ax.scatter(phiipointsI[:,1].detach(),phiipointsI[:,0].detach(),c=&quot;blue&quot;, label=&#39;source landmarks aligned&#39;, s=100)
+
+ax.scatter(pointsJ[:,1],pointsJ[:,0], c=&#39;red&#39;, label=&#39;target landmarks&#39;, s=100)
+ax.set_aspect(&#39;equal&#39;)
+
+lgnd = plt.legend(loc=&quot;upper right&quot;, scatterpoints=1, fontsize=10)
+for handle in lgnd.legend_handles:
+    handle.set_sizes([10.0])
+
+ax.set_title(&#39;After alignment aligned source and target with aligned pointsI and pointsJ&#39;, fontsize=15)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;After alignment aligned source and target with aligned pointsI and pointsJ&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_44_1.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_44_1.png" />
+</div>
+</div>
+<p>Reminder of what source and target looked like before alignment</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.2)
+ax.set_aspect(&#39;equal&#39;, &#39;box&#39;)
+ax.scatter(pointsI[:,1],pointsI[:,0], c=&#39;blue&#39;, s=100)
+ax.set_title(&#39;Before alignment: source with pointsI&#39;, fontsize=15)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;Before alignment: source with pointsI&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_46_1.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_46_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fig,ax = plt.subplots()
+ax.imshow((J.transpose(1,2,0).squeeze()), extent=extentJ)
+ax.scatter(pointsJ[:,1],pointsJ[:,0], c=&#39;red&#39;, s=100)
+ax.set_title(&#39;Before alignment: target with pointsJ&#39;, fontsize=15)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;Before alignment: target with pointsJ&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_47_1.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_47_1.png" />
+</div>
+</div>
+<p>Save the new aligned positions by appending to our original data</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>if tpointsI.is_cuda:
+    df3 = pd.DataFrame(
+
+        {
+
+            &quot;aligned_x&quot;: xI_LDDMM.cpu(),
+
+            &quot;aligned_y&quot;: yI_LDDMM.cpu(),
+
+        },
+
+
+    )
+else:
+    df3 = pd.DataFrame(
+
+        {
+
+            &quot;aligned_x&quot;: xI_LDDMM,
+
+            &quot;aligned_y&quot;: yI_LDDMM,
+
+        },
+
+
+    )
+results = pd.concat([df1, df3], axis=1)
+results.head()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Unnamed: 0</th>
+      <th>fov</th>
+      <th>volume</th>
+      <th>center_x</th>
+      <th>center_y</th>
+      <th>min_x</th>
+      <th>max_x</th>
+      <th>min_y</th>
+      <th>max_y</th>
+      <th>aligned_x</th>
+      <th>aligned_y</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>158338042824236264719696604356349910479</td>
+      <td>33</td>
+      <td>532.778772</td>
+      <td>617.916619</td>
+      <td>2666.520010</td>
+      <td>614.725219</td>
+      <td>621.108019</td>
+      <td>2657.545209</td>
+      <td>2675.494810</td>
+      <td>-304.781922</td>
+      <td>1543.947789</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>260594727341160372355976405428092853003</td>
+      <td>33</td>
+      <td>1004.430016</td>
+      <td>596.808018</td>
+      <td>2763.450012</td>
+      <td>589.669218</td>
+      <td>603.946818</td>
+      <td>2757.013212</td>
+      <td>2769.886812</td>
+      <td>-311.687871</td>
+      <td>1526.968682</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>307643940700812339199503248604719950662</td>
+      <td>33</td>
+      <td>1267.183208</td>
+      <td>578.880018</td>
+      <td>2748.978012</td>
+      <td>570.877217</td>
+      <td>586.882818</td>
+      <td>2740.489211</td>
+      <td>2757.466812</td>
+      <td>-314.931483</td>
+      <td>1530.063358</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>30863303465976316429997331474071348973</td>
+      <td>33</td>
+      <td>1403.401822</td>
+      <td>572.616017</td>
+      <td>2766.690012</td>
+      <td>564.937217</td>
+      <td>580.294818</td>
+      <td>2756.581212</td>
+      <td>2776.798812</td>
+      <td>-316.678395</td>
+      <td>1527.017231</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>313162718584097621688679244357302162401</td>
+      <td>33</td>
+      <td>507.949497</td>
+      <td>608.364018</td>
+      <td>2687.418010</td>
+      <td>603.061218</td>
+      <td>613.666818</td>
+      <td>2682.493210</td>
+      <td>2692.342810</td>
+      <td>-307.285999</td>
+      <td>1540.425385</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>We will finally create a compressed <code class="docutils literal notranslate"><span class="pre">.csv.gz</span></code> file named <code class="docutils literal notranslate"><span class="pre">mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_STalign_to_Visium_tissue_hires_image_with_point_annotator.csv.gz</span></code></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>results.to_csv(&#39;../merfish_data/mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_STalign_to_Visium_tissue_hires_image_with_point_annotator.csv.gz&#39;,
+               compression=&#39;gzip&#39;)
+</pre></div>
+</div>
+</div>
+<p>We can also remove background cells in the MERFISH data that did not have a target H&amp;E staining image. Here, we compute weight values for transformed source MERFISH points from target H&amp;E image pixel locations and weight 2D array (matching). We then use the computed weight values and a manually selected threshold to remove background cells.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># compute weight values for transformed source points from target image pixel locations and weight 2D array (matching)
+testM = STalign.interp([YJ,XJ],WM[None].float(),tpointsI[None].permute(-1,0,1).float())
+
+#switch tensor from cuda to cpu for plotting with numpy
+if testM.is_cuda:
+    testM = testM.cpu()
+
+fig,ax = plt.subplots()
+scatter = ax.scatter(tpointsI[:,1],tpointsI[:,0],c=testM[0,0],s=0.1,vmin=0,vmax=1, label=&#39;WM values&#39;)
+legend1 = ax.legend(*scatter.legend_elements(),
+                    loc=&quot;upper right&quot;, title=&quot;WM values&quot;)
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_53_0.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_53_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># save weight values
+results[&#39;WM_values&#39;] = testM[0,0]
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>results
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Unnamed: 0</th>
+      <th>fov</th>
+      <th>volume</th>
+      <th>center_x</th>
+      <th>center_y</th>
+      <th>min_x</th>
+      <th>max_x</th>
+      <th>min_y</th>
+      <th>max_y</th>
+      <th>aligned_x</th>
+      <th>aligned_y</th>
+      <th>WM_values</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>158338042824236264719696604356349910479</td>
+      <td>33</td>
+      <td>532.778772</td>
+      <td>617.916619</td>
+      <td>2666.520010</td>
+      <td>614.725219</td>
+      <td>621.108019</td>
+      <td>2657.545209</td>
+      <td>2675.494810</td>
+      <td>-304.781922</td>
+      <td>1543.947789</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>260594727341160372355976405428092853003</td>
+      <td>33</td>
+      <td>1004.430016</td>
+      <td>596.808018</td>
+      <td>2763.450012</td>
+      <td>589.669218</td>
+      <td>603.946818</td>
+      <td>2757.013212</td>
+      <td>2769.886812</td>
+      <td>-311.687871</td>
+      <td>1526.968682</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>307643940700812339199503248604719950662</td>
+      <td>33</td>
+      <td>1267.183208</td>
+      <td>578.880018</td>
+      <td>2748.978012</td>
+      <td>570.877217</td>
+      <td>586.882818</td>
+      <td>2740.489211</td>
+      <td>2757.466812</td>
+      <td>-314.931483</td>
+      <td>1530.063358</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>30863303465976316429997331474071348973</td>
+      <td>33</td>
+      <td>1403.401822</td>
+      <td>572.616017</td>
+      <td>2766.690012</td>
+      <td>564.937217</td>
+      <td>580.294818</td>
+      <td>2756.581212</td>
+      <td>2776.798812</td>
+      <td>-316.678395</td>
+      <td>1527.017231</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>313162718584097621688679244357302162401</td>
+      <td>33</td>
+      <td>507.949497</td>
+      <td>608.364018</td>
+      <td>2687.418010</td>
+      <td>603.061218</td>
+      <td>613.666818</td>
+      <td>2682.493210</td>
+      <td>2692.342810</td>
+      <td>-307.285999</td>
+      <td>1540.425385</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>85953</th>
+      <td>311704042603434891559886168438769992293</td>
+      <td>1545</td>
+      <td>1625.490809</td>
+      <td>9623.123579</td>
+      <td>4030.182069</td>
+      <td>9615.660779</td>
+      <td>9630.586379</td>
+      <td>4019.749269</td>
+      <td>4040.614869</td>
+      <td>1519.770766</td>
+      <td>1175.919074</td>
+      <td>0.387589</td>
+    </tr>
+    <tr>
+      <th>85954</th>
+      <td>312851880059098327776181257829209599759</td>
+      <td>1545</td>
+      <td>905.032435</td>
+      <td>9625.067579</td>
+      <td>4008.749469</td>
+      <td>9620.088779</td>
+      <td>9630.046379</td>
+      <td>4000.320068</td>
+      <td>4017.178869</td>
+      <td>1520.722933</td>
+      <td>1180.469056</td>
+      <td>0.349814</td>
+    </tr>
+    <tr>
+      <th>85955</th>
+      <td>332299915869590281339501510603978852698</td>
+      <td>1545</td>
+      <td>459.647325</td>
+      <td>9605.470978</td>
+      <td>4187.268073</td>
+      <td>9600.767578</td>
+      <td>9610.174378</td>
+      <td>4182.397273</td>
+      <td>4192.138873</td>
+      <td>1511.553158</td>
+      <td>1142.686375</td>
+      <td>0.398904</td>
+    </tr>
+    <tr>
+      <th>85956</th>
+      <td>150462787759670321084458536479486602685</td>
+      <td>1546</td>
+      <td>778.386670</td>
+      <td>9606.874978</td>
+      <td>4208.819338</td>
+      <td>9600.767578</td>
+      <td>9612.982378</td>
+      <td>4200.335938</td>
+      <td>4217.302738</td>
+      <td>1511.134796</td>
+      <td>1138.034522</td>
+      <td>0.374337</td>
+    </tr>
+    <tr>
+      <th>85957</th>
+      <td>268870416870774615427277589169474700725</td>
+      <td>1546</td>
+      <td>592.088115</td>
+      <td>9607.841578</td>
+      <td>4219.019938</td>
+      <td>9602.700778</td>
+      <td>9612.982378</td>
+      <td>4213.393138</td>
+      <td>4224.646738</td>
+      <td>1510.995518</td>
+      <td>1135.826149</td>
+      <td>0.364696</td>
+    </tr>
+  </tbody>
+</table>
+<p>85958 rows × 12 columns</p>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fig,ax = plt.subplots()
+ax.hist(results[&#39;WM_values&#39;], bins = 20)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(array([41242.,   842.,   535.,   439.,   376.,   359.,   358.,   258.,
+          204.,   217.,   153.,   129.,   145.,   170.,   194.,   214.,
+          293.,   356.,   708., 38766.]),
+ array([0.        , 0.0499999 , 0.09999981, 0.14999971, 0.19999962,
+        0.24999952, 0.29999942, 0.34999934, 0.39999923, 0.44999915,
+        0.49999905, 0.54999894, 0.59999883, 0.64999878, 0.69999868,
+        0.74999857, 0.79999846, 0.84999835, 0.89999831, 0.9499982 ,
+        0.99999809]),
+ &lt;BarContainer object of 20 artists&gt;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_56_1.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_56_1.png" />
+</div>
+</div>
+<p>Based on this distribution and manual inspection, we can manually set a threshold value to filter transformed MERFISH data.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># set a threshold value
+WMthresh = .95
+
+# filter transformed MERFISH data
+results_filtered = results[results[&#39;WM_values&#39;] &gt; WMthresh]
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(results_filtered[&#39;aligned_x&#39;],results_filtered[&#39;aligned_y&#39;],c=results_filtered[&#39;WM_values&#39;],s=0.1,vmin=0,vmax=1)
+ax.set_aspect(&#39;equal&#39;)
+ax.invert_yaxis()
+plt.show()
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-visium-alignment-with-point-annotator_58_0.png" src="../_images/notebooks_merfish-visium-alignment-with-point-annotator_58_0.png" />
+</div>
+</div>
+<p>Similar to the unfiltered dataset, create a compressed <code class="docutils literal notranslate"><span class="pre">.csv.gz</span></code> file named <code class="docutils literal notranslate"><span class="pre">mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_STalign_to_Slice2_Replicate2_STalign_to_Visium_tissue_hires_image_with_point_annotator_filtered.csv.gz</span></code></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[62]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>results.to_csv(&#39;../merfish_data/mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_STalign_to_Slice2_Replicate2_STalign_to_Visium_tissue_hires_image_with_point_annotator_filtered.csv.gz&#39;,
+               compression=&#39;gzip&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="starmap-allen3Datlas-alignment.html" class="btn btn-neutral float-left" title="Aligning partial coronal brain sections with the Allen Brain Altas" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="heart-alignment.html" class="btn btn-neutral float-right" title="Aligning heart ST data from ISS" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aligning full coronal sections of adult mouse brain from MERFISH and Xenium &mdash; STalign 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#installation-import">Installation &amp; Import</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../STalign.html">Functions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Aligning full coronal sections of adult mouse brain from MERFISH and Xenium</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/merfish-xenium-alignment.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Aligning-full-coronal-sections-of-adult-mouse-brain-from-MERFISH-and-Xenium">
+<h1>Aligning full coronal sections of adult mouse brain from MERFISH and Xenium<a class="headerlink" href="#Aligning-full-coronal-sections-of-adult-mouse-brain-from-MERFISH-and-Xenium" title="Link to this heading"></a></h1>
+<p>In this notebook, we align two single cell resolution spatial transcriptomics datasets of full coronal sections of the adult mouse brain from approximately the same locations assayed by MERFISH and Xenium.</p>
+<p>We will use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to achieve this alignment. We will first load the relevant code libraries.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># import dependencies
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import torch
+
+# import STalign from upper directory
+# skip next 2 lines if STalign.py in same folder as notebook
+#import sys
+#sys.path.append(&quot;../../&quot;)
+import STalign
+
+# make plots bigger
+plt.rcParams[&quot;figure.figsize&quot;] = (12,10)
+</pre></div>
+</div>
+</div>
+<p>We have already downloaded single cell spatial transcriptomics datasets and placed the files in a folder called <code class="docutils literal notranslate"><span class="pre">merfish_data</span></code> and <code class="docutils literal notranslate"><span class="pre">xenium_data</span></code>.</p>
+<p>We can read in the cell information for the first dataset using <code class="docutils literal notranslate"><span class="pre">pandas</span></code> as <code class="docutils literal notranslate"><span class="pre">pd</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[51]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Single cell data 1
+# read in data
+fname = &#39;../../merfish_data/datasets_mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_cell_metadata_S2R3.csv.gz&#39;
+df1 = pd.read_csv(fname)
+print(df1.head())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+                                Unnamed: 0  fov       volume    center_x  \
+0  158338042824236264719696604356349910479   33   532.778772  617.916619
+1  260594727341160372355976405428092853003   33  1004.430016  596.808018
+2  307643940700812339199503248604719950662   33  1267.183208  578.880018
+3   30863303465976316429997331474071348973   33  1403.401822  572.616017
+4  313162718584097621688679244357302162401   33   507.949497  608.364018
+
+      center_y       min_x       max_x        min_y        max_y
+0  2666.520010  614.725219  621.108019  2657.545209  2675.494810
+1  2763.450012  589.669218  603.946818  2757.013212  2769.886812
+2  2748.978012  570.877217  586.882818  2740.489211  2757.466812
+3  2766.690012  564.937217  580.294818  2756.581212  2776.798812
+4  2687.418010  603.061218  613.666818  2682.493210  2692.342810
+</pre></div></div>
+</div>
+<p>For alignment with <code class="docutils literal notranslate"><span class="pre">STalign</span></code>, we only need the cell centroid information. So we can pull out this information. We can further visualize the cell centroids to get a sense of the variation in cell density that we will be relying on for our alignment by plotting using <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> as <code class="docutils literal notranslate"><span class="pre">plt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[52]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get cell centroid coordinates
+xI = np.array(df1[&#39;center_x&#39;])
+yI = np.array(df1[&#39;center_y&#39;])
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.2)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[52]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7fef530a12e0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_5_1.png" src="../_images/notebooks_merfish-xenium-alignment_5_1.png" />
+</div>
+</div>
+<p>We will first use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to rasterize the single cell centroid positions into an image. Assuming the single-cell centroid coordinates are in microns, we will perform this rasterization at a 30 micron resolution. We can visualize the resulting rasterized image.</p>
+<p>Note that points are plotting with the origin at bottom left while images are typically plotted with origin at top left so we’ve used <code class="docutils literal notranslate"><span class="pre">invert_yaxis()</span></code> to invert the yaxis for visualization consistency.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[73]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># rasterize at 30um resolution (assuming positions are in um units) and plot
+XI,YI,I,fig = STalign.rasterize(xI,yI,dx=15,blur=1.5)
+
+# plot
+ax = fig.axes[0]
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 85958
+10000 of 85958
+20000 of 85958
+30000 of 85958
+40000 of 85958
+50000 of 85958
+60000 of 85958
+70000 of 85958
+80000 of 85958
+85957 of 85958
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_7_1.png" src="../_images/notebooks_merfish-xenium-alignment_7_1.png" />
+</div>
+</div>
+<p>Now, we can repeat this for the cell information from the second dataset.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[74]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Single cell data 2
+# read in data
+fname = &#39;../../xenium_data/Xenium_V1_FF_Mouse_Brain_MultiSection_1_cells.csv.gz&#39;
+df2 = pd.read_csv(fname)
+
+# get cell centroids
+xJ = np.array(df2[&#39;x_centroid&#39;])
+yJ = np.array(df2[&#39;y_centroid&#39;])
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xJ,yJ,s=1,alpha=0.2,c=&#39;#ff7f0e&#39;)
+
+# rasterize and plot
+XJ,YJ,J,fig = STalign.rasterize(xJ,yJ,dx=15, blur=1.5)
+ax = fig.axes[0]
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 162033
+10000 of 162033
+20000 of 162033
+30000 of 162033
+40000 of 162033
+50000 of 162033
+60000 of 162033
+70000 of 162033
+80000 of 162033
+90000 of 162033
+100000 of 162033
+110000 of 162033
+120000 of 162033
+130000 of 162033
+140000 of 162033
+150000 of 162033
+160000 of 162033
+162032 of 162033
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_9_1.png" src="../_images/notebooks_merfish-xenium-alignment_9_1.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_9_2.png" src="../_images/notebooks_merfish-xenium-alignment_9_2.png" />
+</div>
+</div>
+<p>Note that plotting the cell centroid positions from both datasets shows that non-linear local alignment is needed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[75]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.2)
+ax.scatter(xJ,yJ,s=1,alpha=0.1)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[75]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7fef530a8850&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_11_1.png" src="../_images/notebooks_merfish-xenium-alignment_11_1.png" />
+</div>
+</div>
+<p>We can also plot the rasterized images next to each other.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[76]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get extent of images
+extentI = STalign.extent_from_x((YI,XI))
+extentJ = STalign.extent_from_x((YJ,XJ))
+
+# plot rasterized images
+fig,ax = plt.subplots(2,1)
+ax[0].imshow((I.transpose(1,2,0).squeeze()), extent=extentI) # just want 201x276 matrix
+ax[1].imshow((J.transpose(1,2,0).squeeze()), extent=extentJ) # just want 201x276 matrix
+ax[0].invert_yaxis()
+ax[1].invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_13_0.png" src="../_images/notebooks_merfish-xenium-alignment_13_0.png" />
+</div>
+</div>
+<p>Now we will perform our alignment. There are many parameters that can be tuned for performing this alignment. If we don’t specify parameters, defaults will be used.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%time
+
+# run LDDMM
+# specify device (default device for STalign.LDDMM is cpu)
+if torch.cuda.is_available():
+    device = &#39;cuda:0&#39;
+else:
+    device = &#39;cpu&#39;
+
+# keep all other parameters default
+params = {
+          &#39;niter&#39;: 10000,
+          &#39;device&#39;:device,
+          &#39;epV&#39;: 50
+          }
+
+Ifoo = np.vstack((I, I, I)) # make RGB instead of greyscale
+Jfoo = np.vstack((J, J, J)) # make RGB instead of greyscale
+out = STalign.LDDMM([YI,XI],Ifoo,[YJ,XJ],Jfoo,**params)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get necessary output variables
+A = out[&#39;A&#39;]
+v = out[&#39;v&#39;]
+xv = out[&#39;xv&#39;]
+</pre></div>
+</div>
+</div>
+<p>Plots generated throughout the alignment can be used to give you a sense of whether the parameter choices are appropriate and whether your alignment is converging on a solution.</p>
+<p>We can also evaluate the resulting alignment by applying the transformation to visualize how our source and target images were deformed to achieve the alignment.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[84]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># apply transform
+phii = STalign.build_transform(xv,v,A,XJ=[YJ,XJ],direction=&#39;b&#39;)
+phiI = STalign.transform_image_source_to_target(xv,v,A,[YI,XI],Ifoo,[YJ,XJ])
+
+# plot with grids
+fig,ax = plt.subplots()
+levels = np.arange(-100000,100000,1000)
+ax.contour(XJ,YJ,phii[...,0],colors=&#39;r&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.contour(XJ,YJ,phii[...,1],colors=&#39;g&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.set_aspect(&#39;equal&#39;)
+ax.set_title(&#39;source to target&#39;)
+ax.imshow(phiI.permute(1,2,0)/torch.max(phiI),extent=extentJ)
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_18_0.png" src="../_images/notebooks_merfish-xenium-alignment_18_0.png" />
+</div>
+</div>
+<p>Note that because of our use of LDDMM, the resulting transformation is invertible.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[85]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># transform is invertible
+phi = STalign.build_transform(xv,v,A,XJ=[YI,XI],direction=&#39;f&#39;)
+phiiJ = STalign.transform_image_target_to_source(xv,v,A,[YJ,XJ],Jfoo,[YI,XI])
+
+# plot with grids
+fig,ax = plt.subplots()
+levels = np.arange(-100000,100000,1000)
+ax.contour(XI,YI,phi[...,0],colors=&#39;r&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.contour(XI,YI,phi[...,1],colors=&#39;g&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.set_aspect(&#39;equal&#39;)
+ax.set_title(&#39;target to source&#39;)
+ax.imshow(phiiJ.permute(1,2,0)/torch.max(phiiJ),extent=extentI)
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_20_0.png" src="../_images/notebooks_merfish-xenium-alignment_20_0.png" />
+</div>
+</div>
+<p>Finally, we can apply our transform to the original sets of single cell centroid positions to achieve their new aligned positions.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[86]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># apply transform to original points
+tpointsJ = STalign.transform_points_target_to_source(xv,v,A, np.stack([yJ, xJ], 1))
+
+# just original points for visualizing later
+tpointsI = np.stack([xI, yI])
+</pre></div>
+</div>
+</div>
+<p>And we can visualize the results.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[87]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot results
+fig,ax = plt.subplots()
+ax.scatter(tpointsI[0,:],tpointsI[1,:],s=1,alpha=0.2)
+ax.scatter(tpointsJ[:,1],tpointsJ[:,0],s=1,alpha=0.1) # also needs to plot as y,x not x,y
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[87]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7fef9398e580&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_24_1.png" src="../_images/notebooks_merfish-xenium-alignment_24_1.png" />
+</div>
+</div>
+<p>We can also plot the transformed dataset by itself.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[90]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fig,ax = plt.subplots()
+ax.scatter(tpointsJ[:,1],tpointsJ[:,0],s=1,alpha=0.1) # also needs to plot as y,x not x,y
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[90]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7fefb0cf4a60&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_26_1.png" src="../_images/notebooks_merfish-xenium-alignment_26_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[89]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[89]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.PathCollection at 0x7fefa0270550&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-xenium-alignment_28_1.png" src="../_images/notebooks_merfish-xenium-alignment_28_1.png" />
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aligning two coronal sections of adult mouse brain from MERFISH &mdash; STalign 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#installation-import">Installation &amp; Import</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../STalign.html">Functions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Aligning two coronal sections of adult mouse brain from MERFISH</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/merfish-merfish-alignment-affine-only.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Aligning-two-coronal-sections-of-adult-mouse-brain-from-MERFISH">
+<h1>Aligning two coronal sections of adult mouse brain from MERFISH<a class="headerlink" href="#Aligning-two-coronal-sections-of-adult-mouse-brain-from-MERFISH" title="Link to this heading"></a></h1>
+<p>In this notebook, we align two single cell resolution spatial transcriptomics datasets of coronal sections of the adult mouse brain from matched locations with respect to bregma assayed by MERFISH.</p>
+<p>We will use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to achieve this alignment. We will first load the relevant code libraries.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>## import dependencies
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import torch
+import plotly
+import requests
+
+# make plots bigger
+plt.rcParams[&quot;figure.figsize&quot;] = (12,10)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>## skip cell if STalign.py in same folder as notebook
+import sys
+sys.path.append(&quot;../../STalign&quot;)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>## import STalign from upper directory
+import STalign
+</pre></div>
+</div>
+</div>
+<p>We have already downloaded single cell spatial transcriptomics datasets and placed the files in a folder called <code class="docutils literal notranslate"><span class="pre">merfish_data</span></code>.</p>
+<p>We can read in the cell information for the first dataset using <code class="docutils literal notranslate"><span class="pre">pandas</span></code> as <code class="docutils literal notranslate"><span class="pre">pd</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Single cell data 1
+# read in data
+fname = &#39;../merfish_data/datasets_mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_cell_metadata_S2R3.csv.gz&#39;
+df1 = pd.read_csv(fname)
+print(df1.head())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+                                Unnamed: 0  fov       volume    center_x
+0  158338042824236264719696604356349910479   33   532.778772  617.916619  \
+1  260594727341160372355976405428092853003   33  1004.430016  596.808018
+2  307643940700812339199503248604719950662   33  1267.183208  578.880018
+3   30863303465976316429997331474071348973   33  1403.401822  572.616017
+4  313162718584097621688679244357302162401   33   507.949497  608.364018
+
+      center_y       min_x       max_x        min_y        max_y
+0  2666.520010  614.725219  621.108019  2657.545209  2675.494810
+1  2763.450012  589.669218  603.946818  2757.013212  2769.886812
+2  2748.978012  570.877217  586.882818  2740.489211  2757.466812
+3  2766.690012  564.937217  580.294818  2756.581212  2776.798812
+4  2687.418010  603.061218  613.666818  2682.493210  2692.342810
+</pre></div></div>
+</div>
+<p>For alignment with <code class="docutils literal notranslate"><span class="pre">STalign</span></code>, we only need the cell centroid information so we can pull out this information. We can further visualize the cell centroids to get a sense of the variation in cell density that we will be relying on for our alignment by plotting using <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot</span></code> as <code class="docutils literal notranslate"><span class="pre">plt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get cell centroid coordinates
+xI = np.array(df1[&#39;center_x&#39;])
+yI = np.array(df1[&#39;center_y&#39;])
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.2, label=&#39;source&#39;)
+ax.legend(markerscale = 10)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x7f37d4aec850&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_7_1.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_7_1.png" />
+</div>
+</div>
+<p>Now, we can repeat this to get cell information from the second dataset.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Single cell data 2
+# read in data
+fname = &#39;../merfish_data/datasets_mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate2_cell_metadata_S2R2.csv.gz&#39;
+
+df2 = pd.read_csv(fname)
+
+# get cell centroids
+xJ = np.array(df2[&#39;center_x&#39;])
+yJ = np.array(df2[&#39;center_y&#39;])
+
+# plot
+fig,ax = plt.subplots()
+ax.scatter(xJ,yJ,s=1,alpha=0.2,c=&#39;#ff7f0e&#39;, label=&#39;target&#39;)
+ax.legend(markerscale = 10)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x7f37d475ffa0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_9_1.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_9_1.png" />
+</div>
+</div>
+<p>Note that plotting the cell centroid positions from both datasets shows that non-linear local alignment is needed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.2, label=&#39;source&#39;)
+ax.scatter(xJ,yJ,s=1,alpha=0.1, label= &#39;target&#39;)
+ax.legend(markerscale = 10)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x7f37cbf92550&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_11_1.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_11_1.png" />
+</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">STalign</span></code> relies on an interative gradient descent to align these two images. This performs quicker and better if the source and target are initially at a similar angle.</p>
+<p>Evaluate the similarity of the rotation angle by viewing a side by side comparison. Change the value of <code class="docutils literal notranslate"><span class="pre">theta_deg</span></code>, until the rotation angle is similar. Note: the rotation here is defined in degrees and is in the clockwise direction.</p>
+<p>The angle chosen will be used to construct a 2x2 rotation matrix <code class="docutils literal notranslate"><span class="pre">L</span></code> and a 2 element translation vector <code class="docutils literal notranslate"><span class="pre">T</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>theta_deg = 45
+theta0 = (np.pi/180)*-theta_deg
+
+#rotation matrix
+#rotates about the origin
+L = np.array([[np.cos(theta0),-np.sin(theta0)],
+              [np.sin(theta0),np.cos(theta0)]])
+
+source_L = np.matmul(L , np.array([xI, yI]))
+xI_L = source_L[0]
+yI_L = source_L[1]
+
+#translation matrix
+#effectively makes the rotation about the centroid of I (i.e the means of xI and yI])
+#and also moves the centroid of I to the centroid of J
+T = np.array([ np.mean(xI)- np.cos(theta0)*np.mean(xI) +np.sin(theta0)*np.mean(yI) - (np.mean(xI)-np.mean(xJ)),
+              np.mean(yI)- np.sin(theta0)*np.mean(xI) -np.cos(theta0)*np.mean(yI) - (np.mean(yI)-np.mean(yJ))])
+
+xI_L_T = xI_L + T[0]
+yI_L_T = yI_L + T[1]
+
+
+fig,ax = plt.subplots()
+ax.scatter(xI_L_T,yI_L_T,s=1,alpha=0.1, label=&#39;source with initial affine transformation&#39;)
+ax.scatter(xJ,yJ,s=1,alpha=0.1, label = &#39;target&#39;)
+ax.legend(markerscale = 10)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x7f37cbf92f70&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_13_1.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_13_1.png" />
+</div>
+</div>
+<p>Now, we will first use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> to rasterize the single cell centroid positions into an image. Assuming the single-cell centroid coordinates are in microns, we will perform this rasterization at a 30 micron resolution. We can visualize the resulting rasterized image.</p>
+<p>Note that points are plotting with the origin at bottom left while images are typically plotted with origin at top left so we’ve used <code class="docutils literal notranslate"><span class="pre">invert_yaxis()</span></code> to invert the yaxis for visualization consistency.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># rasterize at 30um resolution (assuming positions are in um units) and plot
+XI,YI,I,fig = STalign.rasterize(xI_L_T,yI_L_T,dx=15,blur=1.5)
+
+# plot
+ax = fig.axes[0]
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 85958
+10000 of 85958
+20000 of 85958
+30000 of 85958
+40000 of 85958
+50000 of 85958
+60000 of 85958
+70000 of 85958
+80000 of 85958
+85957 of 85958
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_15_1.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_15_1.png" />
+</div>
+</div>
+<p>Repeat rasterization for target dataset.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># rasterize and plot
+XJ,YJ,J,fig = STalign.rasterize(xJ,yJ,dx=15, blur=1.5)
+ax = fig.axes[0]
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 of 84172
+10000 of 84172
+20000 of 84172
+30000 of 84172
+40000 of 84172
+50000 of 84172
+60000 of 84172
+70000 of 84172
+80000 of 84172
+84171 of 84172
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_17_1.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_17_1.png" />
+</div>
+</div>
+<p>We can also plot the rasterized images next to each other.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get extent of images
+extentI = STalign.extent_from_x((YI,XI))
+extentJ = STalign.extent_from_x((YJ,XJ))
+
+# plot rasterized images
+fig,ax = plt.subplots(1,2)
+ax[0].imshow(I.transpose(1,2,0).squeeze(), extent=extentI)
+ax[1].imshow(J.transpose(1,2,0).squeeze(), extent=extentJ)
+ax[0].invert_yaxis()
+ax[1].invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_19_0.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_19_0.png" />
+</div>
+</div>
+<p>Now we will perform our alignment. There are many parameters that can be tuned for performing this alignment. If we don’t specify parameters, defaults will be used.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%time
+
+# run LDDMM
+# specify device (default device for STalign.LDDMM is cpu)
+if torch.cuda.is_available():
+    device = &#39;cuda:0&#39;
+else:
+    device = &#39;cpu&#39;
+
+# keep all other parameters default
+params = {
+            &#39;niter&#39;: 1000,
+            &#39;diffeo_start&#39;: 1001,
+            &#39;device&#39;:device,
+            &#39;epV&#39;: 50
+          }
+
+Ifoo = np.vstack((I, I, I)) # make RGB instead of greyscale
+Jfoo = np.vstack((J, J, J)) # make RGB instead of greyscale
+out = STalign.LDDMM([YI,XI],Ifoo,[YJ,XJ],Jfoo,**params)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 47min 48s, sys: 15.4 s, total: 48min 3s
+Wall time: 3min 11s
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_21_1.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_21_1.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_21_2.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_21_2.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_21_3.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_21_3.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># get necessary output variables
+A = out[&#39;A&#39;]
+v = out[&#39;v&#39;]
+xv = out[&#39;xv&#39;]
+</pre></div>
+</div>
+</div>
+<p>Plots generated throughout the alignment can be used to give you a sense of whether the parameter choices are appropriate and whether your alignment is converging on a solution.</p>
+<p>We can also evaluate the resulting alignment by applying the transformation to visualize how our source and target images were deformed to achieve the alignment.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># apply transform
+phii = STalign.build_transform(xv,v,A,XJ=[YJ,XJ],direction=&#39;b&#39;)
+phiI = STalign.transform_image_source_to_target(xv,v,A,[YI,XI],Ifoo,[YJ,XJ])
+
+# plot with grids
+fig,ax = plt.subplots()
+levels = np.arange(-100000,100000,1000)
+ax.contour(XJ,YJ,phii[...,0],colors=&#39;r&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.contour(XJ,YJ,phii[...,1],colors=&#39;g&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.set_aspect(&#39;equal&#39;)
+ax.set_title(&#39;source to target&#39;)
+ax.imshow(phiI.permute(1,2,0)/torch.max(phiI),extent=extentJ)
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/home/kalen/STalign/docs/notebooks/../../STalign/STalign.py:1636: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  A = torch.tensor(A)
+/home/kalen/STalign/docs/notebooks/../../STalign/STalign.py:1637: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  if v is not None: v = torch.tensor(v)
+/home/kalen/STalign/docs/notebooks/../../STalign/STalign.py:1649: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  XJ = torch.tensor(XJ)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_24_1.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_24_1.png" />
+</div>
+</div>
+<p>Note that because of our use of LDDMM, the resulting transformation is invertible.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># transform is invertible
+phi = STalign.build_transform(xv,v,A,XJ=[YI,XI],direction=&#39;f&#39;)
+phiiJ = STalign.transform_image_target_to_source(xv,v,A,[YJ,XJ],Jfoo,[YI,XI])
+
+# plot with grids
+fig,ax = plt.subplots()
+levels = np.arange(-100000,100000,1000)
+ax.contour(XI,YI,phi[...,0],colors=&#39;r&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.contour(XI,YI,phi[...,1],colors=&#39;g&#39;,linestyles=&#39;-&#39;,levels=levels)
+ax.set_aspect(&#39;equal&#39;)
+ax.set_title(&#39;target to source&#39;)
+ax.imshow(phiiJ.permute(1,2,0)/torch.max(phiiJ),extent=extentI)
+ax.invert_yaxis()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_26_0.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_26_0.png" />
+</div>
+</div>
+<p>Finally, we can apply our STalign transform to the original sets of single cell centroid positions (with initial affine transformation) to achieve their new aligned positions.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># apply transform to original points
+tpointsI= STalign.transform_points_source_to_target(xv,v,A, np.stack([yI_L_T, xI_L_T], 1))
+
+#switch from row column coordinates (y,x) to (x,y)
+xI_LDDMM = tpointsI[:,1]
+yI_LDDMM = tpointsI[:,0]
+</pre></div>
+</div>
+</div>
+<p>And we can visualize the results.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># plot results
+fig,ax = plt.subplots()
+ax.scatter(xI,yI,s=1,alpha=0.1, label=&#39;source&#39;)
+ax.scatter(xI_LDDMM,yI_LDDMM,s=1,alpha=0.1, label = &#39;source aligned&#39;)
+ax.scatter(xJ,yJ,s=1,alpha=0.1, label=&#39;target&#39;)
+ax.legend(markerscale = 10)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x7f37cb7ee9a0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_30_1.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_30_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fig,ax = plt.subplots(1,2)
+ax[0].scatter(xI_L_T,yI_L_T,s=1,alpha=0.1, label=&#39;source with initial affine transformation&#39;)
+ax[0].scatter(xJ,yJ,s=1,alpha=0.1, label=&#39;target&#39;)
+ax[1].scatter(xI_LDDMM,yI_LDDMM,s=1,alpha=0.1, label = &#39;source STaligned&#39;)
+ax[1].scatter(xJ,yJ,s=1,alpha=0.1, label=&#39;target&#39;)
+ax[0].legend(markerscale = 10, loc = &#39;lower left&#39;)
+ax[1].legend(markerscale = 10, loc = &#39;lower left&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x7f3913d64f70&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-merfish-alignment-affine-only_31_1.png" src="../_images/notebooks_merfish-merfish-alignment-affine-only_31_1.png" />
+</div>
+</div>
+<p>And save the new aligned positions by appending to our original data</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>df3 = pd.DataFrame(
+
+    {
+
+        &quot;aligned_x&quot;: xI_LDDMM,
+
+        &quot;aligned_y&quot;: yI_LDDMM,
+
+    },
+
+
+)
+
+results = pd.concat([df1, df3], axis=1)
+results.head()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Unnamed: 0</th>
+      <th>fov</th>
+      <th>volume</th>
+      <th>center_x</th>
+      <th>center_y</th>
+      <th>min_x</th>
+      <th>max_x</th>
+      <th>min_y</th>
+      <th>max_y</th>
+      <th>aligned_x</th>
+      <th>aligned_y</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>158338042824236264719696604356349910479</td>
+      <td>33</td>
+      <td>532.778772</td>
+      <td>617.916619</td>
+      <td>2666.520010</td>
+      <td>614.725219</td>
+      <td>621.108019</td>
+      <td>2657.545209</td>
+      <td>2675.494810</td>
+      <td>949.886326</td>
+      <td>7880.601566</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>260594727341160372355976405428092853003</td>
+      <td>33</td>
+      <td>1004.430016</td>
+      <td>596.808018</td>
+      <td>2763.450012</td>
+      <td>589.669218</td>
+      <td>603.946818</td>
+      <td>2757.013212</td>
+      <td>2769.886812</td>
+      <td>1003.479267</td>
+      <td>7965.602055</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>307643940700812339199503248604719950662</td>
+      <td>33</td>
+      <td>1267.183208</td>
+      <td>578.880018</td>
+      <td>2748.978012</td>
+      <td>570.877217</td>
+      <td>586.882818</td>
+      <td>2740.489211</td>
+      <td>2757.466812</td>
+      <td>980.582930</td>
+      <td>7969.484408</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>30863303465976316429997331474071348973</td>
+      <td>33</td>
+      <td>1403.401822</td>
+      <td>572.616017</td>
+      <td>2766.690012</td>
+      <td>564.937217</td>
+      <td>580.294818</td>
+      <td>2756.581212</td>
+      <td>2776.798812</td>
+      <td>988.675305</td>
+      <td>7986.908832</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>313162718584097621688679244357302162401</td>
+      <td>33</td>
+      <td>507.949497</td>
+      <td>608.364018</td>
+      <td>2687.418010</td>
+      <td>603.061218</td>
+      <td>613.666818</td>
+      <td>2682.493210</td>
+      <td>2692.342810</td>
+      <td>957.906796</td>
+      <td>7902.859951</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>We will finally create a compressed <code class="docutils literal notranslate"><span class="pre">.csv.gz</span></code> file named <code class="docutils literal notranslate"><span class="pre">mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_STalign_to_Slice2_Replicate2.csv.gz</span></code></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>results.to_csv(&#39;../merfish_data/mouse_brain_map_BrainReceptorShowcase_Slice2_Replicate3_STalign_to_Slice2_Replicate2_affine_only.csv.gz&#39;,
+               compression=&#39;gzip&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
