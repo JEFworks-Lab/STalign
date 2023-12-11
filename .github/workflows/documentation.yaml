@@ -6,9 +6,11 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-      - name: Install dependencies
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v4
+      with:
+          python-version: '3.10'
+    - name: Install dependencies
         run: |
           pip install readthedocs-sphinx-search sphinx sphinx-rtd-theme numpy matplotlib torch pandas requests collection pynrrd tornado plotly myst_parser autodocsumm nbsphinx pypandoc
           conda install pandoc
