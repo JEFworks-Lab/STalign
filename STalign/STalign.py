@@ -78,7 +78,7 @@ def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wav
     expand : float
         Factor to expand sampled area beyond cells. Defaults to 1.1.
     draw : int
-        If True, draw a figure every draw points return its handle. Defaults to False (0).
+        If True, draw a figure every draw points and return its handle. Defaults to 10000 draw points. If set to False (0), no handle is returned.
     wavelet_magnitude : bool
         If True, take the absolute value of difference between scales for raster images.
         When using this option blur should be sorted from greatest to least.
