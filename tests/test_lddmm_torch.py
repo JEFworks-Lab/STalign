@@ -402,6 +402,12 @@ def test_threads_capped_restored_and_results_invariant(monkeypatch):
 
 
 def _fft_in_child(queue):
+    # Linux torch wheels use GNU OpenMP (libgomp), which is not fork-safe: once the parent has run a
+    # multi-threaded torch op, the child's first multi-threaded op deadlocks, inside torch and
+    # whatever STalign does (torch's DataLoader workers set 1 thread for the same reason).  This
+    # test is about STalign's FFT pool, which is called with 2 workers explicitly below, so the
+    # child's own torch ops run on 1 thread.
+    torch.set_num_threads(1)
     x = torch.arange(96.0).reshape(6, 4, 4)
     queue.put(bool(torch.equal(TE._pool_map(torch.fft.rfft2, x, 2), torch.fft.rfft2(x))))
 

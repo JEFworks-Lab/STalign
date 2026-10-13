@@ -249,7 +249,9 @@ template <int D>
 struct SplatAcc {
   static constexpr int NC = 1 << D;
   i64 lbase = -1;  // local (box) point offset of corner 0 of the cached cell
-  double acc[NC][D];
+  // zeroed before use whenever lbase is set (vback_acc), and read only when lbase >= 0; the
+  // initializer only silences GCC 11's -Wuninitialized false positive
+  double acc[NC][D] = {};
   void flush(double* __restrict lbuf, const i64* lstr) {
     if (lbase < 0) return;
     for (int c = 0; c < NC; ++c) {

@@ -38,7 +38,7 @@ pip install plotly scipy scikit-learn scikit-image
 
 ### Faster alignment with the C++ engine
 
-`STalign` includes an optional C++ engine for `LDDMM` and `LDDMM_3D_to_slice`. `pip` compiles it during installation if a C++17 compiler is available: the Xcode Command Line Tools on macOS (`xcode-select --install`), `g++` or `clang++` on Linux, or the Microsoft C++ Build Tools on Windows. Without a compiler the installation still succeeds and `STalign` uses its pure `torch` implementation (`pip install -v` shows a warning in the build log). Both compute the same iterations up to rounding (in some long alignments these small differences grow, see [CHANGES.md](CHANGES.md)); the C++ engine is faster. The engine has been tested on macOS; Linux and Windows builds are expected to work but have not been tested yet.
+`STalign` includes an optional C++ engine for `LDDMM` and `LDDMM_3D_to_slice`. `pip` compiles it during installation if a C++17 compiler is available: the Xcode Command Line Tools on macOS (`xcode-select --install`), `g++` or `clang++` on Linux, or the Microsoft C++ Build Tools on Windows. Without a compiler the installation still succeeds and `STalign` uses its pure `torch` implementation (`pip install -v` shows a warning in the build log). Both compute the same iterations up to rounding (in some long alignments these small differences grow, see [CHANGES.md](CHANGES.md)); the C++ engine is faster. The engine has been tested on macOS (Apple clang) and Linux (gcc 11); Windows builds are expected to work but have not been tested yet.
 
 To check which one is used:
 
