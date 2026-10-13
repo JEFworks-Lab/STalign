@@ -8,7 +8,11 @@ and _prefit.py).
 * the reported settings reproduce a fit, and both backends agree on the default path
 * legacy_defaults=True gives the fit of earlier versions bit for bit: against the explicit old
   values, and against the package of commit bec34e4 when STALIGN_LEGACY_SRC points to a copy
-  of its source tree (with the C++ extension built for the 'cpp' backend)
+  of its source tree (with the C++ extension built for the 'cpp' backend), for example
+
+      git archive bec34e4 STalign setup.py pyproject.toml requirements.txt | tar -x -C DIR
+      (cd DIR && python setup.py build_ext --inplace)
+      STALIGN_LEGACY_SRC=DIR pytest tests/test_round2_core.py
 '''
 import inspect
 import math
