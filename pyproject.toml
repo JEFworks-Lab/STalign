@@ -1,0 +1,5 @@
+[build-system]
+# pybind11 is needed only to compile the optional C++ engine (STalign/_cpp); it is
+# not a runtime dependency.  Package metadata and the extension are in setup.py.
+requires = ["setuptools>=61", "wheel", "pybind11>=2.10"]
+build-backend = "setuptools.build_meta"
