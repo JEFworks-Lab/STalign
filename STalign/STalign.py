@@ -56,7 +56,8 @@ def normalize(arr, t_min=0, t_max=1):
 
 
 
-def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wavelet_magnitude=False,use_windowing=True):
+def rasterize(x, y, g=np.ones(1), dx=30.0, blur=None, expand=1.1, draw=10000, wavelet_magnitude=False,use_windowing=True,
+              *, blur_um=None):
     ''' Rasterize a spatial transcriptomics dataset into a density image
 
     Each cell adds a Gaussian kernel centered on the cell, normalized to unit
@@ -80,7 +81,8 @@ def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wav
     blur : float or list of floats
         Width of the Gaussian interpolation kernel, in pixels.  The kernel
         standard deviation is 2*blur pixels (2*blur*dx in the units of x and
-        y).  Use a list to do multi scale (one channel per blur).
+        y).  Use a list to do multi scale (one channel per blur).  Defaults
+        to 1.0, unless blur_um is given.
     expand : float
         Factor to expand sampled area beyond cells. Defaults to 1.1.
     draw : int
@@ -97,6 +99,11 @@ def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wav
         and normalized to unit sum on that window.  The window holds about 95%
         of the Gaussian, so the kernel acts like one about 4% narrower.
         If False, the untruncated kernel is evaluated on the whole image.
+    blur_um : float or list of floats, keyword only
+        The kernel standard deviation in the units of x and y (for example
+        micrometers), instead of blur: blur = blur_um/(2*dx).  The kernel
+        then has the same physical width at any pixel size dx.  Give either
+        blur or blur_um, not both.
     
         
     Returns
@@ -114,6 +121,8 @@ def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wav
     ------    
     Exception 
         If wavelet_magnitude is set to true but blur is not sorted from greatest to least.
+    ValueError
+        If both blur and blur_um are given.
     IndexError
         If the image is empty (e.g. a single cell, or cells on a line).
         
@@ -131,15 +140,21 @@ def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wav
     Rasterize a dataset at 30 micron pixel size, with three kernels, using difference between scales.
     
     >>> X,Y,M,fig = STalign.rasterize(x,y,dx=30.0,blur=[2.0,1.0,0.5],draw=10000, wavelet_magnitude=True)
+
+    Rasterize a dataset at 15 micron pixel size with a kernel of standard deviation 30 microns
+    (the same as blur=1.0).
+
+    >>> X,Y,M = STalign.rasterize(x,y,dx=15.0,blur_um=30.0,draw=0)
         
         
     '''
     return _raster.rasterize(x, y, g=g, dx=dx, blur=blur, expand=expand, draw=draw,
-                             wavelet_magnitude=wavelet_magnitude, use_windowing=use_windowing)
+                             wavelet_magnitude=wavelet_magnitude, use_windowing=use_windowing, blur_um=blur_um)
     
 
     
-def rasterize_with_signal(x, y, s=None, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=False,use_windowing=True):
+def rasterize_with_signal(x, y, s=None, dx=30.0, blur=None, expand=1.1, draw=0, wavelet_magnitude=False,use_windowing=True,
+                          *, blur_um=None):
     ''' Rasterize a spatial transcriptomics dataset with a signal per cell
 
     Each cell adds a Gaussian kernel centered on the cell, normalized to unit
@@ -163,6 +178,7 @@ def rasterize_with_signal(x, y, s=None, dx=30.0, blur=1.0, expand=1.1, draw=0, w
         Width of the Gaussian interpolation kernel, in pixels.  The kernel
         standard deviation is 2*blur pixels (2*blur*dx in the units of x and
         y).  A list does multi scale, which is only possible if s is None.
+        Defaults to 1.0, unless blur_um is given.
     expand : float
         Factor to expand sampled area beyond cells. Defaults to 1.1.
     draw : int
@@ -175,6 +191,9 @@ def rasterize_with_signal(x, y, s=None, dx=30.0, blur=1.0, expand=1.1, draw=0, w
     use_windowing : bool
         If True (default), evaluate each kernel on a window of about 2
         standard deviations; if False, on the whole image (see rasterize).
+    blur_um : float or list of floats, keyword only
+        The kernel standard deviation in the units of x and y, instead of
+        blur: blur = blur_um/(2*dx).  Give either blur or blur_um, not both.
     
         
     Returns
@@ -194,6 +213,8 @@ def rasterize_with_signal(x, y, s=None, dx=30.0, blur=1.0, expand=1.1, draw=0, w
     Exception 
         If s is given with more than one blur, or if wavelet_magnitude is set
         to true but blur is not sorted from greatest to least.
+    ValueError
+        If both blur and blur_um are given.
     IndexError
         If s has fewer rows than there are cells, or if the image is empty.
         
@@ -212,7 +233,8 @@ def rasterize_with_signal(x, y, s=None, dx=30.0, blur=1.0, expand=1.1, draw=0, w
         
     '''
     return _raster.rasterize_with_signal(x, y, s=s, dx=dx, blur=blur, expand=expand, draw=draw,
-                                         wavelet_magnitude=wavelet_magnitude, use_windowing=use_windowing)
+                                         wavelet_magnitude=wavelet_magnitude, use_windowing=use_windowing,
+                                         blur_um=blur_um)
     
         
 

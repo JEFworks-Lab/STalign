@@ -93,6 +93,10 @@ def test_public_functions():
     assert info['auto'] == ('cpp' if info['cpp'] else 'torch')
 
 
+# blur=None means blur=1.0 unless the keyword-only blur_um is given (the two exclude each other)
+CHANGED_DEFAULTS.update({('rasterize', 'blur'): (1.0, None), ('rasterize_with_signal', 'blur'): (1.0, None)})
+
+
 def test_signatures_extend_the_original():
     '''Every original parameter keeps its name, position and default (except the documented
     CHANGED_DEFAULTS); new parameters are keyword-only or come last with a default.'''

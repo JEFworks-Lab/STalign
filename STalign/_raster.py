@@ -63,10 +63,10 @@ def normalize(arr, t_min=0, t_max=1):
     return norm_arr
 
 
-def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wavelet_magnitude=False,
-              use_windowing=True):
+def rasterize(x, y, g=np.ones(1), dx=30.0, blur=None, expand=1.1, draw=10000, wavelet_magnitude=False,
+              use_windowing=True, *, blur_um=None):
     ''' Density (or weighted density) image of cells (see STalign.rasterize). '''
-    blur = _blurs(blur)
+    blur = _blurs(_blur_pixels(blur, blur_um, dx))
     _check_wavelet(blur, wavelet_magnitude)
     X_, Y_ = _grid(x, y, dx, expand)
     x = np.asarray(x)
@@ -82,10 +82,10 @@ def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wav
     return _finish(X_, Y_, W, blur.size, draw, wavelet_magnitude)
 
 
-def rasterize_with_signal(x, y, s=None, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=False,
-                          use_windowing=True):
+def rasterize_with_signal(x, y, s=None, dx=30.0, blur=None, expand=1.1, draw=0, wavelet_magnitude=False,
+                          use_windowing=True, *, blur_um=None):
     ''' Image of a per-cell signal (see STalign.rasterize_with_signal). '''
-    blur = _blurs(blur)
+    blur = _blurs(_blur_pixels(blur, blur_um, dx))
     if blur.size > 1 and s is not None:
         raise Exception('when using a signal, we can only have one blur')
     if s is not None:
@@ -110,6 +110,20 @@ def rasterize_with_signal(x, y, s=None, dx=30.0, blur=1.0, expand=1.1, draw=0, w
 # ---------------------------------------------------------------------------
 # setup shared by both functions
 # ---------------------------------------------------------------------------
+def _blur_pixels(blur, blur_um, dx):
+    ''' The blur in pixels: blur as given (1.0 if None), or blur_um/(2*dx).
+
+    blur_um is the kernel standard deviation in the units of x and y; the
+    kernel standard deviation is 2*blur pixels, i.e. 2*blur*dx in those units.
+    '''
+    if blur_um is None:
+        return 1.0 if blur is None else blur
+    if blur is not None:
+        raise ValueError('give the kernel width either as blur (in pixels) or as blur_um (in the units of x '
+                         'and y), not both')
+    return np.asarray(blur_um, dtype=np.float64)/(2.0*dx)
+
+
 def _blurs(blur):
     ''' Blur(s) as a 1D float array: a list, tuple or array gives one channel per entry. '''
     blur = np.atleast_1d(np.asarray(blur, dtype=np.float64))

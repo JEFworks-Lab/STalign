@@ -460,6 +460,70 @@ def test_signal_rows_and_errors():
 
 
 # ---------------------------------------------------------------------------
+# blur_um: the kernel width in the units of x and y
+# ---------------------------------------------------------------------------
+def test_default_blur_is_one():
+    x, y = cells(800, seed=50)
+    s = np.random.default_rng(50).random((x.size, 2))
+    for fn, kw in ((STalign.rasterize, {}), (STalign.rasterize_with_signal, {}),
+                   (STalign.rasterize_with_signal, dict(s=s))):
+        out = fn(x, y, dx=30.0, draw=0, **kw)
+        for a, b in zip(out, fn(x, y, dx=30.0, blur=1.0, draw=0, **kw)):
+            np.testing.assert_array_equal(a, b)
+        for a, b in zip(out, fn(x, y, dx=30.0, blur=None, blur_um=None, draw=0, **kw)):
+            np.testing.assert_array_equal(a, b)
+    assert_same(STalign.rasterize(x, y, draw=0), reference_rasterize(x, y, blur=1.0))
+
+
+@pytest.mark.parametrize('dx,blur_um', [(15.0, 30.0), (30.0, 45.0), (10.0, [40.0, 20.0]), (7.0, 13.0)])
+def test_blur_um_is_blur_in_pixels(dx, blur_um):
+    # bit for bit the call with blur = blur_um/(2*dx)
+    x, y = cells(1500, seed=51)
+    s = np.random.default_rng(51).random(x.size) - 0.5
+    blur = list(np.asarray(blur_um)/(2*dx)) if isinstance(blur_um, list) else blur_um/(2*dx)
+    calls = [(STalign.rasterize, dict(draw=0)), (STalign.rasterize_with_signal, {})]
+    if isinstance(blur_um, list):
+        calls.append((STalign.rasterize, dict(draw=0, wavelet_magnitude=True)))
+    else:
+        calls.append((STalign.rasterize_with_signal, dict(s=s, use_windowing=False)))
+    for fn, kw in calls:
+        a = fn(x, y, dx=dx, blur_um=blur_um, **kw)
+        b = fn(x, y, dx=dx, blur=blur, **kw)
+        assert len(a) == len(b) == 3
+        for u, v in zip(a, b):
+            np.testing.assert_array_equal(u, v)
+    if dx == 15.0:  # 30 um at 15 um pixels is the default blur of 1 pixel
+        a = STalign.rasterize(x, y, dx=dx, blur_um=blur_um, draw=0)
+        assert_same(a, reference_rasterize(x, y, dx=dx, blur=1.0))
+
+
+def test_blur_um_is_the_kernel_standard_deviation():
+    # one cell at a pixel center, whole-image kernel: the image's standard deviation is blur_um
+    # at any pixel size (the two other cells have weight 0 and only set the image extent)
+    x = np.array([0.0, 1500.0, 3000.0])
+    y = np.array([0.0, 1500.0, 3000.0])
+    for dx in (10.0, 15.0, 30.0):
+        X, Y, W = STalign.rasterize(x, y, g=np.array([0.0, 1.0, 0.0]), dx=dx, blur_um=60.0, draw=0,
+                                    use_windowing=False)
+        w = W[0]/W[0].sum()
+        mx, my = (w.sum(0)*X).sum(), (w.sum(1)*Y).sum()
+        assert abs(mx - 1500.0) < 1e-6 and abs(my - 1500.0) < 1e-6
+        sx = np.sqrt((w.sum(0)*(X - mx)**2).sum())
+        sy = np.sqrt((w.sum(1)*(Y - my)**2).sum())
+        assert abs(sx - 60.0) < 1e-6 and abs(sy - 60.0) < 1e-6, (dx, sx, sy)
+
+
+def test_blur_and_blur_um_together_raise():
+    x, y = cells(100, seed=52)
+    for fn in (STalign.rasterize, STalign.rasterize_with_signal):
+        for blur in (1.0, 2.0, [2.0, 1.0]):
+            with pytest.raises(ValueError, match='not both'):
+                fn(x, y, dx=15.0, blur=blur, blur_um=30.0, draw=0)
+    with pytest.raises(ValueError, match='non-negative'):
+        STalign.rasterize(x, y, dx=15.0, blur_um=-30.0, draw=0)
+
+
+# ---------------------------------------------------------------------------
 # normalize
 # ---------------------------------------------------------------------------
 def test_normalize():
