@@ -109,6 +109,8 @@ To use this tool, you will need provide the following information:
 - Source: Arrays of x and y positions of cells
 - Target: Arrays of x and y positions of cells
 
+`STalign.align_cells(xI, yI, xJ, yJ)` aligns two such sets of cells in one call: it rasterizes them at 15 µm and runs `LDDMM` coarse to fine, which had about half the error of `LDDMM` on 30 or 60 µm rasters in our tests (see [CHANGES.md](CHANGES.md)). Its result works with the transform functions like that of `LDDMM`.
+
 ### single-cell and spot-resolution ST alignment
 - Source: Arrays of x and y positions of cells from single-cell resolution ST data
 - Target: Registered H&E image from spot-resolution ST data
