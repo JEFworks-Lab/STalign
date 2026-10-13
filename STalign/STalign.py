@@ -1,9 +1,10 @@
 ''' Tools for aligning spatial transcriptomics data
 
-The LDDMM fits (LDDMM, LDDMM_3D_to_slice), rasterization and the transforms of fitted
-mappings are implemented in private modules next to this file (_lddmm*.py, _raster.py,
-_transforms.py) and exposed here.  The LDDMM fits use a compiled C++ engine when it is
-installed and pure torch otherwise; backend_info() reports which.
+The LDDMM fits (LDDMM, LDDMM_3D_to_slice, and align_cells for two sets of cells),
+rasterization and the transforms of fitted mappings are implemented in private modules next
+to this file (_lddmm*.py, _cells.py, _raster.py, _transforms.py) and exposed here.  The LDDMM
+fits use a compiled C++ engine when it is installed and pure torch otherwise; backend_info()
+reports which.
 '''
 
 import os
@@ -17,18 +18,20 @@ import torch
 # file directly (the private modules are then top-level modules too).
 try:
     from . import _raster, _transforms
+    from ._cells import align_cells
     from ._lddmm import LDDMM, LDDMM_3D_to_slice
     from ._lddmm_common import backend_info
 except ImportError:
     import _raster
     import _transforms
+    from _cells import align_cells
     from _lddmm import LDDMM, LDDMM_3D_to_slice
     from _lddmm_common import backend_info
 
 # These are part of this module's API: present them as defined here (like numpy's
 # set_module), so that help() and the documentation, which lists the functions of this
 # module, show them with it.
-for _f in (LDDMM, LDDMM_3D_to_slice, backend_info):
+for _f in (LDDMM, LDDMM_3D_to_slice, align_cells, backend_info):
     _f.__module__ = __name__
 del _f
 
