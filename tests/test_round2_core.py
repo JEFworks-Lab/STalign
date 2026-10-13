@@ -19,6 +19,7 @@ import math
 import os
 import subprocess
 import sys
+import warnings
 
 import numpy as np
 import pytest
@@ -299,6 +300,26 @@ def test_prefit_rules():
     v[1, 2, 2, 0] = 1.0
     assert fit2d(data, niter=0, v=v, xv=xv)['prefit'] == {'ran': False, 'reason': 'initial velocity'}
     assert info(v=0 * v, xv=xv, prefit='auto')['ran']
+
+
+def test_prefit_skips_a_target_without_tissue():
+    '''A constant target has no tissue to align to: the pre-fit is skipped with one warning
+    (no numpy RuntimeWarning), the given steps are kept and the fit runs.'''
+    data, _, _, _ = rotated_pair()
+    d3 = um_3d()
+    fits = ((fit2d, dict(data, J=np.full_like(data['J'], 0.3))), (fit3d, dict(d3, J=np.full_like(d3['J'], 0.3))))
+    for fit, d in fits:
+        for prefit in ('auto', True):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter('always')
+                out = fit(d, niter=3, prefit=prefit)
+            assert [(w.category, str(w.message)) for w in caught] == [
+                (UserWarning, 'the affine pre-fit was skipped: the target image has no tissue (it is constant at the '
+                              'resolution of the pre-fit); starting from the given affine')]
+            assert {k: out['prefit'][k] for k in ('ran', 'reason')} == {'ran': False, 'reason': 'no target tissue'}
+            assert all(torch.isfinite(out[k]).all() for k in ('A', 'v', 'WM'))
+        if fit is fit2d:
+            assert {k: out['settings'][k] for k in C.STEPS_2D} == C.STEPS_2D
 
 
 def test_prefit_failure_warns_and_the_fit_goes_on(monkeypatch):

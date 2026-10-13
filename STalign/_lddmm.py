@@ -166,8 +166,8 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         from the result. With landmarks the pre-fit includes the landmark term and keeps the
         initial orientation. 'auto' (default) runs it unless landmarks (pointsI, pointsJ) or a
         nonzero initial velocity field v are given; True always; False never. It is deterministic,
-        and what it did is returned as 'prefit'. If it fails, a warning is issued and the fit
-        starts from the given affine.
+        and what it did is returned as 'prefit'. If the target has no tissue (a constant image)
+        or the pre-fit fails, a warning is issued and the fit starts from the given affine.
     sigma_disp : float, keyword only
         Prior displacement scale in micrometers (default 94.03, which reproduces the previous
         default sigmaR=5e5 on 30 um images). Used only when sigmaR is None; larger values allow
@@ -295,7 +295,8 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
         best one is refined at twice that resolution (ties within 1% go to the start closest to
         the initial plane). 'auto' (default) runs it unless a nonzero initial velocity field v
         is given; True always; False never. It is deterministic, and what it did is returned as
-        'prefit'. If it fails, a warning is issued and the fit starts from the given affine.
+        'prefit'. If the target has no tissue (a constant image) or the pre-fit fails, a warning
+        is issued and the fit starts from the given affine.
     sigma_disp : float, keyword only
         Prior displacement scale in micrometers (default 94.03), used when sigmaR is None.
     legacy_defaults : bool, keyword only

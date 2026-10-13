@@ -427,7 +427,8 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
        2D unless there are landmarks, but never from a nonzero initial velocity field (the
        pre-fit would change the affine under a fitted deformation, e.g. in a warm start);
        True runs it always and False never.  It starts from the problem's L and T and replaces
-       them.  If it fails, it warns and the fit starts from the given L and T.
+       them.  If the target has no tissue (_prefit.has_tissue; a constant image), it is
+       skipped with a warning; if it fails, it warns and the fit starts from the given L and T.
     2. sigmaR = _prefit.physical_sigmaR(problem, sigma_disp).
     3. 2D: epL, epT, epV = _prefit.curvature_steps(problem, STEPS_2D) for those left as None;
        3D: FIXED_3D.
@@ -473,6 +474,11 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
         torch_threads = torch.get_num_threads()
         torch.set_num_threads(resolve_num_threads(num_threads))
         try:
+            if reason is None and not prefit_mod.has_tissue(problem):
+                reason = 'no target tissue'
+                info = {'ran': False, 'reason': reason}
+                warnings.warn('the affine pre-fit was skipped: the target image has no tissue (it is constant at '
+                              'the resolution of the pre-fit); starting from the given affine', stacklevel=3)
             if reason is None:
                 try:
                     problem.L, problem.T, info = prefit_mod.affine_prefit(problem)

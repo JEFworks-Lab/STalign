@@ -459,6 +459,17 @@ def search_pool(xJ):
     return max(1, int(round(n / float(SEARCH_PIXELS))))
 
 
+def has_tissue(problem):
+    '''Whether the target of a prepared LDDMM problem has any tissue at the resolution of the
+    coarse search: the tissue signal (tissue_weights) of the target pooled by search_pool is
+    nonzero somewhere.  A constant target has none, and the search could not place it (its
+    tissue centroid is undefined).'''
+    J = problem.J[:, 0] if problem.dim == 3 else problem.J
+    xJ = problem.xJ[-2:]
+    _, Jc = pool_image(xJ, J, search_pool(xJ))
+    return bool(np.any(tissue_weights(Jc) > 0))
+
+
 def affine_prefit(problem):
     '''Run the pre-alignment for a prepared LDDMM problem from its initial L and T.
 
