@@ -11,3 +11,14 @@ __pycache__/
 
 _build/
 Pipfile.lock
+
+# build outputs (C++ extension, wheels, egg-info)
+*.so
+*.pyd
+*.o
+build/
+dist/
+*.egg-info/
+
+# local development / benchmarking artifacts (not synced, not committed)
+dev/
