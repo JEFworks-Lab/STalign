@@ -3,7 +3,7 @@
 The engine is checked against the autograd oracle in tests/reference.py: gradients at
 non-trivial states (including sample points outside the source image and outside the
 velocity grid) and 300-iteration trajectories through the public front-end, with and without
-the affine step control, and with the exact and the Euler landmark map.
+the affine step control, with the exact and the Euler landmark map and with the mixture EM.
 Also tested: the engine interface (snapshots, segmented runs, niter=0), agreement with the
 torch engine, results that are bitwise independent of the thread count, fork safety and
 concurrent calls from Python threads.
@@ -140,6 +140,9 @@ TRAJECTORY_CASES = {
     '2d_estimated_mu': lambda: problem_2d(),
     '2d_points': lambda: problem_2d(points=True, sigmaP=2.0),
     '2d_points_euler': lambda: problem_2d(points=True, sigmaP=2.0, landmark_map='euler'),
+    '2d_mixture_points': lambda: problem_2d(points=True, sigmaP=2.0, mixture='em'),
+    '2d_mixture_artifact_user_muB': lambda: problem_2d(niter=120, mixture=dict(classes='MAB', start=20, every=3),
+                                                        muB=[0.0, 0.05]),
     '2d_diffeo_start_user_mu': lambda: problem_2d(diffeo_start=30, muA=[0.7, 0.8], muB=0),
     '2d_one_source_channel_nt5': lambda: problem_2d(CI=1, CJ=3, nt=5),
     '3d': lambda: problem_3d(muA=[3.0], muB=0),
@@ -193,9 +196,10 @@ def test_step_control_matches_torch_engine(dim):
         assert rel(ours[k], theirs[k]) < 1e-9, k
 
 
-def test_landmark_maps_match_torch_engine():
+@pytest.mark.parametrize('mixture', [None, 'em', dict(classes='MAB', start=20, every=3, fix_muB=False)])
+def test_landmark_maps_and_mixture_match_torch_engine(mixture):
     for landmark_map in ('exact', 'euler'):
-        problem, _ = problem_2d(niter=150, points=True, sigmaP=2.0, landmark_map=landmark_map)
+        problem, _ = problem_2d(niter=150, points=True, sigmaP=2.0, landmark_map=landmark_map, mixture=mixture)
         ours = run_engine(problem, problem.niter)
         torch_engine = TE.TorchEngine(problem, THREADS)
         torch_engine.run(problem.niter)
@@ -277,12 +281,14 @@ def test_niter_zero_returns_initial_state():
 
 
 @pytest.mark.parametrize('make', [lambda: problem_2d(niter=0, points=True, diffeo_start=13)[0],
+                                  lambda: problem_2d(niter=0, points=True, mixture=dict(start=13, every=7))[0],
                                   lambda: problem_step(2, niter=0, diffeo_start=13)[0],
                                   lambda: problem_step(3, niter=0, diffeo_start=13)[0]],
-                         ids=['2d', '2d_step_control', '3d_step_control'])
+                         ids=['2d', '2d_mixture', '2d_step_control', '3d_step_control'])
 def test_segmented_runs_are_identical(make):
     # the iteration counter persists across run() calls (it % 5, it >= 50 and diffeo_start
-    # rules), and so does the state of the affine step control
+    # rules, the mixture EM's schedule), and so does the state of the affine step control and
+    # of the mixture EM
     problem = make()
     whole = run_engine(problem, 120)
     engine = CppEngine(problem, THREADS)
@@ -331,8 +337,9 @@ def test_mu_forms_are_equivalent():
 
 # =========================================================================== threads
 @pytest.mark.parametrize('make', [lambda: problem_2d(niter=0, points=True)[0], lambda: problem_3d(niter=0)[0],
-                                  lambda: problem_step(2, niter=0)[0], lambda: problem_step(3, niter=0)[0]],
-                         ids=['2d', '3d', '2d_step_control', '3d_step_control'])
+                                  lambda: problem_step(2, niter=0)[0], lambda: problem_step(3, niter=0)[0],
+                                  lambda: problem_2d(niter=0, mixture=dict(start=10, every=3))[0]],
+                         ids=['2d', '3d', '2d_step_control', '3d_step_control', '2d_mixture'])
 def test_results_do_not_depend_on_thread_count(make):
     problem = make()
     reference = run_engine(problem, 60, num_threads=1)

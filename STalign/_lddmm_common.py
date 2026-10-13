@@ -48,6 +48,12 @@ AFFINE_STEP_CAP = 1.0
 # Euler steps of earlier versions.
 LANDMARK_MAPS = ('exact', 'euler')
 
+# Default options of the mixture EM (LDDMM(mixture='em')); a dict passed as `mixture` overrides
+# some of them.  See mixture_options.
+MIXTURE_EM = dict(start=50, every=5, classes='MB', pi_min=0.5, pi_init=(0.9, 0.05, 0.05),
+                  fix_muA=False, fix_muB=True)
+MIXTURE_CLASSES = ('M', 'MB', 'MA', 'MAB')
+
 BACKENDS = ('auto', 'cpp', 'torch')
 
 # Iterations per engine.run call.  Short segments keep long fits responsive to Ctrl-C.
@@ -90,6 +96,26 @@ class Problem:
     the result does not depend on the tolerance), and differentiated by the implicit function
     theorem with the same z and M: dp_{t+1} = M^-1 (dp_t + dv_t(z)/nt).  Engines report the
     number of steps that did not converge as ``snapshot()['landmark_unconverged']``.
+
+    ``mixture`` is None (the original weights: an M-step for muA/muB every 5 iterations and,
+    from iteration 50, the E-step) or the options of the mixture EM (see mixture_options) plus
+    the initial class means 'muA' and 'muB' ((C_J,) arrays).  Then WM starts at 1 and WA, WB at
+    0, and after iterations start, start + every, ... the engine updates the weights from that
+    iteration's residual r = fAI - J (C = C_J)::
+
+        on the first E-step: vM = max(mean(|r|^2) / C, 1e-12);  vA, vB = (sigmaA/sigmaM)^2 vM,
+            (sigmaB/sigmaM)^2 vM
+        E-step (per pixel; a class not in `classes` has weight 0):
+            lM = log pi_M - |r|^2 / (2 vM) - C/2 log vM
+            lA = log pi_A - |J - muA|^2 / (2 vA) - C/2 log vA   (lB likewise with muB, vB)
+            (WM, WA, WB) = softmax(lM, lA, lB)
+        M-step: pi = clip((sum WM, sum WA, sum WB) / N, 1e-4); if pi_M < pi_min, pi_M = pi_min
+            and pi_A, pi_B are rescaled to sum to 1 - pi_min; pi /= sum(pi).
+            muA = sum WA J / sum WA if it is estimated and sum WA > 1e-3 (muB likewise);
+            vM = max(sum WM |r|^2 / (C sum WM), 1e-12);  vA, vB from vM as above.
+
+    pi starts at pi_init.  muA (muB) is estimated when the caller gave none and fix_muA
+    (fix_muB) is False.  The data term keeps sigmaM; only the weights change.
     '''
     dim: int
     xI: list
@@ -131,6 +157,7 @@ class Problem:
     step_floor: float = AFFINE_STEP_FLOOR
     step_cap: float = AFFINE_STEP_CAP
     landmark_map: str = 'exact'
+    mixture: Optional[dict] = None
 
 
 # =========================================================================== inputs
@@ -201,16 +228,83 @@ def coerce_mu(mu, C, name):
     raise ValueError(f'{name} must have 1 or {C} entries (one per channel of the target image), got {mu.size}')
 
 
+def mixture_options(mixture):
+    '''Validated options of the mixture EM: None (off), 'em' (the defaults MIXTURE_EM) or a dict
+    that overrides some of them.
+
+    Keys: start (first iteration with an E-step, >= 0), every (iterations between E-steps,
+    >= 1), classes ('M', 'MB', 'MA' or 'MAB': matching, artifact, background), pi_min (lower
+    bound of the matching prior, in [0, 1)), pi_init (initial priors of the three classes,
+    positive; normalized), fix_muA and fix_muB (keep the initial class mean).
+    Returns a new dict with every key, or None.
+    '''
+    if mixture is None:
+        return None
+    if isinstance(mixture, str) and mixture == 'em':
+        given = {}
+    elif isinstance(mixture, dict):
+        given = dict(mixture)
+    else:
+        raise ValueError(f"mixture must be None, 'em' or a dict of options, got {mixture!r}")
+    unknown = sorted(set(given) - set(MIXTURE_EM))
+    if unknown:
+        raise ValueError(f'unknown mixture options {unknown}; the options are {sorted(MIXTURE_EM)}')
+    out = dict(MIXTURE_EM, **given)
+
+    def integer(k, lo):
+        x = out[k]
+        if isinstance(x, (bool, np.bool_)) or not isinstance(x, (int, np.integer)) or x < lo:
+            raise ValueError(f'mixture option {k} must be an integer >= {lo}, got {x!r}')
+        return int(x)
+
+    out['start'], out['every'] = integer('start', 0), integer('every', 1)
+    if out['classes'] not in MIXTURE_CLASSES:
+        raise ValueError(f'mixture option classes must be one of {MIXTURE_CLASSES}, got {out["classes"]!r}')
+    pi_min = out['pi_min']
+    if isinstance(pi_min, (bool, np.bool_)) or not (isinstance(pi_min, (int, float, np.number)) and 0 <= pi_min < 1):
+        raise ValueError(f'mixture option pi_min must be in [0, 1), got {pi_min!r}')
+    out['pi_min'] = float(pi_min)
+    pi = np.asarray(out['pi_init'], dtype=np.float64).reshape(-1) if np.ndim(out['pi_init']) == 1 else None
+    if pi is None or pi.size != 3 or not np.all(np.isfinite(pi) & (pi > 0)):
+        raise ValueError(f'mixture option pi_init must be 3 positive numbers, got {out["pi_init"]!r}')
+    out['pi_init'] = tuple(float(x) for x in pi / pi.sum())
+    for k in ('fix_muA', 'fix_muB'):
+        if not isinstance(out[k], (bool, np.bool_)):
+            raise ValueError(f'mixture option {k} must be True or False, got {out[k]!r}')
+        out[k] = bool(out[k])
+    return out
+
+
+def mixture_means(J, muA, muB):
+    '''Initial class means of the mixture EM, (C_J,) arrays: the caller's muA / muB if given,
+    else the mean of J (artifact) and the median of the border of J (background: the outer
+    1/20 of the rows and columns on each side; the lower median for an even count).'''
+    C = J.shape[0]
+    H, W = J.shape[-2], J.shape[-1]
+    if muA is None:
+        muA = J.reshape(C, -1).mean(1)
+    if muB is None:
+        bh, bw = max(1, H // 20), max(1, W // 20)
+        mask = np.zeros((H, W), dtype=bool)
+        mask[:bh] = mask[-bh:] = True
+        mask[:, :bw] = mask[:, -bw:] = True
+        border = J.reshape(C, -1, H, W)[:, :, mask].reshape(C, -1)
+        muB = np.partition(border, (border.shape[1] - 1) // 2, axis=1)[:, (border.shape[1] - 1) // 2]
+    return np.array(muA, dtype=np.float64), np.array(muB, dtype=np.float64)
+
+
 def prepare_problem(dim, xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=None, A=None, v=None, xv=None,
                     a=500.0, p=2.0, expand=2.0, nt=3, niter=5000, diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
                     sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=5e5, sigmaP=2e1, device='cpu',
-                    dtype=torch.float64, muA=None, muB=None, affine_step_control=False, landmark_map='exact'):
+                    dtype=torch.float64, muA=None, muB=None, affine_step_control=False, landmark_map='exact',
+                    mixture=None):
     '''Validate and normalize the arguments of LDDMM (dim=2) or LDDMM_3D_to_slice (dim=3).
 
     Follows the original conventions: A excludes L and T, v requires xv, and the velocity grid
     is built from xI when neither is given.  2D landmarks must come in pairs; in 3D they are
     dropped (the caller warns).  The constants of the affine step control are read from this
-    module (AFFINE_STEP_*) at call time.  ``landmark_map`` is described in :class:`Problem`.
+    module (AFFINE_STEP_*) at call time.  ``landmark_map`` and ``mixture`` are described in
+    :class:`Problem`; the mixture EM exists in 2D only (NotImplementedError in 3D).
     '''
     device = torch.device(device)
     if not (isinstance(dtype, torch.dtype) and dtype.is_floating_point):
@@ -219,6 +313,9 @@ def prepare_problem(dim, xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=Non
         raise ValueError(f'affine_step_control must be True or False, got {affine_step_control!r}')
     if not (isinstance(landmark_map, str) and landmark_map in LANDMARK_MAPS):
         raise ValueError(f'landmark_map must be one of {LANDMARK_MAPS}, got {landmark_map!r}')
+    mixture = mixture_options(mixture)
+    if mixture is not None and dim != 2:
+        raise NotImplementedError('the mixture EM (mixture=...) is available in 2D (LDDMM) only')
     step = dict(step_shrink=float(AFFINE_STEP_SHRINK), step_grow=float(AFFINE_STEP_GROW),
                 step_floor=float(AFFINE_STEP_FLOOR), step_cap=float(AFFINE_STEP_CAP))
     if not (0.0 < step['step_shrink'] < 1.0 and step['step_grow'] >= 1.0
@@ -287,14 +384,18 @@ def prepare_problem(dim, xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=Non
     if niter < 0:
         raise ValueError(f'niter must be >= 0, got {niter}')
     C = J.shape[0]
+    muA, muB = coerce_mu(muA, C, 'muA'), coerce_mu(muB, C, 'muB')
+    WM, WB, WA = np.full(J.shape[1:], 0.5), np.full(J.shape[1:], 0.4), np.full(J.shape[1:], 0.1)
+    if mixture is not None:
+        WM, WB, WA = np.ones(J.shape[1:]), np.zeros(J.shape[1:]), np.zeros(J.shape[1:])
+        mixture['muA'], mixture['muB'] = mixture_means(J, muA, muB)
     return Problem(
-        dim=dim, xI=xI, I=I, xJ=xJ, J=J, L=L, T=T, v=v, xv=xv, LL=LL, K=K, DV=DV,
-        WM=np.full(J.shape[1:], 0.5), WB=np.full(J.shape[1:], 0.4), WA=np.full(J.shape[1:], 0.1),
-        muA=coerce_mu(muA, C, 'muA'), muB=coerce_mu(muB, C, 'muB'), pointsI=pointsI, pointsJ=pointsJ,
+        dim=dim, xI=xI, I=I, xJ=xJ, J=J, L=L, T=T, v=v, xv=xv, LL=LL, K=K, DV=DV, WM=WM, WB=WB, WA=WA,
+        muA=muA, muB=muB, pointsI=pointsI, pointsJ=pointsJ,
         a=float(a), p=float(p), nt=int(nt), niter=niter, diffeo_start=int(diffeo_start),
         epL=float(epL), epT=float(epT), epV=float(epV), sigmaM=float(sigmaM), sigmaB=float(sigmaB),
         sigmaA=float(sigmaA), sigmaR=float(sigmaR), sigmaP=float(sigmaP), device=device, dtype=dtype,
-        affine_step_control=bool(affine_step_control), landmark_map=landmark_map, **step)
+        affine_step_control=bool(affine_step_control), landmark_map=landmark_map, mixture=mixture, **step)
 
 
 # =========================================================================== threads

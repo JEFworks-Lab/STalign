@@ -38,7 +38,7 @@ where fac is the original's 1 + 9 * (it >= diffeo_start).  The v update is uncha
 the original update lines run unchanged.  The result's ``step_multipliers`` holds the final m.
 The default 3D sigmaR is the package's new default.
 
-Round 2 adds an option of the 2D fit:
+Round 2 adds two options of the 2D fit:
 
 landmark_map='exact' (default)  The landmarks move with the exact inverse of the backward map
     instead of the original's forward Euler steps ('euler').  Each time step solves
@@ -46,6 +46,10 @@ landmark_map='exact' (default)  The landmarks move with the exact inverse of the
     step of that implicit equation, p_{t+1} = z + M^-1 (p_t + v_t(z)/nt - z) with z the fixed
     point and M = I - Dv_t(z)/nt held constant (Dv_t by autograd), gives the implicit-function
     gradient through autograd.
+mixture='em' (or a dict of options, default None)  The mixture EM: WM starts at 1, WA = WB = 0,
+    and the original's weight updates are replaced by the E/M-steps documented in
+    ``STalign._lddmm_common.Problem`` (log-space E-step, matching variance estimated from the
+    residual, class variances tied to it by sigmaA/sigmaM and sigmaB/sigmaM).
 """
 import warnings
 
@@ -66,6 +70,11 @@ SIGMAR_3D = 2e6  # default sigmaR of LDDMM_3D_to_slice
 # of a velocity grid cell (or a few ulps of the coordinates), after at most LANDMARK_MAX_ITER sweeps
 LANDMARK_TOL = 1e-10
 LANDMARK_MAX_ITER = 100
+
+# mixture EM (mixture='em'): default options, and the floor of the matching variance
+MIXTURE_EM = dict(start=50, every=5, classes='MB', pi_min=0.5, pi_init=(0.9, 0.05, 0.05),
+                  fix_muA=False, fix_muB=True)
+VARIANCE_FLOOR = 1e-12
 
 
 # --------------------------------------------------------------------------- helpers
@@ -262,6 +271,69 @@ def _inputs(xI, I, xJ, J, pointsI=None, pointsJ=None):
     return xI, I, xJ, J, pointsI, pointsJ
 
 
+# --------------------------------------------------------------------------- mixture EM
+def mixture_state(mixture, J, muA, muB, sigmaM, sigmaA, sigmaB):
+    """Initial state of the mixture EM for mixture='em' or a dict of options (2D target J (C, H, W)).
+
+    The class means are the user's (coerced) muA / muB, else the mean of J and the lower median
+    of the outer 1/20 of J's rows and columns."""
+    opts = dict(MIXTURE_EM, **({} if mixture == 'em' else mixture))
+    C, H, W = J.shape
+    estA, estB = muA is None and not opts['fix_muA'], muB is None and not opts['fix_muB']
+    muA = J.mean(dim=(1, 2)) if muA is None else coerce_mu(muA, C, 'muA')
+    if muB is None:
+        bh, bw = max(1, H // 20), max(1, W // 20)
+        mask = torch.zeros((H, W), dtype=torch.bool)
+        mask[:bh] = mask[-bh:] = True
+        mask[:, :bw] = mask[:, -bw:] = True
+        muB = J[:, mask].median(dim=1).values
+    else:
+        muB = coerce_mu(muB, C, 'muB')
+    pi = torch.tensor(opts['pi_init'], dtype=DTYPE)
+    return dict(opts, pi=pi / pi.sum(), muA=muA, muB=muB, estA=estA, estB=estB, vM=None, vA=None, vB=None,
+                rA=sigmaA / sigmaM, rB=sigmaB / sigmaM)
+
+
+def mixture_due(s, it):
+    return it >= s['start'] and (it - s['start']) % s['every'] == 0
+
+
+def mixture_step(s, r, J):
+    """E-step and M-step of the mixture EM from the residual r = fAI - J.  Updates the state s
+    and returns the new weights (WM, WA, WB)."""
+    C = J.shape[0]
+    grid = (Ellipsis, None, None)
+    d2M = torch.sum(r ** 2, 0)
+    if s['vM'] is None:
+        s['vM'] = max(float(d2M.mean()) / C, VARIANCE_FLOOR)
+        s['vA'], s['vB'] = s['rA'] ** 2 * s['vM'], s['rB'] ** 2 * s['vM']
+    lp = torch.log(s['pi'])
+
+    def loglik(k, d2, var):
+        if 'MAB'[k] not in s['classes']:
+            return torch.full_like(d2, -np.inf)
+        return lp[k] - d2 / (2 * var) - 0.5 * C * np.log(var)
+
+    W = torch.softmax(torch.stack((loglik(0, d2M, s['vM']),
+                                   loglik(1, torch.sum((J - s['muA'][grid]) ** 2, 0), s['vA']),
+                                   loglik(2, torch.sum((J - s['muB'][grid]) ** 2, 0), s['vB']))), 0)
+    WM, WA, WB = W
+    sums = W.sum(dim=(1, 2))
+    pi = torch.clamp(sums / sums.sum(), min=1e-4)
+    if pi[0] < s['pi_min']:
+        pi = torch.cat((pi.new_tensor([s['pi_min']]), pi[1:] / pi[1:].sum() * (1 - s['pi_min'])))
+    s['pi'] = pi / pi.sum()
+    sM, sA, sB = (float(x) for x in sums)
+    if s['estA'] and sA > 1e-3:
+        s['muA'] = torch.sum(WA * J, dim=(1, 2)) / sA
+    if s['estB'] and sB > 1e-3:
+        s['muB'] = torch.sum(WB * J, dim=(1, 2)) / sB
+    if sM > 0:
+        s['vM'] = max(float(torch.sum(WM * d2M)) / (C * sM), VARIANCE_FLOOR)
+    s['vA'], s['vB'] = s['rA'] ** 2 * s['vM'], s['rB'] ** 2 * s['vM']
+    return WM.clone(), WA.clone(), WB.clone()
+
+
 # --------------------------------------------------------------------------- gradients at one state
 def gradients(xI, I, xJ, J, L, T, v, xv, WM, a=500.0, p=2.0, sigmaM=1.0, sigmaR=5e5, sigmaP=2e1,
               pointsI=None, pointsJ=None, legacy_er3d=False, landmark_map='exact'):
@@ -303,7 +375,7 @@ def gradients(xI, I, xJ, J, L, T, v, xv, WM, a=500.0, p=2.0, sigmaM=1.0, sigmaR=
 # --------------------------------------------------------------------------- the loop
 def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter, diffeo_start,
          epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, legacy_er3d, affine_step_control,
-         landmark_map='exact'):
+         landmark_map='exact', mixture=None):
     xI, I, xJ, J, pointsI, pointsJ = _inputs(xI, I, xJ, J, pointsI, pointsJ)
     dim = len(xI)
     if A is not None:
@@ -335,6 +407,10 @@ def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter
     WM = torch.ones(J[0].shape, dtype=J.dtype) * 0.5
     WB = torch.ones(J[0].shape, dtype=J.dtype) * 0.4
     WA = torch.ones(J[0].shape, dtype=J.dtype) * 0.1
+    em = None
+    if mixture is not None:
+        em = mixture_state(mixture, J, muA, muB, sigmaM, sigmaA, sigmaB)
+        WM, WB, WA = torch.ones_like(WM), torch.zeros_like(WB), torch.zeros_like(WA)
     estimate_muA = muA is None
     estimate_muB = muB is None
     muA = coerce_mu(muA, J.shape[0], 'muA')
@@ -381,8 +457,12 @@ def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter
             if it >= diffeo_start:
                 v -= smooth(v.grad, K) * epV
             v.grad.zero_()
+        if em is not None:  # the mixture EM replaces the original weight updates
+            if mixture_due(em, it):
+                with torch.no_grad():
+                    WM, WA, WB = mixture_step(em, fAI.detach() - J, J)
         # update weights: M step for the class means, then (from iteration 50) the E step
-        if not it % 5:
+        elif not it % 5:
             with torch.no_grad():
                 if estimate_muA:
                     muA = torch.sum(WA * J, dim=sdims) / torch.sum(WA)
@@ -418,14 +498,15 @@ def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter
 def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=None, A=None, v=None, xv=None,
           a=500.0, p=2.0, expand=2.0, nt=3, niter=5000, diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
           sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=5e5, sigmaP=2e1, muB=None, muA=None,
-          affine_step_control=False, landmark_map='exact'):
+          affine_step_control=False, landmark_map='exact', mixture=None):
     """Oracle of the 2D ``LDDMM`` (float64, CPU), same arguments and defaults as the public function,
-    with the landmark map of the module docstring.  The original is landmark_map='euler'."""
+    with the landmark map and the mixture EM of the module docstring.  The original is
+    landmark_map='euler', mixture=None."""
     if (pointsI is None) != (pointsJ is None):
         raise Exception('Must specify corresponding sets of points or none at all')
     return _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter, diffeo_start,
                 epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, False, affine_step_control,
-                landmark_map)
+                landmark_map, mixture)
 
 
 def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=None, A=None, v=None, xv=None,

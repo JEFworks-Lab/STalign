@@ -45,7 +45,7 @@ _ext = _import_extension()
 
 # Binding interface this module is written for.  A stale build of the extension (e.g. an old
 # in-place build next to newer sources) counts as missing, so the torch engine is used.
-_API_VERSION = 3
+_API_VERSION = 4
 if getattr(_ext, 'API_VERSION', None) != _API_VERSION:
     raise ImportError(f'the C++ extension {_ext.__file__} is out of date (API version '
                       f'{getattr(_ext, "API_VERSION", None)}, expected {_API_VERSION}); rebuild it with '
@@ -88,17 +88,25 @@ class CppEngine:
         self._dim = P.dim
         self._landmarks = P.dim == 2 and P.pointsI.shape[0] > 0
         self._landmarks_exact = self._landmarks and P.landmark_map == 'exact'
+        muA, muB, mix = P.muA, P.muB, {}
+        if P.mixture is not None:  # the engine gets the initial class means and the options
+            m = P.mixture
+            muA, muB = m['muA'], m['muB']
+            mix = dict(mixture=True, mix_start=m['start'], mix_every=m['every'], mix_classes=m['classes'],
+                       mix_pi_min=m['pi_min'], mix_pi_init=list(m['pi_init']),
+                       mix_est_muA=P.muA is None and not m['fix_muA'],
+                       mix_est_muB=P.muB is None and not m['fix_muB'])
         Engine = _ext.Engine2D if P.dim == 2 else _ext.Engine3D
         self._eng = Engine(
             P.I, P.xI, P.J, P.xJ, P.v, P.xv, P.L, P.T, P.K, P.LL, P.WM, P.WA, P.WB,
-            muA=P.muA, muB=P.muB,
+            muA=muA, muB=muB,
             pointsI=P.pointsI if self._landmarks else None,
             pointsJ=P.pointsJ if self._landmarks else None,
             sigmaM=P.sigmaM, sigmaA=P.sigmaA, sigmaB=P.sigmaB, sigmaR=P.sigmaR, sigmaP=P.sigmaP,
             epL=P.epL, epT=P.epT, epV=P.epV, diffeo_start=P.diffeo_start, DV=P.DV,
             affine_step_control=bool(P.affine_step_control), step_shrink=P.step_shrink,
             step_grow=P.step_grow, step_floor=P.step_floor, step_cap=P.step_cap,
-            num_threads=int(num_threads), landmark_exact=P.landmark_map == 'exact')
+            num_threads=int(num_threads), landmark_exact=P.landmark_map == 'exact', **mix)
         self._step_control = bool(P.affine_step_control)
 
     def run(self, n):

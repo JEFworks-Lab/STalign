@@ -32,7 +32,8 @@ How it differs from the original (all equal up to rounding):
   small thread pool, because pocketfft is single threaded.  In 3D the gradient lives on the
   crop slab, so its forward transform is three small dense DFTs.  Only increasing ``dim``
   orders are used: MPS computes rfftn/irfftn with a permuted dim order wrongly.
-* With user-supplied muA / muB the exp() terms of WA / WB are constant and computed once.
+* With user-supplied muA / muB the exp() terms of WA / WB are constant and computed once (and,
+  with the mixture EM, the squared distances to a fixed class mean).
 * Exact landmark map: the fixed-point sweeps run on all landmarks at once and freeze each one
   as it converges (as the C++ engine solves them one by one).  The Jacobians for the Newton
   step and the implicit-function gradient come from one grid_sampler backward pass with a
@@ -61,6 +62,8 @@ _RESYNC = 50
 # fraction of a velocity grid cell, after at most _LANDMARK_MAX_ITER sweeps (as the C++ engine).
 _LANDMARK_TOL = 1e-10
 _LANDMARK_MAX_ITER = 100
+# Mixture EM: floor of the estimated matching variance.
+_VARIANCE_FLOOR = 1e-12
 
 
 # =========================================================================== threads
@@ -772,6 +775,17 @@ class TorchEngine:
                 self.xv0_g = torch.stack((xv[1][0], xv[0][0]))
                 self.xvs_g = torch.stack((xv[1][-1] - xv[1][0], xv[0][-1] - xv[0][0]))
                 self.lm_tol = _landmark_tol(P.xv, dt)
+            # mixture EM (see _lddmm_common.Problem): priors, class means, variances (vM, vA, vB)
+            # once estimated, and the squared distances to a class mean that stays fixed
+            self.mix = P.mixture
+            if self.mix is not None:
+                pi = tensor(np.asarray(self.mix['pi_init'], dtype=np.float64))
+                self.mix_pi = pi / pi.sum()
+                self.mix_mu = {'A': tensor(self.mix['muA']), 'B': tensor(self.mix['muB'])}
+                self.mix_est = {'A': P.muA is None and not self.mix['fix_muA'],
+                                'B': P.muB is None and not self.mix['fix_muB']}
+                self.mix_var = None
+                self.mix_d2 = {}
             self.Esave = torch.zeros((max(P.niter, 1), 4 if self.has_points else 3), device=dev, dtype=dt)
             # affine step control: one multiplier per affine parameter (L row-major, then T)
             # and the previous gradient, see _lddmm_common.Problem
@@ -841,7 +855,10 @@ class TorchEngine:
         if diffeo:
             self.vi = self.smooth.step(res['vgrad'], self.vi, P.epV, res['crop'])
             self.v_zero = False
-        if not it % 5:
+        if self.mix is not None:
+            if it >= self.mix['start'] and (it - self.mix['start']) % self.mix['every'] == 0:
+                self._mixture_step()
+        elif not it % 5:
             self._update_weights(it)
         self.it += 1
 
@@ -888,6 +905,46 @@ class TorchEngine:
         WA /= WS
         m.set_WM(WM)
         self.WA, self.WB = WA, WB
+
+    def _mixture_step(self):
+        '''E-step and M-step of the mixture EM from this iteration's residual (see
+        ``_lddmm_common.Problem``).'''
+        P, m, J, mix = self.problem, self.model, self.J, self.mix
+        C = J.shape[0]
+        grid = (Ellipsis,) + (None,) * self.dim
+        sdims = tuple(range(-self.dim, 0))
+        d2M = torch.sum(m.residual() ** 2, 0)
+        if self.mix_var is None:  # first E-step: the matching variance of the unweighted residual
+            vM = max(float(d2M.mean()) / C, _VARIANCE_FLOOR)
+            self.mix_var = (vM, (P.sigmaA / P.sigmaM) ** 2 * vM, (P.sigmaB / P.sigmaM) ** 2 * vM)
+        vM, vA, vB = self.mix_var
+        lp = torch.log(self.mix_pi)
+        logl = [lp[0] - d2M / (2 * vM) - 0.5 * C * math.log(vM)]
+        for k, c, var in ((1, 'A', vA), (2, 'B', vB)):
+            if c not in mix['classes']:
+                logl.append(torch.full_like(d2M, -math.inf))
+                continue
+            d2 = self.mix_d2.get(c)
+            if d2 is None:
+                d2 = torch.sum((J - self.mix_mu[c][grid]) ** 2, 0)
+                if not self.mix_est[c]:
+                    self.mix_d2[c] = d2
+            logl.append(lp[k] - d2 / (2 * var) - 0.5 * C * math.log(var))
+        W = torch.softmax(torch.stack(logl), 0)
+        m.set_WM(W[0])
+        self.WA, self.WB = W[1], W[2]
+        sums = W.sum(dim=tuple(range(1, self.dim + 1)))
+        pi = torch.clamp(sums / sums.sum(), min=1e-4)
+        if pi[0] < mix['pi_min']:
+            pi = torch.cat((pi.new_tensor([mix['pi_min']]), pi[1:] / pi[1:].sum() * (1.0 - mix['pi_min'])))
+        self.mix_pi = pi / pi.sum()
+        sM, sA, sB = (float(x) for x in sums)
+        for c, Wc, s in (('A', W[1], sA), ('B', W[2], sB)):
+            if self.mix_est[c] and s > 1e-3:
+                self.mix_mu[c] = torch.sum(Wc * J, dim=sdims) / s
+        if sM > 0:
+            vM = max(float(torch.sum(W[0] * d2M)) / (C * sM), _VARIANCE_FLOOR)
+        self.mix_var = (vM, (P.sigmaA / P.sigmaM) ** 2 * vM, (P.sigmaB / P.sigmaM) ** 2 * vM)
 
     # ---- outputs ------------------------------------------------------------
     def _v_out(self, vi):

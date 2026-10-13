@@ -8,6 +8,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <array>
 #include <optional>
 #include <string>
 #include <vector>
@@ -48,7 +49,9 @@ class PyEngine {
            std::optional<carr> pointsJ, double sigmaM, double sigmaA, double sigmaB,
            double sigmaR, double sigmaP, double epL, double epT, double epV, int diffeo_start,
            double DV, bool affine_step_control, double step_shrink, double step_grow,
-           double step_floor, double step_cap, int num_threads, bool landmark_exact)
+           double step_floor, double step_cap, int num_threads, bool landmark_exact, bool mixture,
+           int mix_start, int mix_every, const std::string& mix_classes, double mix_pi_min,
+           std::array<double, 3> mix_pi_init, bool mix_est_muA, bool mix_est_muB)
       : I_(std::move(I)), J_(std::move(J)) {
     if (I_.ndim() != D + 1) throw std::invalid_argument("I must have shape (C_I, *nI)");
     if (J_.ndim() != D + 1) throw std::invalid_argument("J must have shape (C_J, *nJ)");
@@ -129,6 +132,20 @@ class PyEngine {
     in.params.step_floor = step_floor;
     in.params.step_cap = step_cap;
     in.params.landmark_exact = landmark_exact;
+    if (mixture) {
+      if (mix_classes != "M" && mix_classes != "MB" && mix_classes != "MA" && mix_classes != "MAB")
+        throw std::invalid_argument("mix_classes must be 'M', 'MB', 'MA' or 'MAB'");
+      if (!muA || !muB) throw std::invalid_argument("the mixture EM needs the initial means muA and muB");
+    }
+    in.params.mixture = mixture;
+    in.params.mix_start = mix_start;
+    in.params.mix_every = mix_every;
+    in.params.mix_classA = mix_classes.find('A') != std::string::npos;
+    in.params.mix_classB = mix_classes.find('B') != std::string::npos;
+    in.params.mix_est_muA = mix_est_muA;
+    in.params.mix_est_muB = mix_est_muB;
+    in.params.mix_pi_min = mix_pi_min;
+    for (int k = 0; k < 3; ++k) in.params.mix_pi_init[k] = mix_pi_init[k];
     e_ = std::make_unique<stalign::Engine<D>>(in, num_threads);
   }
 
@@ -246,13 +263,17 @@ void bind_engine(py::module_& m, const char* name, const char* doc) {
                     const std::vector<carr>&, carr, carr, carr, carr, carr, carr, carr,
                     std::optional<carr>, std::optional<carr>, std::optional<carr>,
                     std::optional<carr>, double, double, double, double, double, double, double,
-                    double, int, double, bool, double, double, double, double, int, bool>(),
+                    double, int, double, bool, double, double, double, double, int, bool, bool, int,
+                    int, const std::string&, double, std::array<double, 3>, bool, bool>(),
            "I"_a, "xI"_a, "J"_a, "xJ"_a, "v"_a, "xv"_a, "L"_a, "T"_a, "K"_a, "LL"_a, "WM"_a,
            "WA"_a, "WB"_a, py::kw_only(), "muA"_a = py::none(), "muB"_a = py::none(),
            "pointsI"_a = py::none(), "pointsJ"_a = py::none(), "sigmaM"_a, "sigmaA"_a,
            "sigmaB"_a, "sigmaR"_a, "sigmaP"_a, "epL"_a, "epT"_a, "epV"_a, "diffeo_start"_a,
            "DV"_a, "affine_step_control"_a = false, "step_shrink"_a = 0.5, "step_grow"_a = 1.05,
-           "step_floor"_a = 1e-3, "step_cap"_a = 1.0, "num_threads"_a = 1, "landmark_exact"_a = true)
+           "step_floor"_a = 1e-3, "step_cap"_a = 1.0, "num_threads"_a = 1, "landmark_exact"_a = true,
+           "mixture"_a = false, "mix_start"_a = 50, "mix_every"_a = 5, "mix_classes"_a = "MB",
+           "mix_pi_min"_a = 0.5, "mix_pi_init"_a = std::array<double, 3>{0.9, 0.05, 0.05},
+           "mix_est_muA"_a = true, "mix_est_muB"_a = false)
       .def("run", &E::run, "n"_a, py::call_guard<py::gil_scoped_release>(),
            "Advance n iterations (the iteration counter persists across calls).")
       .def("gradient", &E::gradient,
@@ -282,7 +303,7 @@ void bind_engine(py::module_& m, const char* name, const char* doc) {
 PYBIND11_MODULE(_stalign_cpp, m) {
   m.doc() = "C++ CPU (float64) engine for STalign's LDDMM and LDDMM_3D_to_slice";
   // bumped whenever the binding interface changes, so a stale in-place build is detected
-  m.attr("API_VERSION") = 3;
+  m.attr("API_VERSION") = 4;
   m.attr("MAX_CI") = stalign::MAX_CI;
   m.attr("MAX_CJ") = stalign::MAX_CJ;
   m.attr("MAX_NT") = stalign::MAX_NT;

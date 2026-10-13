@@ -14,8 +14,9 @@
 //
 // The landmark term (2D) maps the landmarks by forward Euler steps or, by default,
 // exactly by the inverse of the backward map (fixed-point solve of each implicit
-// step, implicit-function gradient), as described in STalign/_lddmm_common.py
-// (class Problem).
+// step, implicit-function gradient).  The weights come from the original's E-step
+// or from the mixture EM (Params::mixture).  Both are described in
+// STalign/_lddmm_common.py (class Problem).
 //
 // The regulariser is ER = DV / (2 sigmaR^2 N) sum_k LL_k |fftn(v)_k|^2 with the
 // FFT over all spatial axes (N = number of velocity grid points).  Since the
@@ -51,6 +52,8 @@ constexpr int MAX_NT = 64;  // velocity time steps
 // coordinates), after at most LANDMARK_MAX_ITER sweeps.  (Same values in the torch engine.)
 constexpr double LANDMARK_TOL = 1e-10;
 constexpr int LANDMARK_MAX_ITER = 100;
+// Mixture EM: floor of the estimated matching variance.
+constexpr double VARIANCE_FLOOR = 1e-12;
 
 #if defined(__GNUC__) || defined(__clang__)
 #define STALIGN_UNLIKELY(x) __builtin_expect(!!(x), 0)
@@ -484,6 +487,16 @@ struct Params {
   double step_shrink = 0.5, step_grow = 1.05, step_floor = 1e-3, step_cap = 1.0;
   // landmark term: the exact inverse of the backward map (else forward Euler steps)
   bool landmark_exact = true;
+  // mixture EM instead of the original weight updates: E-steps after iterations
+  // mix_start, mix_start + mix_every, ...; the classes present besides matching; which class
+  // means are estimated (the initial means are Inputs::muA / muB); the lower bound of the
+  // matching prior and the initial priors (matching, artifact, background)
+  bool mixture = false;
+  int mix_start = 50, mix_every = 5;
+  bool mix_classA = false, mix_classB = true;
+  bool mix_est_muA = true, mix_est_muB = false;
+  double mix_pi_min = 0.5;
+  double mix_pi_init[3] = {0.9, 0.05, 0.05};
 };
 
 // Problem description for Engine<D>.  Arrays are float64 in C order.  I and J are
@@ -507,6 +520,7 @@ struct Inputs {
   const double* WB = nullptr;
   const double* muA = nullptr;              // (CJ,) fixed artifact / background means;
   const double* muB = nullptr;              // nullptr: re-estimated every 5 iterations
+                                            // (mixture EM: the initial means, required)
   i64 NP = 0;                               // number of landmark pairs
   const double* pointsI = nullptr;          // (NP, D) landmarks in I and J
   const double* pointsJ = nullptr;
@@ -552,6 +566,12 @@ class Engine {
   double E_last[4] = {0, 0, 0, 0};  // EM + ER, EM, ER, EP
   std::vector<double> Ehist;        // E_last of every iteration
   i64 lm_unconverged = 0;           // exact landmark solves that did not converge
+
+  // ---- mixture EM state: priors (matching, artifact, background) and class variances
+  // (set at the first E-step)
+  double mix_pi[3] = {1.0, 0.0, 0.0};
+  double mix_var[3] = {0.0, 0.0, 0.0};
+  bool mix_var_set = false;
 
   Engine(const Inputs<D>& in, int num_threads) {
     if (in.nt < 1 || in.nt > MAX_NT) throw std::invalid_argument("nt out of range");
@@ -619,6 +639,15 @@ class Engine {
       extent = std::max(extent, std::max(std::fabs(in.xV0[d]), std::fabs(in.xVl[d])));
     }
     lm_tol = std::max(LANDMARK_TOL * cell, 64.0 * std::numeric_limits<double>::epsilon() * extent);
+    if (P.mixture) {
+      if (!in.muA || !in.muB) throw std::invalid_argument("the mixture EM needs the initial class means");
+      if (P.mix_start < 0 || P.mix_every < 1) throw std::invalid_argument("mixture EM: need start >= 0, every >= 1");
+      const double* pi = P.mix_pi_init;
+      if (!(pi[0] > 0.0 && pi[1] > 0.0 && pi[2] > 0.0) || !(P.mix_pi_min >= 0.0 && P.mix_pi_min < 1.0))
+        throw std::invalid_argument("mixture EM: need positive initial priors and 0 <= pi_min < 1");
+      const double s = pi[0] + pi[1] + pi[2];
+      for (int k = 0; k < 3; ++k) mix_pi[k] = pi[k] / s;
+    }
 
     // spectral setup (fields over the velocity grid)
     const i64 n2 = (D == 3) ? gV.n[2] : 1;
@@ -710,7 +739,7 @@ class Engine {
   static constexpr int kResyncEvery = 50;  // recompute specA from v every 50 iterations
 
   // ---- scratch
-  std::vector<double> dAIbuf, rsbuf, gradV, mu_sums;
+  std::vector<double> dAIbuf, rsbuf, gradV, mu_sums, mix_red;
   i64 NRED1 = 0, NRED2 = 0;
   std::vector<double> red1, red2;
   struct Box {
@@ -1232,6 +1261,99 @@ class Engine {
     });
   }
 
+  // Mixture EM (P.mixture): E-step from this iteration's residuals (rsbuf), then the M-step
+  // of the priors, the estimated class means and the variances.  The per-pixel work and its
+  // sums run per chunk and are combined in chunk order.
+  void mixture_em() {
+    const double C = double(CJ);
+    const i64 rows = rows_per_chunk * rowlen;
+    if (!mix_var_set) {  // first E-step: the variance of the unweighted residual
+      std::vector<double> part(nchunks, 0.0);
+      pool().parallel_for(nchunks, [&](i64 ch) {
+        double s = 0.0;
+        for (i64 j = ch * rows, j1 = std::min(NJ, j + rows); j < j1; ++j) s += rsbuf[j];
+        part[ch] = s;
+      });
+      double tot = 0.0;
+      for (double x : part) tot += x;
+      mix_var[0] = std::max(tot / double(NJ) / C, VARIANCE_FLOOR);
+      set_class_variances();
+      mix_var_set = true;
+    }
+    const bool on[3] = {true, P.mix_classA, P.mix_classB};
+    double lp[3], hl[3];
+    for (int k = 0; k < 3; ++k) {
+      lp[k] = std::log(mix_pi[k]);
+      hl[k] = 0.5 * C * std::log(mix_var[k]);
+    }
+    const double vM2 = 2.0 * mix_var[0], vA2 = 2.0 * mix_var[1], vB2 = 2.0 * mix_var[2];
+    const double ninf = -std::numeric_limits<double>::infinity();
+    // per chunk: sum WM, sum WA, sum WB, sum WM |r|^2, sum WA J (CJ), sum WB J (CJ)
+    const i64 NS = 4 + 2 * CJ;
+    mix_red.assign(nchunks * NS, 0.0);
+    pool().parallel_for(nchunks, [&](i64 ch) {
+      double acc[4 + 2 * MAX_CJ];
+      for (i64 k = 0; k < NS; ++k) acc[k] = 0.0;
+      for (i64 j = ch * rows, j1 = std::min(NJ, j + rows); j < j1; ++j) {
+        double d2a = 0.0, d2b = 0.0;
+        for (int c = 0; c < CJ; ++c) {
+          const double da = J[c * NJ + j] - muA[c];
+          const double db = J[c * NJ + j] - muB[c];
+          d2a += da * da;
+          d2b += db * db;
+        }
+        const double l0 = (lp[0] - rsbuf[j] / vM2) - hl[0];
+        const double l1 = on[1] ? (lp[1] - d2a / vA2) - hl[1] : ninf;
+        const double l2 = on[2] ? (lp[2] - d2b / vB2) - hl[2] : ninf;
+        const double mx = std::max(l0, std::max(l1, l2));
+        const double e0 = std::exp(l0 - mx), e1 = on[1] ? std::exp(l1 - mx) : 0.0,
+                     e2 = on[2] ? std::exp(l2 - mx) : 0.0;
+        const double s = e0 + e1 + e2;
+        const double wm = e0 / s, wa = e1 / s, wb = e2 / s;
+        WM[j] = wm;
+        WA[j] = wa;
+        WB[j] = wb;
+        acc[0] += wm;
+        acc[1] += wa;
+        acc[2] += wb;
+        acc[3] += wm * rsbuf[j];
+        for (int c = 0; c < CJ; ++c) {
+          acc[4 + c] += wa * J[c * NJ + j];
+          acc[4 + CJ + c] += wb * J[c * NJ + j];
+        }
+      }
+      std::copy(acc, acc + NS, &mix_red[ch * NS]);
+    });
+    std::vector<double> S(NS, 0.0);
+    for (i64 ch = 0; ch < nchunks; ++ch)
+      for (i64 k = 0; k < NS; ++k) S[k] += mix_red[ch * NS + k];
+    // M-step
+    const double N = S[0] + S[1] + S[2];
+    double pi[3];
+    for (int k = 0; k < 3; ++k) pi[k] = std::max(S[k] / N, 1e-4);
+    if (pi[0] < P.mix_pi_min) {
+      const double rest = pi[1] + pi[2];
+      pi[1] = pi[1] / rest * (1.0 - P.mix_pi_min);
+      pi[2] = pi[2] / rest * (1.0 - P.mix_pi_min);
+      pi[0] = P.mix_pi_min;
+    }
+    const double sp = pi[0] + pi[1] + pi[2];
+    for (int k = 0; k < 3; ++k) mix_pi[k] = pi[k] / sp;
+    if (P.mix_est_muA && S[1] > 1e-3)
+      for (int c = 0; c < CJ; ++c) muA[c] = S[4 + c] / S[1];
+    if (P.mix_est_muB && S[2] > 1e-3)
+      for (int c = 0; c < CJ; ++c) muB[c] = S[4 + CJ + c] / S[2];
+    if (S[0] > 0.0) mix_var[0] = std::max(S[3] / (C * S[0]), VARIANCE_FLOOR);
+    set_class_variances();
+  }
+
+  // artifact and background variances tied to the matching variance by sigmaA/sigmaM, sigmaB/sigmaM
+  void set_class_variances() {
+    const double rA = P.sigmaA / P.sigmaM, rB = P.sigmaB / P.sigmaM;
+    mix_var[1] = rA * rA * mix_var[0];
+    mix_var[2] = rB * rB * mix_var[0];
+  }
+
   // Affine step control: the sign of (new gradient * previous gradient) of each affine
   // parameter shrinks (< 0) or grows (> 0) its step multiplier; 0 leaves it unchanged.
   void update_step_multipliers() {
@@ -1254,8 +1376,11 @@ class Engine {
   // keep a copy of the v used by this iteration's forward pass (v_eval).
   void step(bool last) {
     const bool diffeo = it >= P.diffeo_start;
-    const bool mu_step = (it % 5) == 0;
-    const bool e_step = mu_step && it >= 50;
+    // weights: the original M-step (every 5 iterations) and E-step (from iteration 50), or
+    // the mixture EM; both need this iteration's squared residuals (e_step)
+    const bool em = P.mixture && it >= P.mix_start && (it - P.mix_start) % P.mix_every == 0;
+    const bool mu_step = !P.mixture && (it % 5) == 0;
+    const bool e_step = P.mixture ? em : (mu_step && it >= 50);
     double A[D + 1][D + 1], Ai[D + 1][D + 1];
     forward_backward(diffeo, mu_step, e_step, A, Ai);
     for (int a = 0; a <= D; ++a)
@@ -1353,6 +1478,7 @@ class Engine {
         for (int c = 0; c < CJ; ++c) muB[c] = MU[3 + CJ + c] / MU[2];
       if (e_step) estep();
     }
+    if (em) mixture_em();
     ++it;
   }
 };

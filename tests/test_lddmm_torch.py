@@ -6,7 +6,8 @@
 * the approved fixes (F1-F6), input conventions, draw modes, threads and backend selection
 * the affine step control (on by default in 3D): trajectories with oscillating affine steps,
   segmented runs, defaults and validation
-* the landmark maps ('exact', the default, and 'euler'): gradients, trajectories and validation
+* the landmark maps ('exact', the default, and 'euler') and the mixture EM (mixture='em' or a
+  dict of options): gradients, trajectories, options and validation
 * the oracle itself against the frozen original STalign (skipped when it is not available)
 """
 import dataclasses
@@ -428,6 +429,64 @@ def test_landmark_map_validation():
     for bad in ('Exact', 'implicit', None, 1):
         with pytest.raises(ValueError, match='landmark_map'):
             C.prepare_problem(2, **kw, landmark_map=bad)
+
+
+# --------------------------------------------------------------------------- mixture EM
+MIX_MAB = dict(classes='MAB', start=20, every=3, fix_muB=False)
+
+
+@pytest.mark.parametrize('mixture,extra', [('em', {}), (MIX_MAB, dict(niter=80)),
+                                           (dict(start=10, pi_min=0.8, pi_init=(2, 1, 1)), dict(muB=[0.1, 0.0]))],
+                         ids=['em', 'MAB_estimated_means', 'user_muB'])
+def test_trajectory_mixture(mixture, extra):
+    """The mixture EM vs the oracle: 'em' over 200 iterations (E-steps from 50); the artifact
+    class with both means estimated; a user muB (fixed) and other priors.  (Longer runs of the
+    second one are chaotic: differences of 1e-12 grow to 1e-2 by iteration 200.)"""
+    kw = data_2d(CI=3, CJ=2, **dict(dict(niter=200), **extra))
+    ref = R.LDDMM(**kw, mixture=mixture)
+    out = _lddmm.LDDMM(**kw, mixture=mixture, draw=False, backend='torch')
+    assert_close(out, ref, ('A', 'v', 'WM', 'WA', 'WB'), TRAJ_TOL)
+    classes = mixture.get('classes', 'MB') if isinstance(mixture, dict) else 'MB'
+    assert float(ref['WM'].min()) < 0.999 and float(ref['WB'].max()) > 1e-3  # the E-steps ran
+    assert (float(ref['WA'].max()) > 0.0) == ('A' in classes)
+
+
+def test_mixture_options_and_initial_state():
+    J = R.synthetic_2d(CJ=2)['J']
+    assert C.mixture_options(None) is None
+    assert C.mixture_options('em') == dict(C.MIXTURE_EM, pi_init=(0.9, 0.05, 0.05)) and C.MIXTURE_EM == R.MIXTURE_EM
+    o = C.mixture_options(dict(start=np.int64(7), every=2, classes='MAB', pi_min=0, pi_init=[2, 1, 1], fix_muA=True))
+    assert (o['start'], o['every'], o['classes'], o['pi_min'], o['fix_muA'], o['fix_muB']) == (7, 2, 'MAB', 0.0, True, True)
+    assert o['pi_init'] == (0.5, 0.25, 0.25)
+    bad = [dict(begin=3), dict(start=-1), dict(start=2.0), dict(every=0), dict(every=True), dict(classes='AB'),
+           dict(pi_min=1.0), dict(pi_min=-0.1), dict(pi_init=(1, 1)), dict(pi_init=(1, 0, 1)), dict(fix_muB=1)]
+    for b in bad + ['EM', 1, True]:
+        with pytest.raises(ValueError, match='mixture'):
+            C.mixture_options(b)
+    # initial weights and class means (the oracle computes them independently)
+    kw = data_2d(CJ=2, niter=0)
+    for muA, muB in ((None, None), (2.0, [0.1, 0.2])):
+        p = C.prepare_problem(2, **kw, muA=muA, muB=muB, mixture='em')
+        assert (p.WM == 1).all() and not p.WA.any() and not p.WB.any()
+        s = R.mixture_state('em', torch.tensor(p.J), muA, muB, 0.5, 2.0, 1.0)
+        assert relerr(p.mixture['muA'], s['muA']) < 1e-15 and np.array_equal(p.mixture['muB'], s['muB'].numpy())
+    assert np.array_equal(p.mixture['muB'], [0.1, 0.2])
+    out = _lddmm.LDDMM(**kw, mixture='em', draw=False, backend='torch')  # niter=0: the initial state
+    assert (out['WM'] == 1).all() and not out['WB'].any()
+    # 2D only
+    with pytest.raises(NotImplementedError, match='mixture'):
+        torch_lddmm3d(**data_3d(niter=1), mixture='em')
+    with pytest.raises(NotImplementedError, match='mixture'):
+        C.prepare_problem(3, **data_3d(niter=1), mixture='em')
+    assert inspect.signature(_lddmm.LDDMM).parameters['mixture'].kind == inspect.Parameter.KEYWORD_ONLY
+
+
+def test_mixture_off_keeps_the_original_weights():
+    """mixture=None gives the original E-step, bitwise the same as without the argument."""
+    kw = data_2d(niter=60, points=False)
+    a, b = torch_lddmm(**kw), torch_lddmm(**kw, mixture=None)
+    assert all(torch.equal(a[k], b[k]) for k in ('A', 'v', 'WM', 'WA', 'WB'))
+    assert not torch.equal(a['WM'], torch_lddmm(**kw, mixture='em')['WM'])
 
 
 # --------------------------------------------------------------------------- threads

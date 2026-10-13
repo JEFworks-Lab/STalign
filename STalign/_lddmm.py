@@ -15,7 +15,7 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
           niter=5000, diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
           sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=5e5, sigmaP=2e1,
           device='cpu', dtype=torch.float64, muB=None, muA=None,
-          *, draw='end', num_threads=None, backend='auto', affine_step_control=False):
+          *, draw='end', num_threads=None, backend='auto', affine_step_control=False, mixture=None):
     ''' Run LDDMM between a pair of images.
 
     This jointly estimates an affine transform A, and a diffeomorphism phi.
@@ -121,6 +121,21 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         larger than epL and epT. This stops the affine part from oscillating when epL or epT is
         too large. Default False, which gives the plain gradient steps of earlier versions.
         (LDDMM_3D_to_slice uses it by default.)
+    mixture : None, 'em' or dict, keyword only
+        How the weights WM, WA, WB of the matching, artifact and background classes are found.
+        None (default): as in earlier versions (WM starts at 0.5; from iteration 50, every 5
+        iterations, an E-step with the fixed variances sigmaM^2, sigmaA^2, sigmaB^2).
+        'em': a mixture EM whose matching variance vM is estimated from the residual. WM starts
+        at 1. From iteration 50, every 5 iterations, each target pixel is weighted between the
+        matching class (variance vM) and the background class (mean muB, the median of the
+        target's border unless muB is given; variance (sigmaB/sigmaM)^2 vM), with the matching
+        prior kept >= 0.5. Pixels that look like background while the deformed source does not
+        match them, as where the target section is incomplete, then get a low matching weight.
+        A dict selects 'em' and overrides some of its options: start (50), every (5), classes
+        ('MB'; 'MAB' adds the artifact class with mean muA, the mean of the target unless muA is
+        given, and variance (sigmaA/sigmaM)^2 vM; 'M' and 'MA' are also accepted), pi_min (0.5),
+        pi_init ((0.9, 0.05, 0.05)), fix_muA (False), fix_muB (True: muB is not re-estimated).
+        Only the weights change; the matching term keeps sigmaM.
 
     Returns a dictionary
     -------
@@ -146,7 +161,7 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
                               a=a, p=p, expand=expand, nt=nt, niter=niter, diffeo_start=diffeo_start,
                               epL=epL, epT=epT, epV=epV, sigmaM=sigmaM, sigmaB=sigmaB, sigmaA=sigmaA,
                               sigmaR=sigmaR, sigmaP=sigmaP, device=device, dtype=dtype, muA=muA, muB=muB,
-                              affine_step_control=affine_step_control)
+                              affine_step_control=affine_step_control, mixture=mixture)
     return run_lddmm(problem, draw=draw, num_threads=num_threads, backend=backend)
 
 
@@ -156,7 +171,7 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
                       niter=5000, diffeo_start=0, epL=1e-6, epT=1e1, epV=1e3,
                       sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=DEFAULT_SIGMAR_3D, sigmaP=2e1,
                       device='cpu', dtype=torch.float64, muA=None, muB=None,
-                      *, draw='end', num_threads=None, backend='auto', affine_step_control=True):
+                      *, draw='end', num_threads=None, backend='auto', affine_step_control=True, mixture=None):
     ''' LDDMM for 3D to 2D slice mapping.
 
     Jointly estimates a 3D affine transform A and a 3D diffeomorphism phi that map the 3D source
@@ -207,6 +222,9 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
         the result depends on rounding: in the tutorials, changing the initial translation in
         its last digit moved the cells by 24-84 um on average without the control, and by about
         1e-12 um with it. False gives the plain gradient steps of earlier versions.
+    mixture : None, keyword only
+        The mixture EM of LDDMM (mixture='em') is not available in 3D; anything but None raises
+        NotImplementedError.
 
     Returns a dictionary
     -------
@@ -226,6 +244,8 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
     returned.
 
     '''
+    if mixture is not None:
+        raise NotImplementedError('LDDMM_3D_to_slice has no mixture EM (mixture=...); it exists in LDDMM only')
     if pointsI is not None or pointsJ is not None:
         warnings.warn('LDDMM_3D_to_slice has no landmark matching term: pointsI, pointsJ and sigmaP are '
                       'ignored. Use L_T_from_points to initialize L and T from landmarks instead.', stacklevel=2)
