@@ -198,8 +198,11 @@ def test_curvature_steps():
     problem = C.prepare_problem(2, **data, epL=None, epT=None, epV=55.0, sigmaR=1.0)
     C.resolve_defaults(problem, prefit=False)
     assert (problem.epL, problem.epT, problem.epV) == (base[0], base[1], 55.0)
-    # a constant target has no curvature: the unscaled steps
-    np.testing.assert_array_equal(steps(J=np.ones_like(data['J'])), [2e-8, 2e-1, 2e3])
+    # a constant target has no curvature: the unscaled steps (np.var of a constant 0.3 is not 0)
+    for c in (1.0, 0.3):
+        np.testing.assert_array_equal(steps(J=np.full_like(data['J'], c)), [2e-8, 2e-1, 2e3])
+    # a constant source channel is skipped
+    np.testing.assert_array_equal(steps(I=np.concatenate((data['I'], np.full_like(data['I'], 0.3)))), base)
 
 
 # --------------------------------------------------------------------------- pre-fit

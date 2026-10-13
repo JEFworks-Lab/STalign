@@ -563,7 +563,9 @@ def curvature_proxy(xI, I, xJ, J, L, T):
         G = (sum_c var J_c) * mean_k sum_j |grad AI_kj|^2 / var AI_k
 
     AI = the source under the affine, sampled on the target grid (bilinear, border padding).
-    Source channels without variance are skipped; without any, G = sum_j |grad J_j|^2.
+    Source channels without variance (in AI, or constant in I) are skipped; without any,
+    G = sum_j |grad J_j|^2.  Constant channels of J add no variance (np.var can round to a
+    tiny positive number there).
     '''
     J = np.asarray(J, np.float64)
     H, W = J.shape[-2:]
@@ -573,9 +575,11 @@ def curvature_proxy(xI, I, xJ, J, L, T):
     Ai = torch.as_tensor(np.linalg.inv(A))
     X = (Ai[:2, :2] @ Y[..., None])[..., 0] + Ai[:2, 2]
     lo, span = _grid_norm(xI)
-    AI = _sample(torch.as_tensor(np.asarray(I, np.float64))[None], lo, span, X[None])[0].numpy()
-    vJ = float(sum(np.var(Jc) for Jc in J.reshape(J.shape[0], -1)))
-    g = [_gradient_energy(AIk[None], xJ) / np.var(AIk) for AIk in AI if np.var(AIk) > 0]
+    I = np.asarray(I, np.float64)
+    AI = _sample(torch.as_tensor(I)[None], lo, span, X[None])[0].numpy()
+    vJ = float(sum(np.var(Jc) for Jc in J.reshape(J.shape[0], -1) if np.ptp(Jc) > 0))
+    g = [_gradient_energy(AIk[None], xJ) / np.var(AIk) for AIk, Ik in zip(AI, I)
+         if np.var(AIk) > 0 and np.ptp(Ik) > 0]
     return vJ * float(np.mean(g)) if g else _gradient_energy(J, xJ)
 
 
