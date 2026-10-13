@@ -249,9 +249,14 @@ template <int D>
 struct SplatAcc {
   static constexpr int NC = 1 << D;
   i64 lbase = -1;  // local (box) point offset of corner 0 of the cached cell
-  // zeroed before use whenever lbase is set (vback_acc), and read only when lbase >= 0; the
-  // initializer only silences GCC 11's -Wuninitialized false positive
+  // zeroed before use whenever lbase is set (vback_acc), and read only when lbase >= 0.  GCC
+  // reports a false-positive -Wmaybe-uninitialized here, so it gets an initializer; clang does
+  // not, and there the initializer makes pass 2 about 4% slower (2D, Apple M1).
+#if defined(__GNUC__) && !defined(__clang__)
   double acc[NC][D] = {};
+#else
+  double acc[NC][D];
+#endif
   void flush(double* __restrict lbuf, const i64* lstr) {
     if (lbase < 0) return;
     for (int c = 0; c < NC; ++c) {
