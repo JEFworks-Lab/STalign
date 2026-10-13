@@ -98,7 +98,8 @@ This version keeps the functions and arguments of earlier versions, aligns much 
 
 - `LDDMM` and `LDDMM_3D_to_slice` draw their figures once, at the end. `draw=True` redraws them every 10 iterations as before, and `draw=False` turns them off.
 - `transform_points_source_to_target` and the other source-to-target transforms use the exact inverse of the fitted transformation; cells can move by up to about 100 µm on the tutorial datasets. `exact_inverse=False` gives the previous approximation.
-- The regularization of `LDDMM_3D_to_slice` is corrected (with a new default `sigmaR=2e6`) and the step size of each affine parameter is controlled (`affine_step_control=True`), so 3D alignments change and no longer depend on rounding. `analyze3Dalign` returns corrected atlas coordinates.
+- The regularization of `LDDMM_3D_to_slice` is corrected and the step size of each affine parameter is controlled (`affine_step_control=True`), so 3D alignments change and no longer depend on rounding. `analyze3Dalign` returns corrected atlas coordinates.
+- `LDDMM` and `LDDMM_3D_to_slice` start with a coarse affine pre-alignment that finds large rotations (2D) and tilted slice planes (3D), and choose `sigmaR` and, in 2D, the step sizes from the images (coordinates in µm); `LDDMM` runs 2000 iterations by default. On held-out test problems this more than halved the alignment error on average. Arguments you pass are used as before; `prefit=False` turns the pre-alignment off and `legacy_defaults=True` all of these defaults.
 
 See [CHANGES.md](CHANGES.md) for the full list.
 
