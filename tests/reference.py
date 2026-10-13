@@ -36,7 +36,9 @@ backward pass and before the affine update::
 
 where fac is the original's 1 + 9 * (it >= diffeo_start).  The v update is unchanged.  Off,
 the original update lines run unchanged.  The result's ``step_multipliers`` holds the final m.
-The default 3D sigmaR is the package's new default.
+The default 3D sigmaR (2e6) is the package's with legacy_defaults=True: the oracle has no
+affine pre-fit and no data-driven settings, so comparisons pass prefit=False and explicit
+settings to the package.
 
 Round 2 adds two options of the 2D fit:
 
@@ -64,7 +66,7 @@ SHRINK = 0.5
 GROW = 1.05
 FLOOR = 1e-3
 CAP = 1.0
-SIGMAR_3D = 2e6  # default sigmaR of LDDMM_3D_to_slice
+SIGMAR_3D = 2e6  # sigmaR of LDDMM_3D_to_slice with legacy_defaults=True
 
 # exact landmark map: a fixed-point solve stops when no point moves by more than this fraction
 # of a velocity grid cell (or a few ulps of the coordinates), after at most LANDMARK_MAX_ITER sweeps
