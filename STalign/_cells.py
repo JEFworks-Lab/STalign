@@ -52,9 +52,8 @@ def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500
         * niter: set by levels (passing niter is an error).
         * L, T or A, v and xv (the initial state), prefit and diffeo_start: apply to the
           first level, which is an ordinary LDDMM call. Each later level starts from the
-          previous level's A and v (LDDMM does not pre-fit the affine when it is given an
-          initial velocity field) on the same velocity grid xv, and deforms from its first
-          iteration.
+          previous level's A and v on the same velocity grid xv, without a pre-fit, and
+          deforms from its first iteration.
         * sigmaP (only with landmarks): multiplied by the level's pooling factor, so that the
           balance between the landmark and the image terms does not change with the
           number of pixels.
@@ -132,7 +131,7 @@ def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500
             lvl.update(first)
         else:
             prev = results[-1]
-            lvl.update(A=prev['A'], v=prev['v'], xv=prev['xv'], diffeo_start=0)
+            lvl.update(A=prev['A'], v=prev['v'], xv=prev['xv'], diffeo_start=0, prefit=False)
         results.append(LDDMM(xIc, Ic, xJc, Jc, **lvl))
         linear = _numpy(results[-1]['A'])[:2, :2]
         info.append(dict(factor=f, source_factor=fI, niter=n, xI=xIc, xJ=xJc))

@@ -118,7 +118,8 @@ def test_level_arguments(monkeypatch):
     assert first['diffeo_start'] == 5 and first['prefit'] is True
     assert not {'A', 'L', 'T', 'v', 'xv'} & set(first)
     for kw, prev in zip(later, calls):
-        assert kw['diffeo_start'] == 0 and 'prefit' not in kw and not {'L', 'T'} & set(kw)
+        # no pre-fit even though the previous level's v is zero (as after affine-only iterations)
+        assert kw['diffeo_start'] == 0 and kw['prefit'] is False and not {'L', 'T'} & set(kw)
         assert kw['A'] is prev['out']['A'] and kw['v'] is prev['out']['v'] and kw['xv'] is prev['out']['xv']
     # the source is pooled to the target's pixel size under the current affine (|det L| = 1/4^level)
     assert [(lv['factor'], lv['source_factor']) for lv in out['levels']] == [(8, 8), (4, 8), (2, 8)]
