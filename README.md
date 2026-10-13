@@ -99,9 +99,9 @@ This version keeps the functions and arguments of earlier versions, aligns much 
 - `LDDMM` and `LDDMM_3D_to_slice` draw their figures once, at the end. `draw=True` redraws them every 10 iterations as before, and `draw=False` turns them off.
 - `transform_points_source_to_target` and the other source-to-target transforms use the exact inverse of the fitted transformation; cells can move by up to about 100 µm on the tutorial datasets. `exact_inverse=False` gives the previous approximation.
 - The regularization of `LDDMM_3D_to_slice` is corrected and the step size of each affine parameter is controlled (`affine_step_control=True`), so 3D alignments change and no longer depend on rounding. `analyze3Dalign` returns corrected atlas coordinates.
-- `LDDMM` and `LDDMM_3D_to_slice` start with a coarse affine pre-alignment that finds large rotations (2D) and tilted slice planes (3D), and choose `sigmaR` and, in 2D, the step sizes from the images (coordinates in µm); `LDDMM` runs 2000 iterations by default. On held-out test problems this more than halved the alignment error on average. Arguments you pass are used as before; `prefit=False` turns the pre-alignment off and `legacy_defaults=True` all of these defaults.
+- `LDDMM` and `LDDMM_3D_to_slice` start with a coarse affine pre-alignment that finds large rotations (2D) and tilted slice planes (3D), and choose `sigmaR` and, in 2D, the step sizes from the images (coordinates in µm); `LDDMM` runs 2000 iterations by default. On held-out synthetic test problems the geometric mean alignment error fell to 0.43 times the previous one in 2D and 0.21 times in 3D, and 2D fits took about half as long. Arguments you pass are used as before; `prefit=False` turns the pre-alignment off and `legacy_defaults=True` all of these defaults.
 - With landmarks, `LDDMM` matches them under the exact inverse of the fitted map (the map `transform_points_source_to_target` applies) instead of forward Euler steps.
-- New: `align_cells` aligns two sets of cells in one call (see below), `rasterize(..., blur_um=...)` gives the kernel width in µm, and `LDDMM(mixture='em')` can help when the target section lacks tissue that the source has.
+- New: `align_cells` aligns two sets of cells in one call (see below), `rasterize(..., blur_um=...)` gives the kernel width in µm, and `LDDMM(mixture='em')` (also through `align_cells`) can help when the target section lacks tissue that the source has.
 
 See [CHANGES.md](CHANGES.md) for the full list.
 
@@ -112,7 +112,7 @@ To use this tool, you will need provide the following information:
 - Source: Arrays of x and y positions of cells
 - Target: Arrays of x and y positions of cells
 
-`STalign.align_cells(xI, yI, xJ, yJ)` aligns two such sets of cells in one call: it rasterizes them at 15 µm and runs `LDDMM` coarse to fine, which had about half the error of `LDDMM` on 30 or 60 µm rasters in our tests (see [CHANGES.md](CHANGES.md)). Its result works with the transform functions like that of `LDDMM`.
+`STalign.align_cells(xI, yI, xJ, yJ)` aligns two such sets of cells in one call: it rasterizes them at 15 µm and runs `LDDMM` coarse to fine, which had 0.44 times the error of `LDDMM` on the 15, 30 or 60 µm rasters of our tests (but 7–15% more error where those had 15 µm pixels; see [CHANGES.md](CHANGES.md)). Where the target lacks tissue, pass `mixture='em'`. Its result works with the transform functions like that of `LDDMM`.
 
 ### single-cell and spot-resolution ST alignment
 - Source: Arrays of x and y positions of cells from single-cell resolution ST data

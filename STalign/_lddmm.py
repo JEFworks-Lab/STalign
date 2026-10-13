@@ -262,7 +262,7 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
         sigma_disp * sqrt(64 pi) * a^1.5 * sqrt(nt) * (dx / 30) * sigmaM / s_J (dx: the
         target pixel size in atlas units under the affine after the pre-fit; s_J: the typical
         tissue intensity of the target), so that the prior allows displacements of about
-        sigma_disp micrometers (1.1e7 and 1.8e6 in the MERFISH and STARmap tutorials). A given
+        sigma_disp micrometers (1.1e7 and 1.85e6 in the MERFISH and STARmap tutorials). A given
         value is used as is (2e6 with legacy_defaults=True, which gives deformations of about
         the size of the old regularizer's). See CHANGES.md.
     niter, epL, epT, epV :
