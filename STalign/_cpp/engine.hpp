@@ -469,6 +469,13 @@ static inline void small_solve(int n, int m, double* A, double* B) {
   }
 }
 
+// determinant of a 2x2 or 3x3 matrix (row-major), by the cofactor formula
+static inline double small_det(int n, const double* A) {
+  if (n == 2) return A[0] * A[3] - A[1] * A[2];
+  return A[0] * (A[4] * A[8] - A[5] * A[7]) - A[1] * (A[3] * A[8] - A[5] * A[6]) +
+         A[2] * (A[3] * A[7] - A[4] * A[6]);
+}
+
 static inline void small_inverse(int n, const double* A, double* Ai) {
   std::vector<double> a(A, A + n * n), b(n * n, 0.0);
   for (int i = 0; i < n; ++i) b[i * n + i] = 1.0;
@@ -565,7 +572,8 @@ class Engine {
   double gL[D][D], gT[D];      // affine gradient
   double E_last[4] = {0, 0, 0, 0};  // EM + ER, EM, ER, EP
   std::vector<double> Ehist;        // E_last of every iteration
-  i64 lm_unconverged = 0;           // exact landmark solves that did not converge
+  i64 lm_unconverged = 0;           // exact landmark solves that did not converge or fell
+                                    // back to the Euler step (singular Newton matrix)
 
   // ---- mixture EM state: priors (matching, artifact, background) and class variances
   // (set at the first E-step)
@@ -1022,15 +1030,17 @@ class Engine {
   // z = p + v_t(z)/nt, solved by fixed-point iteration from the Euler step and finished
   // by one Newton step z + M^-1 (p + v_t(z)/nt - z), M = I - Dv_t(z)/nt (the solution
   // up to rounding, whatever the stopping tolerance).  The gradient uses the same z and M.
+  // Where M is exactly singular (det M = 0, or NaN) that step is the Euler step instead,
+  // with its gradient, and is counted in lm_unconverged (as the torch engine does).
   double points_term(const double (&A)[D + 1][D + 1], double (&gA)[D][D + 1], bool splat) {
     const double dnt = double(nt);
     const double invsP2 = 1.0 / (P.sigmaP * P.sigmaP);
     double EP = 0.0;
     std::vector<double> Pt((nt + 1) * D);
-    // exact map: the fixed point z of each step before the Newton step, its M, and whether
-    // v_t has a sample there
+    // exact map: the fixed point z of each step before the Newton step, its M, whether v_t
+    // has a sample there, and whether the step fell back to the Euler step
     std::vector<double> Zt(nt * D), Mt(nt * D * D);
-    std::vector<char> Zin(nt, 0);
+    std::vector<char> Zin(nt, 0), Zeuler(nt, 0);
     for (i64 ip = 0; ip < NP; ++ip) {
       for (int d = 0; d < D; ++d) Pt[d] = pI[ip * D + d];
       for (int t = 0; t < nt; ++t) {
@@ -1042,6 +1052,9 @@ class Engine {
         if (vsetup(gV, Pc, s)) vvalue(gV, vt, s, val);
         for (int d = 0; d < D; ++d) Pn[d] = Pc[d] + val[d] / dnt;
         if (!P.landmark_exact) continue;
+        double euler[D];
+        std::copy(Pn, Pn + D, euler);
+        Zeuler[t] = 0;
         bool converged = false;
         for (int k = 0; k < LANDMARK_MAX_ITER && !converged; ++k) {
           double w[D] = {};
@@ -1065,6 +1078,12 @@ class Engine {
         for (int a = 0; a < D; ++a) {
           for (int b = 0; b < D; ++b) Ms[a * D + b] = (a == b ? 1.0 : 0.0) - Jac[a][b] / dnt;
           r[a] = Pc[a] + w[a] / dnt - Pn[a];
+        }
+        if (!(std::fabs(small_det(D, Ms)) > 0.0)) {  // singular M: the Euler step
+          if (converged) ++lm_unconverged;
+          Zeuler[t] = 1;
+          std::copy(euler, euler + D, Pn);
+          continue;
         }
         std::copy(Ms, Ms + D * D, M);
         small_solve(D, 1, M, r);
@@ -1100,7 +1119,7 @@ class Engine {
         const double* vt = &v[t * NV * D];
         VSample<D> s;
         double q[D], JTq[D];
-        if (P.landmark_exact) {
+        if (P.landmark_exact && !Zeuler[t]) {
           // implicit function theorem at the solution z: lambda = M^-T g is the gradient
           // w.r.t. Pt[t], and lambda/nt is splatted at z
           if (!Zin[t]) continue;  // v_t = 0 near z: lambda = g

@@ -47,7 +47,8 @@ landmark_map='exact' (default)  The landmarks move with the exact inverse of the
     p_{t+1} = p_t + v_t(p_{t+1}) / nt by fixed-point iteration (no gradient); then one Newton
     step of that implicit equation, p_{t+1} = z + M^-1 (p_t + v_t(z)/nt - z) with z the fixed
     point and M = I - Dv_t(z)/nt held constant (Dv_t by autograd), gives the implicit-function
-    gradient through autograd.
+    gradient through autograd.  Where M is exactly singular (det M = 0 or NaN) the step is the
+    forward Euler step p_t + v_t(p_t) / nt.
 mixture='em' (or a dict of options, default None)  The mixture EM: WM starts at 1, WA = WB = 0,
     and the original's weight updates are replaced by the E/M-steps documented in
     ``STalign._lddmm_common.Problem`` (log-space E-step, matching variance estimated from the
@@ -207,8 +208,14 @@ def implicit_step(xv, vt, p, nt):
         zz = z.clone().requires_grad_(True)
         Dv = torch.stack([torch.autograd.grad(points_velocity(xv, f, zz)[:, k].sum(), zz)[0] for k in range(2)], 1)
     M = torch.eye(2, dtype=p.dtype) - Dv / nt  # (N, 2, 2), constant
+    # an exactly singular M (det 0 or NaN): the Euler step instead, as the engines do
+    singular = ~((M[:, 0, 0] * M[:, 1, 1] - M[:, 0, 1] * M[:, 1, 0]).abs() > 0)
+    M = torch.where(singular[:, None, None], torch.eye(2, dtype=p.dtype), M)
     r = p + points_velocity(xv, vt, z) / nt - z
-    return z + torch.linalg.solve(M, r[..., None])[..., 0]
+    newton = z + torch.linalg.solve(M, r[..., None])[..., 0]
+    if not bool(singular.any()):
+        return newton
+    return torch.where(singular[:, None], p + points_velocity(xv, vt, p) / nt, newton)
 
 
 # --------------------------------------------------------------------------- forward model

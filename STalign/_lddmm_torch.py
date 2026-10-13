@@ -506,17 +506,21 @@ def _points_grad_exact(pIf, pJf, A, vi, xv0_g, xvs_g, nt, sigmaP, vgrad, tol):
     p_{t+1} = z + M^-1 (p_t + v_t(z)/nt - z) with M = I - Dv_t(z)/nt, which gives the solution
     up to rounding.  The backward pass applies the implicit function theorem with the same z
     and M: lambda = M^-T h is the gradient at p_t, and lambda/nt is splatted into dEP/dv_t at
-    z.  Returns (transformed pointsI, EP, dEP/dL, dEP/dT, number of solves that did not
-    converge within _LANDMARK_MAX_ITER sweeps).'''
+    z.  Where M is exactly singular (det M = 0, or NaN) that step is the Euler step
+    p_{t+1} = p_t + v_t(p_t)/nt instead, with its gradient (as the C++ engine does).  Returns
+    (transformed pointsI, EP, dEP/dL, dEP/dT, number of solves that did not converge within
+    _LANDMARK_MAX_ITER sweeps or fell back to the Euler step).'''
     P = pIf.shape[0]
     grid = lambda p: ((p - xv0_g) / xvs_g * 2.0 - 1.0).view(1, 1, P, 2)
     vel = lambda t, p: torch.grid_sampler(vi[t][None], grid(p), _BILINEAR, _ZEROS, True)[0, :, 0, :].T
     eye = torch.eye(2, device=pIf.device, dtype=pIf.dtype)
     unit = eye.view(2, 2, 1, 1).expand(2, 2, 1, P).contiguous()  # grad_output e_k for batch entry k
-    p, zs, Ms = pIf, [], []
+    p, ps, zs, Ms, euler = pIf, [], [], [], []
     unconverged = 0
     for t in range(nt):
+        ps.append(p)
         z = p + vel(t, p) / nt
+        z_euler = z
         active = torch.ones(P, dtype=torch.bool, device=p.device)
         for _ in range(_LANDMARK_MAX_ITER):
             zn = p + vel(t, z) / nt
@@ -531,9 +535,19 @@ def _points_grad_exact(pIf, pJf, A, vi, xv0_g, xvs_g, nt, sigmaP, vgrad, tol):
         _, gg = _BWD[2](unit, vi[t][None].expand((2,) + tuple(vi[t].shape)), grid(z).expand(2, 1, P, 2),
                         _BILINEAR, _ZEROS, True, [False, True])
         M = eye - gg[:, 0].transpose(0, 1) * (2.0 / xvs_g) / nt
+        # det M with the C++ engine's formula (its M is this one with both axes flipped)
+        singular = ~((M[:, 0, 0] * M[:, 1, 1] - M[:, 0, 1] * M[:, 1, 0]).abs() > 0)
+        if bool(singular.any()):
+            unconverged += int((singular & ~active).sum())
+            M = torch.where(singular[:, None, None], eye, M)
+            euler.append(singular)
+        else:
+            euler.append(None)
         zs.append(z)
         Ms.append(M)
         p = z + torch.linalg.solve(M, (p + vel(t, z) / nt - z)[..., None])[..., 0]
+        if euler[-1] is not None:
+            p = torch.where(singular[:, None], z_euler, p)
     Alf = A[:2, :2].flip(0).flip(1)
     PA = p @ Alf.T + A[:2, 2].flip(0)
     d = PA - pJf
@@ -544,8 +558,17 @@ def _points_grad_exact(pIf, pJf, A, vi, xv0_g, xvs_g, nt, sigmaP, vgrad, tol):
     h = q @ Alf
     for t in range(nt - 1, -1, -1):
         lam = torch.linalg.solve(Ms[t].transpose(1, 2), h[..., None])[..., 0]
+        singular = euler[t]
+        if singular is not None:  # the Euler steps: splat h/nt at p_t, h <- h + Dv_t(p_t)^T h/nt
+            go = torch.where(singular[:, None], h / nt, torch.zeros_like(h)).T.reshape(1, 2, 1, P).contiguous()
+            gin, gg = _BWD[2](go, vi[t][None], grid(ps[t]), _BILINEAR, _ZEROS, True, [vgrad is not None, True])
+            if vgrad is not None:
+                vgrad[t] += gin[0]
+            lam = torch.where(singular[:, None], h + gg[0, 0] * 2.0 / xvs_g, lam)
         if vgrad is not None:
             go = (lam / nt).T.reshape(1, 2, 1, P).contiguous()
+            if singular is not None:
+                go = torch.where(singular.view(1, 1, 1, P), torch.zeros_like(go), go)
             gin, _ = _BWD[2](go, vi[t][None], grid(zs[t]), _BILINEAR, _ZEROS, True, [True, False])
             vgrad[t] += gin[0]
         h = lam

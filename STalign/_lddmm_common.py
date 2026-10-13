@@ -104,8 +104,10 @@ class Problem:
     velocity grid cell (at most 100 sweeps), followed by one Newton step
     p_{t+1} = z + M^-1 (p_t + v_t(z)/nt - z), M = I - Dv_t(z)/nt, at the last iterate z (so
     the result does not depend on the tolerance), and differentiated by the implicit function
-    theorem with the same z and M: dp_{t+1} = M^-1 (dp_t + dv_t(z)/nt).  Engines report the
-    number of steps that did not converge as ``snapshot()['landmark_unconverged']``.
+    theorem with the same z and M: dp_{t+1} = M^-1 (dp_t + dv_t(z)/nt).  Where M is exactly
+    singular (det M = M00 M11 - M01 M10 is 0 or NaN) the step is the Euler step instead, with
+    its gradient.  Engines report the number of steps that did not converge or fell back to
+    the Euler step as ``snapshot()['landmark_unconverged']``.
 
     ``mixture`` is None (the original weights: an M-step for muA/muB every 5 iterations and,
     from iteration 50, the E-step) or the options of the mixture EM (see mixture_options) plus
@@ -611,8 +613,9 @@ def run_lddmm(problem, draw='end', num_threads=None, backend='auto'):
     snap = engine.snapshot()
     if snap.get('landmark_unconverged'):
         warnings.warn(f'The exact landmark map did not converge in {int(snap["landmark_unconverged"])} of the '
-                      f'(landmark, time step) solves of this fit; the landmark term used approximate positions '
-                      f'there. The velocity field may be too large for its nt time steps to be invertible.',
+                      f'(landmark, time step) solves of this fit, or met a singular Jacobian there; the landmark '
+                      f'term used approximate positions there (forward Euler steps where the Jacobian was '
+                      f'singular). The velocity field may be too large for its nt time steps to be invertible.',
                       RuntimeWarning, stacklevel=3)
     return _result(problem, snap)
 
