@@ -11,9 +11,11 @@ import torch
 
 try:
     from ._lddmm import LDDMM
+    from ._prefit import pool_image
     from ._raster import rasterize
 except ImportError:
     from _lddmm import LDDMM
+    from _prefit import pool_image
     from _raster import rasterize
 
 
@@ -174,26 +176,12 @@ def _linear_part(first):
 
 
 def _pool(x, I, f):
-    ''' Mean-pool the image I (C, H, W) with pixel locations x = [rows, cols] by the factor f.
-
-    Each axis is padded at its end with the edge values to a multiple of f.  A pooled pixel's
-    location is the mean of its pixels' locations (continued with the pixel spacing into the
-    padding).
+    ''' Mean-pool the image I (C, H, W) with pixel locations x = [rows, cols] by the factor f
+    (_prefit.pool_image, which pads each axis at its end with the edge values to a multiple of
+    f), after checking that every axis keeps at least 2 pixels.
     '''
-    x = [np.asarray(xi, dtype=np.float64) for xi in x]
-    I = np.asarray(I, dtype=np.float64)
     n = [len(xi) for xi in x]
     if any(-(-m // f) < 2 for m in n):
         raise ValueError(f'a pooling factor of {f} leaves fewer than 2 pixels along an axis of a {n[0]} x {n[1]} '
                          f'pixel image: use smaller factors in levels, or a smaller dx')
-    if f == 1:
-        return [xi.copy() for xi in x], I.copy()
-    pad = [-m % f for m in n]
-    Ip = np.pad(I, [(0, 0)] + [(0, p) for p in pad], mode='edge')
-    C, H, W = Ip.shape
-    Ip = Ip.reshape(C, H // f, f, W // f, f).mean(axis=(2, 4))
-    xo = []
-    for xi, p in zip(x, pad):
-        xe = np.concatenate([xi, xi[-1] + (xi[1] - xi[0])*np.arange(1, p + 1)])
-        xo.append(xe.reshape(-1, f).mean(1))
-    return xo, Ip
+    return pool_image(x, I, f)
