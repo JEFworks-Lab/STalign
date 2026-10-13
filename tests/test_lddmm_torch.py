@@ -7,7 +7,8 @@
 * the affine step control (on by default in 3D): trajectories with oscillating affine steps,
   segmented runs, defaults and validation
 * the landmark maps ('exact', the default, and 'euler') and the mixture EM (mixture='em' or a
-  dict of options): gradients, trajectories, options and validation
+  dict of options): gradients, trajectories, options and validation, and the mixture EM's
+  effect on a target with missing tissue
 * the oracle itself against the frozen original STalign (skipped when it is not available)
 """
 import dataclasses
@@ -492,6 +493,33 @@ def test_mixture_off_keeps_the_original_weights():
     a, b = torch_lddmm(**kw), torch_lddmm(**kw, mixture=None)
     assert all(torch.equal(a[k], b[k]) for k in ('A', 'v', 'WM', 'WA', 'WB'))
     assert not torch.equal(a['WM'], torch_lddmm(**kw, mixture='em')['WM'])
+
+
+def test_mixture_drops_the_weight_of_missing_target_tissue():
+    """A target that lacks the left part of the source's tissue (the rest is the source plus
+    noise, so the true map is the identity): the mixture EM gives that part a matching weight
+    near 0 and keeps the rest near 1, so the source tissue is not pulled into the gap, while
+    the original weights stay near 1 everywhere and the remaining tissue moves by ~30 um."""
+    from STalign import STalign as S
+    rng = np.random.default_rng(4)
+    x = [np.arange(40) * 30.0 - 585.0, np.arange(40) * 30.0 - 585.0]
+    X = np.meshgrid(*x, indexing='ij')
+    centers, widths = rng.uniform(-350, 350, size=(14, 2)), rng.uniform(60, 120, size=14)
+    I = R._blobs(X, centers, widths, rng.uniform(0.5, 1.0, size=(14, 1)))
+    missing = X[1] < -150
+    J = np.where(missing, 0.0, I) + 0.02 * rng.standard_normal(I.shape)
+    tissue = I[0] > 0.3
+    kept = np.stack([X[0][tissue & ~missing], X[1][tissue & ~missing]], 1)
+    fit = dict(niter=200, epL=1e-7, epT=1.0, epV=2e4, sigmaR=5e5)  # stable steps for these small images
+    WM, err = {}, {}
+    for mixture in (None, 'em'):
+        out = torch_lddmm(xI=x, I=I, xJ=x, J=J, mixture=mixture, **fit)
+        WM[mixture] = out['WM'].numpy()
+        moved = S.transform_points_source_to_target(out['xv'], out['v'], out['A'], kept).numpy()
+        err[mixture] = np.linalg.norm(moved - kept, axis=1).mean()
+    assert WM['em'][tissue & missing].mean() < 0.05 and WM['em'][tissue & ~missing].mean() > 0.95
+    assert WM[None][tissue & missing].mean() > 0.95
+    assert err['em'] < 5.0 and err[None] > 20.0, err
 
 
 # --------------------------------------------------------------------------- threads
