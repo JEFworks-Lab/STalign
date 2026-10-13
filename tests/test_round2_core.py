@@ -347,6 +347,12 @@ def test_backends_agree_on_the_default_path(default_fits):
 OLD_2D = dict(epL=2e-8, epT=2e-1, epV=2e3, sigmaR=5e5)
 
 
+def landmarks(deg=8.0):
+    '''Landmarks of rotated_pair(deg): pointsJ = R(deg) pointsI + shift.'''
+    pI = np.array([[0.0, 0.0], [300.0, 100.0], [-200.0, 250.0], [150.0, -300.0]])
+    return pI, pI @ R.rotation_2d(deg).T + np.array([40.0, -60.0])
+
+
 @pytest.mark.parametrize('backend', BACKENDS)
 def test_legacy_defaults_are_the_old_values(backend):
     data, _, _, _ = rotated_pair(deg=8.0)
@@ -354,6 +360,14 @@ def test_legacy_defaults_are_the_old_values(backend):
     ref = fit2d(data, niter=60, backend=backend, prefit=False, **OLD_2D)
     assert all(torch.equal(out[k], ref[k]) for k in KEYS_2D)
     assert out['settings'] == dict(OLD_2D, niter=60)
+    # with landmarks also the forward Euler landmark map (not a public argument)
+    pI, pJ = landmarks()
+    out = fit2d(data, pointsI=pI, pointsJ=pJ, niter=60, backend=backend, legacy_defaults=True)
+    problem = C.prepare_problem(2, **data, pointsI=pI, pointsJ=pJ, niter=60, landmark_map='euler', **OLD_2D)
+    ref = C.run_lddmm(problem, draw=False, num_threads=2, backend=backend)
+    assert all(torch.equal(out[k], ref[k]) for k in KEYS_2D)
+    exact = fit2d(data, pointsI=pI, pointsJ=pJ, niter=60, backend=backend, **OLD_2D)
+    assert not torch.equal(exact['A'], out['A'])  # the default is the exact map
     d3 = um_3d()
     out = fit3d(d3, niter=30, backend=backend, legacy_defaults=True)
     ref = fit3d(d3, niter=30, backend=backend, prefit=False, sigmaR=2e6)
@@ -384,8 +398,7 @@ np.savez(sys.argv[3], **{f'{n}_{k}': out[k].numpy() for n, out in fits.items() f
 def test_legacy_defaults_match_the_previous_version(tmp_path, backend):
     data, _, _, _ = rotated_pair(deg=8.0)
     d3 = um_3d()
-    pI = np.array([[0.0, 0.0], [300.0, 100.0], [-200.0, 250.0], [150.0, -300.0]])
-    pJ = pI @ R.rotation_2d(8.0).T + np.array([40.0, -60.0])
+    pI, pJ = landmarks()
     inputs = dict(xI0=data['xI'][0], xI1=data['xI'][1], I=data['I'], xJ0=data['xJ'][0], xJ1=data['xJ'][1],
                   J=data['J'], pI=pI, pJ=pJ, zI0=d3['xI'][0], zI1=d3['xI'][1], zI2=d3['xI'][2], I3=d3['I'],
                   zJ0=d3['xJ'][0], zJ1=d3['xJ'][1], J3=d3['J'])

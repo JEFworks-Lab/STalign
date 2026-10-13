@@ -433,7 +433,7 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
 
     With legacy_defaults=True the settings left as None take the values of LEGACY_DEFAULTS,
     'auto' does not run the pre-fit, and the landmark term uses the forward Euler map of
-    earlier versions: the fit is that of earlier versions, bit for bit.
+    earlier versions (landmark_map='euler'): the fit is that of earlier versions, bit for bit.
 
     Returns
     -------
@@ -454,8 +454,7 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
         for k, val in LEGACY_DEFAULTS[dim].items():
             if getattr(problem, k) is None:
                 setattr(problem, k, val)
-        if hasattr(problem, 'landmark_map'):
-            problem.landmark_map = 'euler'
+        problem.landmark_map = 'euler'
     if isinstance(prefit, str):
         reason = ('legacy defaults' if legacy_defaults else
                   'landmarks' if dim == 2 and len(problem.pointsI) else
