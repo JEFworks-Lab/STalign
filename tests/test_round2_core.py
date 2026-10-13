@@ -194,6 +194,8 @@ def test_curvature_steps():
     problem = C.prepare_problem(2, **data, epL=None, epT=None, epV=55.0, sigmaR=1.0)
     C.resolve_defaults(problem, prefit=False)
     assert (problem.epL, problem.epT, problem.epV) == (base[0], base[1], 55.0)
+    # a constant target has no curvature: the unscaled steps
+    np.testing.assert_array_equal(steps(J=np.ones_like(data['J'])), [2e-8, 2e-1, 2e3])
 
 
 # --------------------------------------------------------------------------- pre-fit
@@ -267,15 +269,13 @@ def test_prefit_rules():
     points = dict(pointsI=np.array([[0.0, 0.0], [300.0, 100.0], [-200.0, 250.0]]))
     points['pointsJ'] = points['pointsI'] + 10.0
 
-    def info(dim=2, **kw):
-        d = dict(data, **kw) if dim == 2 else um_3d()
-        problem = C.prepare_problem(dim, **{k: v for k, v in d.items() if k not in ('prefit', 'legacy', 'v')},
+    def info(**kw):
+        problem = C.prepare_problem(2, **{k: v for k, v in dict(data, **kw).items() if k not in ('prefit', 'legacy')},
                                     sigmaR=1.0)
-        return C.resolve_defaults(problem, prefit=kw.get('prefit', 'auto'), legacy_defaults=kw.get('legacy', False),
-                                  initial_velocity='v' in kw)['prefit']
+        return C.resolve_defaults(problem, prefit=kw.get('prefit', 'auto'),
+                                  legacy_defaults=kw.get('legacy', False))['prefit']
 
     assert info(**points) == {'ran': False, 'reason': 'landmarks'}
-    assert info(v=True) == {'ran': False, 'reason': 'initial velocity'}
     assert info(prefit=False) == {'ran': False, 'reason': 'disabled'}
     assert info(legacy=True) == {'ran': False, 'reason': 'legacy defaults'}
     with_points = info(prefit=True, **points)  # one start (the initial orientation), landmarks in the energy
@@ -285,9 +285,13 @@ def test_prefit_rules():
             info(prefit=bad)
     with pytest.raises(ValueError, match='legacy_defaults'):
         info(legacy='no')
-    # an initial velocity field turns 'auto' off through the public functions too
-    out = fit2d(data, niter=0, v=np.zeros((3, 4, 4, 2)), xv=[np.linspace(-900, 900, 4)] * 2)
-    assert out['prefit'] == {'ran': False, 'reason': 'initial velocity'}
+    # a nonzero initial velocity (a warm start) turns 'auto' off, through the public functions
+    # too; a zero one (e.g. to choose the velocity grid) does not
+    xv = [np.linspace(-900, 900, 4)] * 2
+    v = np.zeros((3, 4, 4, 2))
+    v[1, 2, 2, 0] = 1.0
+    assert fit2d(data, niter=0, v=v, xv=xv)['prefit'] == {'ran': False, 'reason': 'initial velocity'}
+    assert info(v=0 * v, xv=xv, prefit='auto')['ran']
 
 
 def test_prefit_failure_warns_and_the_fit_goes_on(monkeypatch):

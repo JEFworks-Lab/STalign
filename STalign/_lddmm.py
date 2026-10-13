@@ -162,8 +162,8 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         best one is refined at twice that resolution; starts whose energies are within 1% of
         the best count as ties, and the smallest rotation among them wins. LDDMM then starts
         from the result. With landmarks the pre-fit includes the landmark term and keeps the
-        initial orientation. 'auto' (default) runs it unless landmarks (pointsI, pointsJ) or an
-        initial velocity field v are given; True always; False never. It is deterministic,
+        initial orientation. 'auto' (default) runs it unless landmarks (pointsI, pointsJ) or a
+        nonzero initial velocity field v are given; True always; False never. It is deterministic,
         and what it did is returned as 'prefit'. If it fails, a warning is issued and the fit
         starts from the given affine.
     sigma_disp : float, keyword only
@@ -209,7 +209,7 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
                               sigmaR=sigmaR, sigmaP=sigmaP, device=device, dtype=dtype, muA=muA, muB=muB,
                               affine_step_control=affine_step_control, mixture=mixture)
     info = resolve_defaults(problem, prefit=prefit, sigma_disp=sigma_disp, legacy_defaults=legacy_defaults,
-                            initial_velocity=v is not None, num_threads=num_threads)
+                            num_threads=num_threads)
     out = run_lddmm(problem, draw=draw, num_threads=num_threads, backend=backend)
     out.update(info)
     return out
@@ -290,8 +290,8 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
         along its normal by -300, 0 and 300 um (27 starts); each start fits a rotation, an
         in-plane affine map and a shift on images pooled to about 80 pixels across, and the
         best one is refined at twice that resolution (ties within 1% go to the start closest to
-        the initial plane). 'auto' (default) runs it unless an initial velocity field v is
-        given; True always; False never. It is deterministic, and what it did is returned as
+        the initial plane). 'auto' (default) runs it unless a nonzero initial velocity field v
+        is given; True always; False never. It is deterministic, and what it did is returned as
         'prefit'. If it fails, a warning is issued and the fit starts from the given affine.
     sigma_disp : float, keyword only
         Prior displacement scale in micrometers (default 94.03), used when sigmaR is None.
@@ -330,7 +330,7 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
                               sigmaR=sigmaR, sigmaP=sigmaP, device=device, dtype=dtype, muA=muA, muB=muB,
                               affine_step_control=affine_step_control)
     info = resolve_defaults(problem, prefit=prefit, sigma_disp=sigma_disp, legacy_defaults=legacy_defaults,
-                            initial_velocity=v is not None, num_threads=num_threads)
+                            num_threads=num_threads)
     out = run_lddmm(problem, draw=draw, num_threads=num_threads, backend=backend)
     out.update(info)
     return out

@@ -415,15 +415,14 @@ def _float_or_none(x):
 
 
 # =========================================================================== data-driven defaults
-def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defaults=False, initial_velocity=False,
-                     num_threads=None):
+def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defaults=False, num_threads=None):
     '''Run the affine pre-fit and choose the settings that the caller left as None.
 
     In this order (each step sees the affine of the previous one):
 
     1. prefit: 'auto' runs the pre-alignment of ``_prefit.affine_prefit`` in 3D always and in
-       2D unless there are landmarks, but never when an initial velocity field is given
-       (``initial_velocity``: the pre-fit would change the affine under a fitted deformation);
+       2D unless there are landmarks, but never from a nonzero initial velocity field (the
+       pre-fit would change the affine under a fitted deformation, e.g. in a warm start);
        True runs it always and False never.  It starts from the problem's L and T and replaces
        them.  If it fails, it warns and the fit starts from the given L and T.
     2. sigmaR = _prefit.physical_sigmaR(problem, sigma_disp).
@@ -459,7 +458,7 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
     if isinstance(prefit, str):
         reason = ('legacy defaults' if legacy_defaults else
                   'landmarks' if dim == 2 and len(problem.pointsI) else
-                  'initial velocity' if initial_velocity else None)
+                  'initial velocity' if np.any(problem.v) else None)
     else:
         reason = None if prefit else 'disabled'
     info = {'ran': False, 'reason': reason}
