@@ -584,8 +584,9 @@ def curvature_steps(problem, steps):
 
     Every step in `steps` is multiplied by sigmaM^2 * 1.1 / G, G = curvature_proxy at the
     problem's initial affine: steps that are stable for the curvature of the data and the
-    weight 1/sigmaM^2 of the image term, equal to the given ones at G = 1.1 sigmaM^2.
+    weight 1/sigmaM^2 of the image term, equal to the given ones at G = 1.1 sigmaM^2.  Without
+    any curvature (a constant target) the steps are returned unchanged.
     '''
     G = curvature_proxy(problem.xI, problem.I, problem.xJ, problem.J, problem.L, problem.T)
-    f = problem.sigmaM ** 2 * CURVATURE_REF / max(G, 1e-300)
+    f = problem.sigmaM ** 2 * CURVATURE_REF / G if np.isfinite(G) and G > 0 else 1.0
     return {k: float(val) * f for k, val in steps.items()}
