@@ -108,7 +108,8 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         Cost is of the form 0.5/sigmaP^2 sum_i (source_point_i - target_point_i)^2, where the source
         points are mapped to the target by the exact inverse of the fitted target-to-source map,
         i.e. as transform_points_source_to_target maps them after the fit. (Earlier versions used
-        forward Euler steps, which invert that map only approximately.)
+        forward Euler steps, which invert that map only approximately; legacy_defaults=True
+        uses them.)
     device: str
         torch device. defaults to 'cpu'. Can also be 'cuda:0' for example.
     dtype: torch dtype
@@ -154,7 +155,8 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         ('MB'; 'MAB' adds the artifact class with mean muA, the mean of the target unless muA is
         given, and variance (sigmaA/sigmaM)^2 vM; 'M' and 'MA' are also accepted), pi_min (0.5),
         pi_init ((0.9, 0.05, 0.05)), fix_muA (False), fix_muB (True: muB is not re-estimated).
-        Only the weights change; the matching term keeps sigmaM.
+        Only the weights change; the matching term keeps sigmaM. Worth trying where the target
+        lacks tissue that the source has; it can make targets of uneven density worse.
     prefit : 'auto', True or False, keyword only
         Coarse affine pre-alignment before LDDMM. The initial affine (L, T or A; identity by
         default) is rotated about the target tissue's centroid in 12 steps of 30 degrees, each
@@ -197,7 +199,8 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         target pooling factors) and 'seconds'; if not, 'reason'.
     'settings': dict
         The niter, sigmaR, epL, epT and epV the fit used. Passing them (and A=prefit['A'] with
-        prefit=False) repeats the fit without the data-driven choices.
+        prefit=False, and legacy_defaults=True if it was given) repeats the fit without the
+        data-driven choices.
     }
     A and v are the pair used by the last iteration's forward pass, so build_transform(xv, v, A)
     reproduces the final alignment. With niter=0 the initial state (after the pre-fit) is returned.
