@@ -283,9 +283,13 @@ def test_prefit_rules():
         return C.resolve_defaults(problem, prefit=kw.get('prefit', 'auto'),
                                   legacy_defaults=kw.get('legacy', False))['prefit']
 
-    assert info(**points) == {'ran': False, 'reason': 'landmarks'}
-    assert info(prefit=False) == {'ran': False, 'reason': 'disabled'}
-    assert info(legacy=True) == {'ran': False, 'reason': 'legacy defaults'}
+    def skipped(reason, A=np.eye(3)):  # the 'prefit' entry when it did not run: A is the start
+        return {'ran': False, 'reason': reason, 'A': A}
+
+    np.testing.assert_equal(info(**points), skipped('landmarks'))
+    np.testing.assert_equal(info(prefit=False, L=2 * np.eye(2), T=[3.0, 4.0]),
+                            skipped('disabled', affine(2 * np.eye(2), [3.0, 4.0])))
+    np.testing.assert_equal(info(legacy=True), skipped('legacy defaults'))
     with_points = info(prefit=True, **points)  # one start (the initial orientation), landmarks in the energy
     assert with_points['ran'] and with_points['starts'] == [0.0]
     for bad in ('yes', None, 1):
@@ -298,7 +302,7 @@ def test_prefit_rules():
     xv = [np.linspace(-900, 900, 4)] * 2
     v = np.zeros((3, 4, 4, 2))
     v[1, 2, 2, 0] = 1.0
-    assert fit2d(data, niter=0, v=v, xv=xv)['prefit'] == {'ran': False, 'reason': 'initial velocity'}
+    np.testing.assert_equal(fit2d(data, niter=0, v=v, xv=xv)['prefit'], skipped('initial velocity'))
     assert info(v=0 * v, xv=xv, prefit='auto')['ran']
 
 
@@ -316,7 +320,8 @@ def test_prefit_skips_a_target_without_tissue():
             assert [(w.category, str(w.message)) for w in caught] == [
                 (UserWarning, 'the affine pre-fit was skipped: the target image has no tissue (it is constant at the '
                               'resolution of the pre-fit); starting from the given affine')]
-            assert {k: out['prefit'][k] for k in ('ran', 'reason')} == {'ran': False, 'reason': 'no target tissue'}
+            np.testing.assert_equal(out['prefit'], {'ran': False, 'reason': 'no target tissue',
+                                                    'A': np.eye(len(d['xI']) + 1)})
             assert all(torch.isfinite(out[k]).all() for k in ('A', 'v', 'WM'))
         if fit is fit2d:
             assert {k: out['settings'][k] for k in C.STEPS_2D} == C.STEPS_2D
@@ -332,7 +337,7 @@ def test_prefit_failure_warns_and_the_fit_goes_on(monkeypatch):
     monkeypatch.setattr(P, 'affine_prefit', broken)
     with pytest.warns(UserWarning, match='pre-fit failed .*no luck'):
         out = fit2d(data, niter=5)
-    assert out['prefit'] == {'ran': False, 'reason': 'failed: RuntimeError: no luck'}
+    np.testing.assert_equal(out['prefit'], {'ran': False, 'reason': 'failed: RuntimeError: no luck', 'A': np.eye(3)})
     assert all(torch.equal(out[k], ref[k]) for k in KEYS_2D)
 
 
@@ -346,14 +351,23 @@ def default_fits():
 
 
 def test_settings_reproduce_the_fit(default_fits):
+    ''''settings' and the start prefit['A'] repeat a fit, whether the pre-fit ran or not.'''
     data, fits = default_fits
     out = next(iter(fits.values()))
     backend = next(iter(fits))
     settings = out['settings']
+    assert out['prefit']['ran']
     assert settings['niter'] == 60 and settings['sigmaR'] > 0 and min(settings[k] for k in ('epL', 'epT', 'epV')) > 0
     again = fit2d(data, A=out['prefit']['A'], prefit=False, backend=backend, **settings)
     assert all(torch.equal(again[k], out[k]) for k in KEYS_2D)
     assert float(out['v'].abs().max()) > 1.0  # the deformation is on
+    # without the pre-fit, from a given L and T
+    start = dict(L=R.rotation_2d(35.0), T=[30.0, -50.0])
+    out = fit2d(data, niter=60, prefit=False, backend=backend, **start)
+    assert not out['prefit']['ran']
+    np.testing.assert_array_equal(out['prefit']['A'], affine(start['L'], start['T']))
+    again = fit2d(data, A=out['prefit']['A'], prefit=False, backend=backend, **out['settings'])
+    assert all(torch.equal(again[k], out[k]) for k in KEYS_2D)
 
 
 def test_backends_agree_on_the_default_path(default_fits):

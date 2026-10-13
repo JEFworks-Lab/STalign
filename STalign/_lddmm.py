@@ -193,14 +193,15 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
     'WA': torch tensor
         Resulting weight 2D array (artifact)
     'prefit': dict
-        What the pre-fit did: 'ran' (bool); if it ran, 'A' (the affine LDDMM started from),
-        'A_start' (the initial affine), 'energy' (the final energy of every start), 'starts'
-        (their rotations in degrees), 'best' (the index of the winner), 'pool' (the source and
-        target pooling factors) and 'seconds'; if not, 'reason'.
+        What the pre-fit did: 'ran' (bool) and 'A' (the affine LDDMM started from: the
+        pre-fit's result, or the initial affine if it did not run); if it ran, 'A_start' (the
+        initial affine), 'energy' (the final energy of every start), 'starts' (their rotations
+        in degrees), 'best' (the index of the winner), 'pool' (the source and target pooling
+        factors) and 'seconds'; if not, 'reason'.
     'settings': dict
-        The niter, sigmaR, epL, epT and epV the fit used. Passing them (and A=prefit['A'] with
-        prefit=False, and legacy_defaults=True if it was given) repeats the fit without the
-        data-driven choices.
+        The niter, sigmaR, epL, epT and epV the fit used. Passing them with A=prefit['A'] (in
+        place of L, T or A) and prefit=False (and legacy_defaults=True if it was given), the
+        other arguments unchanged, repeats the fit exactly, without the data-driven choices.
     }
     A and v are the pair used by the last iteration's forward pass, so build_transform(xv, v, A)
     reproduces the final alignment. With niter=0 the initial state (after the pre-fit) is returned.

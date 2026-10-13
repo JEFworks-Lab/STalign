@@ -441,8 +441,9 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
     Returns
     -------
     info : dict
-        'prefit': what the pre-fit did (see _prefit.affine_prefit; {'ran': False, 'reason': ...}
-        when it did not run) and 'settings': the niter, sigmaR, epL, epT, epV of the fit.
+        'prefit': what the pre-fit did (see _prefit.affine_prefit; {'ran': False, 'reason': ...,
+        'A': the initial affine} when it did not run), so 'A' is always the affine the fit
+        starts from; and 'settings': the niter, sigmaR, epL, epT, epV of the fit.
     '''
     if not isinstance(legacy_defaults, (bool, np.bool_)):
         raise ValueError(f'legacy_defaults must be True or False, got {legacy_defaults!r}')
@@ -494,6 +495,8 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
             torch.set_num_threads(torch_threads)
     for k, val in steps.items():
         setattr(problem, k, val)
+    if 'A' not in info:  # the affine the fit starts from, also when the pre-fit did not run
+        info['A'] = affine(problem.L, problem.T)
     return {'prefit': info, 'settings': {k: getattr(problem, k) for k in SETTINGS}}
 
 
