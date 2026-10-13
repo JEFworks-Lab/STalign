@@ -4,23 +4,28 @@ import warnings
 import torch
 
 try:
-    from ._lddmm_common import DEFAULT_SIGMAR_3D, prepare_problem, run_lddmm
+    from ._lddmm_common import SIGMA_DISP, prepare_problem, resolve_defaults, run_lddmm
 except ImportError:
-    from _lddmm_common import DEFAULT_SIGMAR_3D, prepare_problem, run_lddmm
+    from _lddmm_common import SIGMA_DISP, prepare_problem, resolve_defaults, run_lddmm
 
 
 def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
           L=None, T=None, A=None, v=None, xv=None,
           a=500.0, p=2.0, expand=2.0, nt=3,
-          niter=5000, diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
-          sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=5e5, sigmaP=2e1,
+          niter=None, diffeo_start=0, epL=None, epT=None, epV=None,
+          sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=None, sigmaP=2e1,
           device='cpu', dtype=torch.float64, muB=None, muA=None,
-          *, draw='end', num_threads=None, backend='auto', affine_step_control=False, mixture=None):
+          *, draw='end', num_threads=None, backend='auto', affine_step_control=False, mixture=None,
+          prefit='auto', sigma_disp=SIGMA_DISP, legacy_defaults=False):
     ''' Run LDDMM between a pair of images.
 
     This jointly estimates an affine transform A, and a diffeomorphism phi.
     The map is of the form x -> A phi x
 
+    By default the fit starts with a coarse affine pre-alignment (prefit), and the
+    regularization weight sigmaR and the step sizes epL, epT, epV are chosen from the images
+    unless given (see their descriptions). Coordinates are assumed to be in micrometers.
+    legacy_defaults=True gives the fit of earlier versions.
 
     Parameters
     ----------
@@ -56,7 +61,8 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
     pointsJ : torch tensor
         N x 2 set of corresponding points for matching in target image. Default None (no points).
     niter : int
-        Number of iterations of gradient descent optimization
+        Number of iterations of gradient descent optimization. Default None: 2000 (5000 with
+        legacy_defaults=True).
     diffeo_start : int
         Number of iterations of gradient descent optimization for affine only, before nonlinear deformation.
     epL : float
@@ -65,6 +71,11 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         Gradient descent step size of translation part of affine.
     epV : float
         Gradient descent step size for velocity field.
+        Default None for each of epL, epT, epV: the steps of earlier versions (2e-8, 2e-1, 2e3)
+        times sigmaM^2 * 1.1 / G, where G estimates the curvature of the image matching term
+        from the target's variance and the source's gradients under the initial affine (after
+        the pre-fit). This adapts the steps to the image intensities and pixel size, where the
+        old defaults could be far too large or too small. A given value is used as is.
     sigmaM : float
         Standard deviation of image matching term for Gaussian mixture modeling in cost function.
         This term generally controls matching accuracy with smaller corresponding to more accurate.
@@ -84,6 +95,14 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         L = (1 - a^2 Laplacian)^p, i.e. a sum over the nt time steps without a dt = 1/nt factor
         (nt times 0.5/sigmaR^2 int_0^1 int_X |Lv|^2 dx dt). Changing nt at a fixed sigmaR therefore
         changes the strength of the regularization.
+        Default None: computed from sigma_disp as
+        sigma_disp * sqrt(12 pi) * a * sqrt(nt) * (dx / 30) * sigmaM / s_J, where dx is the
+        target pixel size in source units (under the affine after the pre-fit) and s_J the
+        typical tissue intensity of the target. The prior then allows displacements of about
+        sigma_disp micrometers whatever the pixel size, intensity scale, a and nt (at the
+        defaults a = 500, nt = 3, a 30 um target with s_J = sigmaM gets 5e5, the previous
+        default). A given value is used as is, as in earlier versions (5e5 with
+        legacy_defaults=True).
     sigmaP: float
         Standard deviation for matching of points.
         Cost is of the form 0.5/sigmaP^2 sum_i (source_point_i - target_point_i)^2, where the source
@@ -136,6 +155,25 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         given, and variance (sigmaA/sigmaM)^2 vM; 'M' and 'MA' are also accepted), pi_min (0.5),
         pi_init ((0.9, 0.05, 0.05)), fix_muA (False), fix_muB (True: muB is not re-estimated).
         Only the weights change; the matching term keeps sigmaM.
+    prefit : 'auto', True or False, keyword only
+        Coarse affine pre-alignment before LDDMM. The initial affine (L, T or A; identity by
+        default) is rotated about the target tissue's centroid in 12 steps of 30 degrees, each
+        start is fitted as an affine map on images pooled to about 80 pixels across, and the
+        best one is refined at twice that resolution; starts whose energies are within 1% of
+        the best count as ties, and the smallest rotation among them wins. LDDMM then starts
+        from the result. With landmarks the pre-fit includes the landmark term and keeps the
+        initial orientation. 'auto' (default) runs it unless landmarks (pointsI, pointsJ) or an
+        initial velocity field v are given; True always; False never. It is deterministic,
+        and what it did is returned as 'prefit'. If it fails, a warning is issued and the fit
+        starts from the given affine.
+    sigma_disp : float, keyword only
+        Prior displacement scale in micrometers (default 94.03, which reproduces the previous
+        default sigmaR=5e5 on 30 um images). Used only when sigmaR is None; larger values allow
+        larger deformations. It assumes that coordinates are in micrometers.
+    legacy_defaults : bool, keyword only
+        If True, use the defaults of earlier versions: no pre-fit (unless prefit=True),
+        niter=5000, epL=2e-8, epT=2e-1, epV=2e3, sigmaR=5e5, and the forward Euler map in the
+        landmark term. Results are then identical to those of earlier versions. Default False.
 
     Returns a dictionary
     -------
@@ -152,9 +190,17 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         Resulting weight 2D array (background)
     'WA': torch tensor
         Resulting weight 2D array (artifact)
+    'prefit': dict
+        What the pre-fit did: 'ran' (bool); if it ran, 'A' (the affine LDDMM started from),
+        'A_start' (the initial affine), 'energy' (the final energy of every start), 'starts'
+        (their rotations in degrees), 'best' (the index of the winner), 'pool' (the source and
+        target pooling factors) and 'seconds'; if not, 'reason'.
+    'settings': dict
+        The niter, sigmaR, epL, epT and epV the fit used. Passing them (and A=prefit['A'] with
+        prefit=False) repeats the fit without the data-driven choices.
     }
     A and v are the pair used by the last iteration's forward pass, so build_transform(xv, v, A)
-    reproduces the final alignment. With niter=0 the initial state is returned.
+    reproduces the final alignment. With niter=0 the initial state (after the pre-fit) is returned.
 
     '''
     problem = prepare_problem(2, xI, I, xJ, J, pointsI=pointsI, pointsJ=pointsJ, L=L, T=T, A=A, v=v, xv=xv,
@@ -162,21 +208,28 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
                               epL=epL, epT=epT, epV=epV, sigmaM=sigmaM, sigmaB=sigmaB, sigmaA=sigmaA,
                               sigmaR=sigmaR, sigmaP=sigmaP, device=device, dtype=dtype, muA=muA, muB=muB,
                               affine_step_control=affine_step_control, mixture=mixture)
-    return run_lddmm(problem, draw=draw, num_threads=num_threads, backend=backend)
+    info = resolve_defaults(problem, prefit=prefit, sigma_disp=sigma_disp, legacy_defaults=legacy_defaults,
+                            initial_velocity=v is not None, num_threads=num_threads)
+    out = run_lddmm(problem, draw=draw, num_threads=num_threads, backend=backend)
+    out.update(info)
+    return out
 
 
 def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
                       L=None, T=None, A=None, v=None, xv=None,
                       a=500.0, p=2.0, expand=1.25, nt=3,
                       niter=5000, diffeo_start=0, epL=1e-6, epT=1e1, epV=1e3,
-                      sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=DEFAULT_SIGMAR_3D, sigmaP=2e1,
+                      sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=None, sigmaP=2e1,
                       device='cpu', dtype=torch.float64, muA=None, muB=None,
-                      *, draw='end', num_threads=None, backend='auto', affine_step_control=True, mixture=None):
+                      *, draw='end', num_threads=None, backend='auto', affine_step_control=True,
+                      mixture=None, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defaults=False):
     ''' LDDMM for 3D to 2D slice mapping.
 
     Jointly estimates a 3D affine transform A and a 3D diffeomorphism phi that map the 3D source
     I (for example an atlas) onto the 2D target slice J. The map is of the form x -> A phi x.
-    The parameters are those of LDDMM, with the differences below.
+    The parameters are those of LDDMM, with the differences below. By default the fit starts
+    with a coarse pre-alignment of the slice plane (prefit) and sigmaR is chosen from the
+    images; coordinates are assumed to be in micrometers.
 
     Parameters
     ----------
@@ -194,14 +247,20 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
     expand : float
         Factor to expand size of velocity field around image boundaries (default 1.25)
     sigmaR : float
-        Standard deviation for regularization (default 2e6). Smaller sigmaR means a smoother
+        Standard deviation for regularization. Smaller sigmaR means a smoother
         transformation. Regularization is of the form 0.5/sigmaR^2 sum_{t=0}^{nt-1} int_X |L v_t|^2 dx
         with L = (1 - a^2 Laplacian)^p over all three axes, a sum over time steps without dt as
-        in LDDMM. Before this version the 3D regularizer took the Fourier transform over only
-        two of the three axes, which made it much stronger (and uneven); the default was 1e8.
-        With the corrected regularizer, 1e8 regularizes much less than the old code did (in the
-        3D tutorials the rms velocity became up to twice as large), and the new default 2e6
-        gives deformations of about the old size. See CHANGES.md.
+        in LDDMM. Earlier versions took its Fourier transform over only two of the three axes,
+        which made it much stronger (and uneven), with the default 1e8.
+        Default None: computed from sigma_disp as
+        sigma_disp * sqrt(64 pi) * a^1.5 * sqrt(nt) * (dx / 30) * sigmaM / s_J (dx: the
+        target pixel size in atlas units under the affine after the pre-fit; s_J: the typical
+        tissue intensity of the target), so that the prior allows displacements of about
+        sigma_disp micrometers (1.1e7 and 1.8e6 in the MERFISH and STARmap tutorials). A given
+        value is used as is (2e6 with legacy_defaults=True, which gives deformations of about
+        the size of the old regularizer's). See CHANGES.md.
+    niter, epL, epT, epV :
+        Defaults 5000, 1e-6, 1e1, 1e3 (no data-driven steps in 3D).
     pointsI, pointsJ, sigmaP :
         Not used: there is no landmark term in 3D, and passing points issues a warning.
         Use L_T_from_points to initialize L and T from landmarks instead.
@@ -225,6 +284,20 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
     mixture : None, keyword only
         The mixture EM of LDDMM (mixture='em') is not available in 3D; anything but None raises
         NotImplementedError.
+    prefit : 'auto', True or False, keyword only
+        Coarse pre-alignment of the slice plane before LDDMM. Starting from the initial affine,
+        the plane is tilted about its two in-plane axes by -6, 0 and 6 degrees each and shifted
+        along its normal by -300, 0 and 300 um (27 starts); each start fits a rotation, an
+        in-plane affine map and a shift on images pooled to about 80 pixels across, and the
+        best one is refined at twice that resolution (ties within 1% go to the start closest to
+        the initial plane). 'auto' (default) runs it unless an initial velocity field v is
+        given; True always; False never. It is deterministic, and what it did is returned as
+        'prefit'. If it fails, a warning is issued and the fit starts from the given affine.
+    sigma_disp : float, keyword only
+        Prior displacement scale in micrometers (default 94.03), used when sigmaR is None.
+    legacy_defaults : bool, keyword only
+        If True, use the defaults of earlier versions: no pre-fit (unless prefit=True) and
+        sigmaR=2e6. Results are then identical to those of earlier versions. Default False.
 
     Returns a dictionary
     -------
@@ -239,9 +312,11 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
         Resulting weights (matching, background, artifact), shape (1, H, W)
     'Xs': torch tensor
         Locations in the source space sampled for each target pixel, shape (1, H, W, 3)
+    'prefit', 'settings': dict
+        As in LDDMM; the pre-fit's 'starts' are (tilt 1, tilt 2, offset) triples.
     }
-    A, v and Xs come from the last iteration's forward pass. With niter=0 the initial state is
-    returned.
+    A, v and Xs come from the last iteration's forward pass. With niter=0 the initial state
+    (after the pre-fit) is returned.
 
     '''
     if mixture is not None:
@@ -254,4 +329,8 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
                               epL=epL, epT=epT, epV=epV, sigmaM=sigmaM, sigmaB=sigmaB, sigmaA=sigmaA,
                               sigmaR=sigmaR, sigmaP=sigmaP, device=device, dtype=dtype, muA=muA, muB=muB,
                               affine_step_control=affine_step_control)
-    return run_lddmm(problem, draw=draw, num_threads=num_threads, backend=backend)
+    info = resolve_defaults(problem, prefit=prefit, sigma_disp=sigma_disp, legacy_defaults=legacy_defaults,
+                            initial_velocity=v is not None, num_threads=num_threads)
+    out = run_lddmm(problem, draw=draw, num_threads=num_threads, backend=backend)
+    out.update(info)
+    return out

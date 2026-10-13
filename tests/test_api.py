@@ -45,12 +45,15 @@ ORIGINAL_FUNCTIONS = [
 # small fits with a stable descent (see test_lddmm_cpp.py); 60 iterations include an E-step
 FIT_2D = dict(a=12.0, sigmaM=0.3, sigmaR=5e3, epT=1e-2, epL=1e-5, epV=0.2, niter=60, diffeo_start=10)
 FIT_3D = dict(nt=4, a=10.0, expand=1.25, sigmaM=0.5, sigmaR=5e2, epT=1e-2, epL=1e-5, epV=5.0, niter=60,
-              L=0.95 * R.rotation_3d(4.0, -3.0), T=[0.5, 0.3, -0.4])
+              L=0.95 * R.rotation_3d(4.0, -3.0), T=[0.5, 0.3, -0.4], prefit=False)
 KEYS_2D = ('A', 'v', 'WM', 'WB', 'WA')
 KEYS_3D = KEYS_2D + ('Xs',)
 
-# defaults that were changed on purpose (see CHANGES.md): (function, parameter) -> (old, new)
-CHANGED_DEFAULTS = {('LDDMM_3D_to_slice', 'sigmaR'): (1e8, 2e6)}
+# defaults that were changed on purpose (see CHANGES.md): (function, parameter) -> (old, new);
+# None: chosen from the data (legacy_defaults=True restores the old values)
+CHANGED_DEFAULTS = {('LDDMM_3D_to_slice', 'sigmaR'): (1e8, None), ('LDDMM', 'sigmaR'): (5e5, None),
+                    ('LDDMM', 'niter'): (5000, None), ('LDDMM', 'epL'): (2e-8, None),
+                    ('LDDMM', 'epT'): (2e-1, None), ('LDDMM', 'epV'): (2e3, None)}
 
 
 def data_2d(points=True, CJ=2, **kw):

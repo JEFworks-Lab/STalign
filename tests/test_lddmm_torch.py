@@ -11,6 +11,7 @@
 * the oracle itself against the frozen original STalign (skipped when it is not available)
 """
 import dataclasses
+import functools
 import importlib.util
 import inspect
 import multiprocessing as mp
@@ -41,12 +42,13 @@ def assert_close(ours, ref, keys, tol):
     return errs
 
 
+# The oracle has no affine pre-fit: the comparisons run without it (tested in test_round2_core.py).
 def torch_lddmm(**kw):
-    return _lddmm.LDDMM(**kw, draw=False, backend='torch')
+    return _lddmm.LDDMM(**kw, draw=False, backend='torch', prefit=False)
 
 
 def torch_lddmm3d(**kw):
-    return _lddmm.LDDMM_3D_to_slice(**kw, draw=False, backend='torch')
+    return _lddmm.LDDMM_3D_to_slice(**kw, draw=False, backend='torch', prefit=False)
 
 
 # --------------------------------------------------------------------------- problems
@@ -211,7 +213,8 @@ def test_lattice_aligned_start():
 
 
 # --------------------------------------------------------------------------- affine step control
-FITS = {2: (_lddmm.LDDMM, R.LDDMM), 3: (_lddmm.LDDMM_3D_to_slice, R.LDDMM_3D_to_slice)}
+FITS = {2: (functools.partial(_lddmm.LDDMM, prefit=False), R.LDDMM),
+        3: (functools.partial(_lddmm.LDDMM_3D_to_slice, prefit=False), R.LDDMM_3D_to_slice)}
 
 
 def result_keys(dim):
@@ -242,13 +245,15 @@ def test_trajectory_affine_step_control(dim):
 
 
 def test_affine_step_control_defaults_and_validation(monkeypatch):
-    """On by default in LDDMM_3D_to_slice and off in LDDMM; the 3D default sigmaR is 2e6; the
-    oracle uses the package's constants; the multipliers are in the snapshot only when on."""
+    """On by default in LDDMM_3D_to_slice and off in LDDMM; the oracle's 3D default sigmaR is the
+    package's legacy default 2e6 (the package's default is data-driven); the oracle uses the
+    package's constants; the multipliers are in the snapshot only when on."""
     p2 = inspect.signature(_lddmm.LDDMM).parameters
     p3 = inspect.signature(_lddmm.LDDMM_3D_to_slice).parameters
     assert p2['affine_step_control'].default is False and p3['affine_step_control'].default is True
     assert p2['affine_step_control'].kind == p3['affine_step_control'].kind == inspect.Parameter.KEYWORD_ONLY
-    assert p3['sigmaR'].default == C.DEFAULT_SIGMAR_3D == R.SIGMAR_3D == 2e6 and p2['sigmaR'].default == 5e5
+    assert p3['sigmaR'].default is None and p2['sigmaR'].default is None
+    assert C.LEGACY_DEFAULTS[3]['sigmaR'] == R.SIGMAR_3D == 2e6 and C.LEGACY_DEFAULTS[2]['sigmaR'] == 5e5
     assert ((C.AFFINE_STEP_SHRINK, C.AFFINE_STEP_GROW, C.AFFINE_STEP_FLOOR, C.AFFINE_STEP_CAP)
             == (R.SHRINK, R.GROW, R.FLOOR, R.CAP) == (0.5, 1.05, 1e-3, 1.0))
     for dim, default in ((2, False), (3, True)):
@@ -349,7 +354,7 @@ def test_draw_modes(draw):
 def test_draw_3d_and_draw_errors():
     import matplotlib.pyplot as plt
     kw = data_3d(niter=6)
-    out = _lddmm.LDDMM_3D_to_slice(**kw, draw=5, backend='torch')
+    out = _lddmm.LDDMM_3D_to_slice(**kw, draw=5, backend='torch', prefit=False)
     assert torch.equal(out['v'], torch_lddmm3d(**kw)['v'])
     assert len(plt.get_fignums()) == 3
     # the figures accept 1, 3 or 4 channels only: a 2-channel target warns and the fit completes
@@ -623,16 +628,16 @@ def test_output_contract():
     kw = data_2d(niter=3)
     out = torch_lddmm(**kw)
     nv = tuple(len(x) for x in out['xv'])
-    assert list(out) == ['A', 'v', 'xv', 'WM', 'WB', 'WA']
+    assert list(out) == ['A', 'v', 'xv', 'WM', 'WB', 'WA', 'prefit', 'settings']
     assert out['A'].shape == (3, 3) and out['v'].shape == (3,) + nv + (2,)
     assert all(out[k].shape == kw['J'].shape[1:] for k in ('WM', 'WB', 'WA'))
     assert all(isinstance(x, torch.Tensor) and x.dtype == torch.float64 for x in out['xv'])
     kw3 = data_3d(niter=3)
     out = torch_lddmm3d(**kw3)
-    assert list(out) == ['A', 'v', 'xv', 'WM', 'WB', 'WA', 'Xs']
+    assert list(out) == ['A', 'v', 'xv', 'WM', 'WB', 'WA', 'Xs', 'prefit', 'settings']
     H, W = kw3['J'].shape[1:]
     assert out['A'].shape == (4, 4) and out['Xs'].shape == (1, H, W, 3) and out['WM'].shape == (1, H, W)
-    assert all(val.dtype == torch.float64 and val.device.type == 'cpu' for k, val in out.items() if k != 'xv')
+    assert all(out[k].dtype == torch.float64 and out[k].device.type == 'cpu' for k in ('A', 'v', 'WM', 'WB', 'WA', 'Xs'))
 
 
 def test_float32_and_padding():

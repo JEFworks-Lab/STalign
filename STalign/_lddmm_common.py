@@ -24,11 +24,18 @@ import numpy as np
 import torch
 from torch.nn.functional import grid_sample
 
-# Default sigmaR of LDDMM_3D_to_slice (change it here only).  The corrected 3D regularizer
-# (Fourier transform over all three axes) is much weaker than the old one at the same sigmaR:
-# at the old default 1e8 the rms velocity of the 3D tutorial fits became up to twice as large
-# as with the old code.  At 2e6 it is about as large as with the old code.
-DEFAULT_SIGMAR_3D = 2e6
+# Settings left as None are chosen by resolve_defaults (see there): sigmaR from the prior
+# displacement scale SIGMA_DISP (um), and in 2D the steps STEPS_2D scaled to the curvature of
+# the image term and NITER_2D iterations.  In 3D the steps and niter have fixed defaults.
+SIGMA_DISP = 94.03
+NITER_2D = 2000
+STEPS_2D = {'epL': 2e-8, 'epT': 2e-1, 'epV': 2e3}
+FIXED_3D = {'niter': 5000, 'epL': 1e-6, 'epT': 1e1, 'epV': 1e3}
+SETTINGS = ('niter', 'sigmaR', 'epL', 'epT', 'epV')
+
+# The defaults before the pre-fit and the data-driven settings (legacy_defaults=True).  The
+# 3D sigmaR 2e6 gave deformations of about the size of the old (two-axis) 3D regularizer's.
+LEGACY_DEFAULTS = {2: dict(STEPS_2D, niter=5000, sigmaR=5e5), 3: dict(FIXED_3D, sigmaR=2e6)}
 
 # Affine step control (affine_step_control=True; default in LDDMM_3D_to_slice only).  Every
 # affine parameter (the d*d entries of L, row-major, then the d entries of T) has a step
@@ -71,7 +78,9 @@ class Problem:
     Arrays are float64 C-contiguous numpy arrays that belong to the problem; engines must not
     modify them.  ``L``, ``T`` and ``v`` are the initial state and ``WM``, ``WB``, ``WA`` the
     initial weights.  In 3D the target has a slice axis: ``J`` is (C_J, 1, H, W) and ``xJ``
-    is [array([z]), y, x].  ``muA`` / ``muB`` are None when they are estimated.
+    is [array([z]), y, x].  ``muA`` / ``muB`` are None when they are estimated.  ``niter``,
+    ``epL``, ``epT``, ``epV`` and ``sigmaR`` may be None after prepare_problem; resolve_defaults
+    sets them before the problem reaches an engine.
 
     With ``affine_step_control`` the engines scale each affine step by a per-parameter
     multiplier, updated every iteration before the affine update::
@@ -303,7 +312,8 @@ def prepare_problem(dim, xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=Non
     Follows the original conventions: A excludes L and T, v requires xv, and the velocity grid
     is built from xI when neither is given.  2D landmarks must come in pairs; in 3D they are
     dropped (the caller warns).  The constants of the affine step control are read from this
-    module (AFFINE_STEP_*) at call time.  ``landmark_map`` and ``mixture`` are described in
+    module (AFFINE_STEP_*) at call time.  niter, epL, epT, epV and sigmaR may be None, to be
+    chosen by resolve_defaults.  ``landmark_map`` and ``mixture`` are described in
     :class:`Problem`; the mixture EM exists in 2D only (NotImplementedError in 3D).
     '''
     device = torch.device(device)
@@ -380,9 +390,10 @@ def prepare_problem(dim, xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=Non
         if pointsI.ndim != 2 or pointsI.shape[1] != 2 or pointsI.shape != pointsJ.shape:
             raise ValueError(f'pointsI and pointsJ must both be N x 2, got {pointsI.shape} and {pointsJ.shape}')
 
-    niter = int(niter)
-    if niter < 0:
-        raise ValueError(f'niter must be >= 0, got {niter}')
+    if niter is not None:
+        niter = int(niter)
+        if niter < 0:
+            raise ValueError(f'niter must be >= 0, got {niter}')
     C = J.shape[0]
     muA, muB = coerce_mu(muA, C, 'muA'), coerce_mu(muB, C, 'muB')
     WM, WB, WA = np.full(J.shape[1:], 0.5), np.full(J.shape[1:], 0.4), np.full(J.shape[1:], 0.1)
@@ -393,9 +404,90 @@ def prepare_problem(dim, xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=Non
         dim=dim, xI=xI, I=I, xJ=xJ, J=J, L=L, T=T, v=v, xv=xv, LL=LL, K=K, DV=DV, WM=WM, WB=WB, WA=WA,
         muA=muA, muB=muB, pointsI=pointsI, pointsJ=pointsJ,
         a=float(a), p=float(p), nt=int(nt), niter=niter, diffeo_start=int(diffeo_start),
-        epL=float(epL), epT=float(epT), epV=float(epV), sigmaM=float(sigmaM), sigmaB=float(sigmaB),
-        sigmaA=float(sigmaA), sigmaR=float(sigmaR), sigmaP=float(sigmaP), device=device, dtype=dtype,
-        affine_step_control=bool(affine_step_control), landmark_map=landmark_map, mixture=mixture, **step)
+        epL=_float_or_none(epL), epT=_float_or_none(epT), epV=_float_or_none(epV), sigmaM=float(sigmaM),
+        sigmaB=float(sigmaB), sigmaA=float(sigmaA), sigmaR=_float_or_none(sigmaR), sigmaP=float(sigmaP),
+        device=device, dtype=dtype, affine_step_control=bool(affine_step_control),
+        landmark_map=landmark_map, mixture=mixture, **step)
+
+
+def _float_or_none(x):
+    return None if x is None else float(x)
+
+
+# =========================================================================== data-driven defaults
+def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defaults=False, initial_velocity=False,
+                     num_threads=None):
+    '''Run the affine pre-fit and choose the settings that the caller left as None.
+
+    In this order (each step sees the affine of the previous one):
+
+    1. prefit: 'auto' runs the pre-alignment of ``_prefit.affine_prefit`` in 3D always and in
+       2D unless there are landmarks, but never when an initial velocity field is given
+       (``initial_velocity``: the pre-fit would change the affine under a fitted deformation);
+       True runs it always and False never.  It starts from the problem's L and T and replaces
+       them.  If it fails, it warns and the fit starts from the given L and T.
+    2. sigmaR = _prefit.physical_sigmaR(problem, sigma_disp).
+    3. 2D: epL, epT, epV = _prefit.curvature_steps(problem, STEPS_2D) for those left as None;
+       3D: FIXED_3D.
+    4. niter: NITER_2D in 2D, FIXED_3D['niter'] in 3D.
+
+    With legacy_defaults=True the settings left as None take the values of LEGACY_DEFAULTS,
+    'auto' does not run the pre-fit, and the landmark term uses the forward Euler map of
+    earlier versions: the fit is that of earlier versions, bit for bit.
+
+    Returns
+    -------
+    info : dict
+        'prefit': what the pre-fit did (see _prefit.affine_prefit; {'ran': False, 'reason': ...}
+        when it did not run) and 'settings': the niter, sigmaR, epL, epT, epV of the fit.
+    '''
+    if not isinstance(legacy_defaults, (bool, np.bool_)):
+        raise ValueError(f'legacy_defaults must be True or False, got {legacy_defaults!r}')
+    if not (isinstance(prefit, (bool, np.bool_)) or (isinstance(prefit, str) and prefit == 'auto')):
+        raise ValueError(f"prefit must be 'auto', True or False, got {prefit!r}")
+    if problem.sigmaR is None and not legacy_defaults:
+        sigma_disp = float(sigma_disp)
+        if not (np.isfinite(sigma_disp) and sigma_disp > 0):
+            raise ValueError(f'sigma_disp must be a positive number, got {sigma_disp!r}')
+    dim = problem.dim
+    if legacy_defaults:
+        for k, val in LEGACY_DEFAULTS[dim].items():
+            if getattr(problem, k) is None:
+                setattr(problem, k, val)
+        if hasattr(problem, 'landmark_map'):
+            problem.landmark_map = 'euler'
+    if isinstance(prefit, str):
+        reason = ('legacy defaults' if legacy_defaults else
+                  'landmarks' if dim == 2 and len(problem.pointsI) else
+                  'initial velocity' if initial_velocity else None)
+    else:
+        reason = None if prefit else 'disabled'
+    info = {'ran': False, 'reason': reason}
+    defaults = STEPS_2D if dim == 2 else {k: FIXED_3D[k] for k in STEPS_2D}
+    steps = {k: val for k, val in defaults.items() if getattr(problem, k) is None}
+    if problem.niter is None:
+        problem.niter = NITER_2D if dim == 2 else FIXED_3D['niter']
+    if reason is None or problem.sigmaR is None or (dim == 2 and steps):
+        prefit_mod = _sibling('_prefit')
+        torch_threads = torch.get_num_threads()
+        torch.set_num_threads(resolve_num_threads(num_threads))
+        try:
+            if reason is None:
+                try:
+                    problem.L, problem.T, info = prefit_mod.affine_prefit(problem)
+                except Exception as e:  # the fit can go on from the given affine
+                    warnings.warn(f'the affine pre-fit failed ({type(e).__name__}: {e}); starting from the '
+                                  f'given affine', stacklevel=3)
+                    info = {'ran': False, 'reason': f'failed: {type(e).__name__}: {e}'}
+            if problem.sigmaR is None:
+                problem.sigmaR = prefit_mod.physical_sigmaR(problem, sigma_disp)
+            if dim == 2 and steps:
+                steps = prefit_mod.curvature_steps(problem, steps)
+        finally:
+            torch.set_num_threads(torch_threads)
+    for k, val in steps.items():
+        setattr(problem, k, val)
+    return {'prefit': info, 'settings': {k: getattr(problem, k) for k in SETTINGS}}
 
 
 # =========================================================================== threads
@@ -494,6 +586,9 @@ def run_lddmm(problem, draw='end', num_threads=None, backend='auto'):
     iteration and, in 3D, 'Xs' the sample points of that forward pass.  With niter=0 it is
     the initial state.  Tensors are on the requested device and dtype.
     '''
+    unset = [k for k in SETTINGS if getattr(problem, k) is None]
+    if unset:
+        raise ValueError(f'{", ".join(unset)} must be set before the fit (see resolve_defaults)')
     engine = select_engine(problem, backend, num_threads)
     if problem.niter == 0:
         return _initial_result(problem)
