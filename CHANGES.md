@@ -20,6 +20,7 @@ This version keeps every function and argument of earlier versions. Alignments r
 ### New options
 
 - `LDDMM` and `LDDMM_3D_to_slice` take keyword-only arguments `backend` (`'auto'`, `'cpp'` or `'torch'`), `num_threads` and `draw`. The new `backend_info()` reports which engine is used and, if the C++ engine is unavailable, why.
+- `LDDMM` and `LDDMM_3D_to_slice` take a keyword-only argument `affine_step_control` (default `False` in `LDDMM` and `True` in `LDDMM_3D_to_slice`, see below).
 - The number of threads is at most `num_threads`, else the environment variable `STALIGN_NUM_THREADS`, else `torch.get_num_threads()`. Results do not depend on it.
 - `transform_points_source_to_target`, `build_transform(direction='f')`, `build_transform3D(direction='f')` and `transform_image_target_to_source` take `exact_inverse` (default `True`, see below).
 
@@ -27,13 +28,23 @@ This version keeps every function and argument of earlier versions. Alignments r
 
 - **Source-to-target transforms use the exact inverse of the fitted mapping.** `LDDMM` fits a target-to-source map; mapping cells the other way previously used a forward Euler approximation that is not its inverse. On the tutorial fits, cells move by 1–13 µm on average and up to ~100 µm. The ground-truth error of the simulation tutorial drops from 9.68 to 6.68 µm. `exact_inverse=False` gives the previous approximation.
 - **`transform_points_target_to_source` integrates the velocity in the correct time order** (t = nt-1 down to 0, as `LDDMM` and `build_transform` do). Changes are small: at most 0.26 raster pixels on the tutorials.
-- **The 3D regularizer is corrected.** `LDDMM_3D_to_slice` transformed the velocity over only two of its three axes, so it applied no smoothness left-to-right and a position-dependent penalty up to 83,521 times stronger at the midline. It now computes the documented 0.5/sigmaR² Σ_t ‖L v_t‖². At the current default `sigmaR=1e8` the corrected term is weak; a new 3D default is being evaluated.
+- **The 3D regularizer is corrected.** `LDDMM_3D_to_slice` transformed the velocity over only two of its three axes, so it applied no smoothness left-to-right and a position-dependent penalty up to 83,521 times stronger at the midline. It now computes the documented 0.5/sigmaR² Σ_t ‖L v_t‖². At the old default `sigmaR=1e8` the corrected term regularizes much less than the old one did (in the 3D tutorials the rms velocity became up to twice as large), so **the default is now `sigmaR=2e6`**, which gives deformations of about the previous size (rms velocity 16.7 and 17.4 µm in the MERFISH and STARmap tutorials, against 15.7 and 14.7 µm before). `sigmaR=1e8` gives the old value.
+- **`LDDMM_3D_to_slice` controls the step of each affine parameter** (`affine_step_control=True`, the new default). With the default `epT`, the translation found by plain gradient descent never settled: it jumped back and forth by 45–165 µm per iteration until the last one, so the result depended on rounding. Now the step of each entry of `L` and `T` is multiplied by its own factor between 0.001 and 1, which halves when that parameter's gradient changes sign from one iteration to the next and grows by 5% per iteration while it does not, so steps are never larger than `epL` and `epT`. The affine parameters converge (the translation moves by 0.001–0.3 µm per iteration at the end), and changing the initial translation in its last digit moves the cells by about 1e-12 µm instead of 30–84 µm. With the new `sigmaR`, the 3D tutorial alignments match the atlas about as well as the previous version did:
+
+  | | matching energy | cells in brain | Dice (tissue vs brain) | correlation with the atlas |
+  |---|---|---|---|---|
+  | MERFISH, previous version | 29,095 | 97.1% | 0.885 | 0.394 |
+  | MERFISH, this version | 30,169 | 96.9% | 0.882 | 0.400 |
+  | STARmap, previous version | 92,564 | 97.5% | 0.804 | 0.516 |
+  | STARmap, this version | 77,782 | 97.7% | 0.805 | 0.522 |
+
+  (Matching energy: EM over the last 20 iterations, lower is better. Correlation: the target with the deformed atlas Nissl image over the tissue.) `affine_step_control=False` gives the plain gradient steps. The control is off by default in `LDDMM`: on the 2D tutorials the plain steps either already converge (MERFISH: the cells move by 0.03 µm with the control) or the control made the landmark error worse (the noisy H&E target of the Xenium tutorial: 34.2 µm instead of 30.3 µm).
 - **`analyze3Dalign` returns correct atlas coordinates.** It indexed a 10-unit grid with indices computed from `dx`, so coordinates were wrong whenever `dx` was not 10 (by 4.3 mm on average in the STARmap tutorial, `dx=50`) and biased by up to 19 µm otherwise. Region labels were mostly right and change for under 3% of cells at region boundaries.
 - `LDDMM` and `LDDMM_3D_to_slice` return the affine `A`, velocity `v` and (3D) sample points `Xs` of the same, last evaluated iteration. `v` previously came from one update later than `A`. The difference is one velocity step.
 - `muA` and `muB` are matched to the number of target channels. A 3-entry mean against a 1-channel target (as in the 3D tutorials) previously counted the squared distance three times; it now warns and uses the single value. Integer, float, list, numpy and torch values are accepted.
 - `rasterize_with_signal` keeps the sign of a signed signal (it returned the absolute value). `normalize` maps a constant array to `t_min` instead of NaN, so `rasterize` with a constant gene gives a zero image instead of NaN.
 
-Long 3D fits are very sensitive to rounding: a change in the last digit of the input moves the original code's own result by 30–90 µm on average. Small differences from earlier versions are therefore expected even where nothing was fixed.
+Long 3D fits with plain affine steps are very sensitive to rounding: a change in the last digit of the input moved the previous version's result by 30–84 µm on average in the 3D tutorials. Small differences from earlier versions are therefore expected even where nothing was fixed. With the affine step control, the new default in 3D, the same change moves the result by about 1e-12 µm, and the C++ and `torch` engines give the same 3D tutorial alignments to within 1e-11 µm. 2D alignments of noisy images can still be sensitive: the same change moves the cells of the Xenium-to-H&E tutorial by 8 µm on average.
 
 ### Bug fixes
 

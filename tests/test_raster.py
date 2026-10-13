@@ -5,9 +5,11 @@ original per-cell loop of STalign (before the speedup) with the approved fixes
 applied (abs only for wavelet_magnitude; normalize of a constant gives t_min).
 Criterion: identical grids, shape, layout and NaN / inf pattern, and finite
 values within 1e-12 * max|W|.  When the frozen original is available
-(dev/ref/stalign_orig.py, not distributed), the reference is also checked
-against it bit for bit.
+(dev/ref/stalign_orig.py or the file named by the environment variable
+STALIGN_ORIGINAL; not distributed), the reference is also checked against it
+bit for bit.
 """
+import importlib.util
 import os
 import sys
 import tracemalloc
@@ -137,15 +139,17 @@ def cells(n, seed=0, extent=3000.0, dtype=np.float64):
 
 
 def frozen_original():
-    path = os.path.join(REPO, 'dev', 'ref')
-    if not os.path.exists(os.path.join(path, 'stalign_orig.py')):
-        pytest.skip('frozen original (dev/ref/stalign_orig.py) not available')
-    sys.path.insert(0, path)
-    try:
-        import stalign_orig
-    finally:
-        sys.path.remove(path)
-    return stalign_orig
+    '''The frozen original STalign.py, if available (STALIGN_ORIGINAL or dev/ref/stalign_orig.py).'''
+    path = os.environ.get('STALIGN_ORIGINAL') or os.path.join(REPO, 'dev', 'ref', 'stalign_orig.py')
+    if not os.path.exists(path):
+        pytest.skip('the frozen original STalign.py is not available (set STALIGN_ORIGINAL)')
+    module = sys.modules.get('stalign_orig')
+    if module is None or os.path.abspath(getattr(module, '__file__', '')) != os.path.abspath(path):
+        spec = importlib.util.spec_from_file_location('stalign_orig', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        sys.modules['stalign_orig'] = module
+    return module
 
 
 # ---------------------------------------------------------------------------

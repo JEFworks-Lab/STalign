@@ -45,7 +45,7 @@ _ext = _import_extension()
 
 # Binding interface this module is written for.  A stale build of the extension (e.g. an old
 # in-place build next to newer sources) counts as missing, so the torch engine is used.
-_API_VERSION = 1
+_API_VERSION = 2
 if getattr(_ext, 'API_VERSION', None) != _API_VERSION:
     raise ImportError(f'the C++ extension {_ext.__file__} is out of date (API version '
                       f'{getattr(_ext, "API_VERSION", None)}, expected {_API_VERSION}); rebuild it with '
@@ -95,7 +95,10 @@ class CppEngine:
             pointsJ=P.pointsJ if self._landmarks else None,
             sigmaM=P.sigmaM, sigmaA=P.sigmaA, sigmaB=P.sigmaB, sigmaR=P.sigmaR, sigmaP=P.sigmaP,
             epL=P.epL, epT=P.epT, epV=P.epV, diffeo_start=P.diffeo_start, DV=P.DV,
+            affine_step_control=bool(P.affine_step_control), step_shrink=P.step_shrink,
+            step_grow=P.step_grow, step_floor=P.step_floor, step_cap=P.step_cap,
             num_threads=int(num_threads))
+        self._step_control = bool(P.affine_step_control)
 
     def run(self, n):
         '''Advance n iterations.  The iteration counter persists across calls.'''
@@ -114,6 +117,8 @@ class CppEngine:
             snap['Xs'] = e.Xs
         if self._landmarks:
             snap['pointsIt'] = e.pointsIt
+        if self._step_control:
+            snap['step_multipliers'] = e.step_multipliers
         return snap
 
     def gradient(self):

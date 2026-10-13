@@ -421,6 +421,10 @@ struct Params {
   double epL = 2e-8, epT = 0.2, epV = 2e3;
   int diffeo_start = 0;
   double DV = 1;  // volume of one velocity grid cell, prod(dv)
+  // affine step control: per-parameter step multipliers m in [step_floor, step_cap],
+  // times step_shrink when the parameter's gradient changes sign, else times step_grow
+  bool affine_step_control = false;
+  double step_shrink = 0.5, step_grow = 1.05, step_floor = 1e-3, step_cap = 1.0;
 };
 
 // Problem description for Engine<D>.  Arrays are float64 in C order.  I and J are
@@ -475,6 +479,10 @@ class Engine {
   // the last evaluated iterate: A and v used by the latest forward pass
   double A_eval[D + 1][D + 1];
   std::vector<double> v_eval;
+  // affine step control (if P.affine_step_control): multipliers and previous gradient of
+  // the affine parameters, L row-major then T
+  static constexpr int NA = D * D + D;
+  double step_m[NA], step_gprev[NA];
 
   // ---- outputs of the latest forward pass
   std::vector<double> Xbuf;    // (NJ, nt+1, D) sample points X^(t); X^(0) is Xs
@@ -525,6 +533,10 @@ class Engine {
     for (int a = 0; a <= D; ++a)
       for (int b = 0; b <= D; ++b)
         A_eval[a][b] = (a < D) ? (b < D ? L[a][b] : T[a]) : (b == D ? 1.0 : 0.0);
+    for (int k = 0; k < NA; ++k) {
+      step_m[k] = 1.0;
+      step_gprev[k] = 0.0;
+    }
     WM.assign(in.WM, in.WM + NJ);
     WA.assign(in.WA, in.WA + NJ);
     WB.assign(in.WB, in.WB + NJ);
@@ -1095,6 +1107,24 @@ class Engine {
     });
   }
 
+  // Affine step control: the sign of (new gradient * previous gradient) of each affine
+  // parameter shrinks (< 0) or grows (> 0) its step multiplier; 0 leaves it unchanged.
+  void update_step_multipliers() {
+    double g[NA];
+    for (int a = 0; a < D; ++a) {
+      for (int b = 0; b < D; ++b) g[a * D + b] = gL[a][b];
+      g[D * D + a] = gT[a];
+    }
+    for (int k = 0; k < NA; ++k) {
+      const double s = g[k] * step_gprev[k];
+      if (s < 0.0)
+        step_m[k] = std::max(step_m[k] * P.step_shrink, P.step_floor);
+      else if (s > 0.0)
+        step_m[k] = std::min(step_m[k] * P.step_grow, P.step_cap);
+      step_gprev[k] = g[k];
+    }
+  }
+
   // One iteration, with the control flow of the original loop body.  `last`:
   // keep a copy of the v used by this iteration's forward pass (v_eval).
   void step(bool last) {
@@ -1176,9 +1206,17 @@ class Engine {
     // ---- affine update (the step is 10x smaller once the diffeomorphism is on)
     const double fac = 1.0 + (diffeo ? 9.0 : 0.0);
     const double sL = P.epL / fac, sT = P.epT / fac;
-    for (int a = 0; a < D; ++a) {
-      for (int b = 0; b < D; ++b) L[a][b] -= sL * gL[a][b];
-      T[a] -= sT * gT[a];
+    if (P.affine_step_control) {
+      update_step_multipliers();
+      for (int a = 0; a < D; ++a) {
+        for (int b = 0; b < D; ++b) L[a][b] -= (sL * step_m[a * D + b]) * gL[a][b];
+        T[a] -= (sT * step_m[D * D + a]) * gT[a];
+      }
+    } else {
+      for (int a = 0; a < D; ++a) {
+        for (int b = 0; b < D; ++b) L[a][b] -= sL * gL[a][b];
+        T[a] -= sT * gT[a];
+      }
     }
 
     // ---- weights: M-step for muA/muB, then the E-step (from iteration 50)

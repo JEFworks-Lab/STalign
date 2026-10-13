@@ -9,9 +9,11 @@ that is zero outside the velocity grid (grid_sample with align_corners=True and 
 The exact forward map (the default) is checked by the round trip b(f(x)) = x. The synthetic
 velocity fields are smooth, vary in time and vanish at the edge of their grid; they deform
 by up to ~7 grid cells, with max|Dv|/nt ~ 0.3 (the tutorial fits have 0.05 to 0.21).
-When the frozen original implementation (dev/ref/stalign_orig.py) or the reference fits
-(dev/bench/ref, dev/data/allen) are present, the tests also compare with them.
+When the frozen original implementation (dev/ref/stalign_orig.py, or the file named by the
+environment variable STALIGN_ORIGINAL) or the reference fits (dev/bench/ref, dev/data/allen)
+are present, the tests also compare with them.
 """
+import importlib.util
 import itertools
 import os
 import sys
@@ -32,13 +34,17 @@ DEV = os.path.join(REPO, 'dev')
 
 
 def _original():
-    path = os.path.join(DEV, 'ref')
-    if not os.path.exists(os.path.join(path, 'stalign_orig.py')):
-        pytest.skip('frozen original implementation not available')
-    if path not in sys.path:
-        sys.path.insert(0, path)
-    import stalign_orig
-    return stalign_orig
+    '''The frozen original STalign.py, if available (STALIGN_ORIGINAL or dev/ref/stalign_orig.py).'''
+    path = os.environ.get('STALIGN_ORIGINAL') or os.path.join(DEV, 'ref', 'stalign_orig.py')
+    if not os.path.exists(path):
+        pytest.skip('the frozen original STalign.py is not available (set STALIGN_ORIGINAL)')
+    module = sys.modules.get('stalign_orig')
+    if module is None or os.path.abspath(getattr(module, '__file__', '')) != os.path.abspath(path):
+        spec = importlib.util.spec_from_file_location('stalign_orig', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        sys.modules['stalign_orig'] = module
+    return module
 
 
 # ---------------------------------------------------------------------------

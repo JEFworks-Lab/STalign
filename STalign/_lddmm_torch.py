@@ -2,7 +2,9 @@
 
 This engine runs on any torch device and dtype.  It is the fallback when the compiled engine
 is missing or declines a problem.  It computes the same iteration as the original STalign
-code, with the corrections listed in ``_lddmm_common``, and agrees with it to rounding.
+code, with the corrections listed in CHANGES.md and the optional affine step control
+(``_lddmm_common.Problem``), and agrees with the reference implementation in
+tests/reference.py to rounding.
 
 How it differs from the original (all equal up to rounding):
 
@@ -698,6 +700,12 @@ class TorchEngine:
                 self.xv0_g = torch.stack((xv[1][0], xv[0][0]))
                 self.xvs_g = torch.stack((xv[1][-1] - xv[1][0], xv[0][-1] - xv[0][0]))
             self.Esave = torch.zeros((max(P.niter, 1), 4 if self.has_points else 3), device=dev, dtype=dt)
+            # affine step control: one multiplier per affine parameter (L row-major, then T)
+            # and the previous gradient, see _lddmm_common.Problem
+            self.step_m = self.step_gprev = None
+            if P.affine_step_control:
+                self.step_m = torch.ones(D * D + D, device=dev, dtype=dt)
+                self.step_gprev = torch.zeros(D * D + D, device=dev, dtype=dt)
         self.v_zero = not bool(self.vi.any())
         self.it = 0
         self.A_eval = self.vi_eval = self.pointsIt = None
@@ -744,8 +752,13 @@ class TorchEngine:
             self.Esave[it, 3] = res['EP']
         # gradient step; the step sizes drop 10x once the diffeomorphism is on
         fac = 1.0 + diffeo * 9
-        self.L = self.L - (P.epL / fac) * res['Lgrad']
-        self.T = self.T - (P.epT / fac) * res['Tgrad']
+        if self.step_m is None:
+            self.L = self.L - (P.epL / fac) * res['Lgrad']
+            self.T = self.T - (P.epT / fac) * res['Tgrad']
+        else:
+            mL, mT = self._step_multipliers(res['Lgrad'], res['Tgrad'])
+            self.L = self.L - (P.epL / fac) * mL * res['Lgrad']
+            self.T = self.T - (P.epT / fac) * mT * res['Tgrad']
         self.A_eval, self.vi_eval = A, self.vi
         if diffeo:
             self.vi = self.smooth.step(res['vgrad'], self.vi, P.epV, res['crop'])
@@ -753,6 +766,19 @@ class TorchEngine:
         if not it % 5:
             self._update_weights(it)
         self.it += 1
+
+    def _step_multipliers(self, Lgrad, Tgrad):
+        '''Affine step control: update the per-parameter multipliers from the sign of the new
+        gradient times the previous one; returns them shaped like L and T.'''
+        P, D = self.problem, self.dim
+        g = torch.cat((Lgrad.reshape(-1), Tgrad.reshape(-1)))
+        s = g * self.step_gprev
+        m = self.step_m
+        down = torch.clamp(m * P.step_shrink, min=P.step_floor)
+        up = torch.clamp(m * P.step_grow, max=P.step_cap)
+        self.step_m = torch.where(s < 0, down, torch.where(s > 0, up, m))
+        self.step_gprev = g
+        return self.step_m[:D * D].view(D, D), self.step_m[D * D:]
 
     def _update_weights(self, it):
         '''M step for the class means, then (from iteration 50) the E step for the weights.'''
@@ -803,6 +829,8 @@ class TorchEngine:
             snap['Xs'] = m.sample_points()
         if self.has_points:
             snap['pointsIt'] = self.pointsIt.clone()
+        if self.step_m is not None:
+            snap['step_multipliers'] = self.step_m.clone()
         return snap
 
     def gradient(self):

@@ -4,10 +4,13 @@
   and outside the velocity grid (zero padding): relative error <= 1e-9
 * 300-iteration trajectories: relative difference of A and v <= 1e-7
 * the approved fixes (F1-F6), input conventions, draw modes, threads and backend selection
+* the affine step control (on by default in 3D): trajectories with oscillating affine steps,
+  segmented runs, defaults and validation
 * the oracle itself against the frozen original STalign (skipped when it is not available)
 """
 import dataclasses
 import importlib.util
+import inspect
 import multiprocessing as mp
 import os
 import sys
@@ -147,7 +150,7 @@ def test_gradient_after_iterations():
 
 def test_energy_history():
     """Recorded [E, EM, ER, EP] (with the tracked spectrum of v and its resync) vs the oracle."""
-    for dim, kw in ((2, data_2d(niter=70, diffeo_start=5)), (3, data_3d(niter=70))):
+    for dim, kw in ((2, data_2d(niter=70, diffeo_start=5)), (3, data_3d(niter=70, affine_step_control=True))):
         ref = (R.LDDMM if dim == 2 else R.LDDMM_3D_to_slice)(**kw)
         engine = TE.TorchEngine(C.prepare_problem(dim, **kw), 4)
         engine.run(70)
@@ -181,8 +184,9 @@ def test_trajectory_3d_two_channel_source():
     assert_close(torch_lddmm3d(**kw), ref, ('A', 'v', 'WM', 'WA', 'WB', 'Xs'), TRAJ_TOL)
 
 
-def test_trajectory_3d_diffeo_start_estimated_mu():
-    kw = data_3d(seed=1, niter=80, diffeo_start=20)
+@pytest.mark.parametrize('control', [True, False])
+def test_trajectory_3d_diffeo_start_estimated_mu(control):
+    kw = data_3d(seed=1, niter=80, diffeo_start=20, affine_step_control=control)
     ref = R.LDDMM_3D_to_slice(**kw)
     assert_close(torch_lddmm3d(**kw), ref, ('A', 'v', 'WM', 'WA', 'WB', 'Xs'), TRAJ_TOL)
 
@@ -202,6 +206,71 @@ def test_lattice_aligned_start():
                L=np.eye(3), T=np.array([-d3['xI'][0][8], 0.0, 0.0]), a=6.0, nt=4, niter=6, epL=3e-5, epT=3e-3,
                epV=10.0, sigmaM=0.5, sigmaR=1e5)
     assert_close(torch_lddmm3d(**kw3), R.LDDMM_3D_to_slice(**kw3), ('A', 'v', 'Xs'), 1e-12)
+
+
+# --------------------------------------------------------------------------- affine step control
+FITS = {2: (_lddmm.LDDMM, R.LDDMM), 3: (_lddmm.LDDMM_3D_to_slice, R.LDDMM_3D_to_slice)}
+
+
+def result_keys(dim):
+    return ('A', 'v', 'WM', 'WA', 'WB') + (('Xs',) if dim == 3 else ())
+
+
+@pytest.mark.parametrize('dim', [2, 3])
+def test_trajectory_affine_step_control(dim):
+    """The affine step control vs the oracle, with steps large enough that the affine
+    parameters oscillate (their multipliers shrink, some to the floor, and grow back),
+    diffeo_start > 0, landmarks in 2D, and runs split into segments (draw=N, engine.run(n))."""
+    kw = R.step_control_problem(dim)
+    fit, oracle = FITS[dim]
+    ref = oracle(**kw, affine_step_control=True)
+    m = ref['step_multipliers']
+    assert m.min() < 0.05 and float(ref['v'].abs().max()) > 0.5  # the control and the deformation are active
+    out = fit(**kw, draw=False, backend='torch', affine_step_control=True)
+    assert_close(out, ref, result_keys(dim), TRAJ_TOL)
+    # segments between the draws (iterations 0, 70, 140, ...): the control's state persists
+    segmented = fit(**kw, draw=70, backend='torch', affine_step_control=True)
+    assert all(torch.equal(segmented[k], out[k]) for k in result_keys(dim))
+    engine = TE.TorchEngine(C.prepare_problem(dim, **kw, affine_step_control=True), 4)
+    for n in (1, 12, 37, 50, 200):
+        engine.run(n)
+    snap = engine.snapshot()
+    assert torch.equal(snap['A_eval'], out['A']) and torch.equal(snap['v_eval'], out['v'])
+    assert_close(snap, {'step_multipliers': m}, ('step_multipliers',), TRAJ_TOL)
+
+
+def test_affine_step_control_defaults_and_validation(monkeypatch):
+    """On by default in LDDMM_3D_to_slice and off in LDDMM; the 3D default sigmaR is 2e6; the
+    oracle uses the package's constants; the multipliers are in the snapshot only when on."""
+    p2 = inspect.signature(_lddmm.LDDMM).parameters
+    p3 = inspect.signature(_lddmm.LDDMM_3D_to_slice).parameters
+    assert p2['affine_step_control'].default is False and p3['affine_step_control'].default is True
+    assert p2['affine_step_control'].kind == p3['affine_step_control'].kind == inspect.Parameter.KEYWORD_ONLY
+    assert p3['sigmaR'].default == C.DEFAULT_SIGMAR_3D == R.SIGMAR_3D == 2e6 and p2['sigmaR'].default == 5e5
+    assert ((C.AFFINE_STEP_SHRINK, C.AFFINE_STEP_GROW, C.AFFINE_STEP_FLOOR, C.AFFINE_STEP_CAP)
+            == (R.SHRINK, R.GROW, R.FLOOR, R.CAP) == (0.5, 1.05, 1e-3, 1.0))
+    for dim, default in ((2, False), (3, True)):
+        kw = dict(R.step_control_problem(dim), niter=10)
+        fit = FITS[dim][0]
+        base = fit(**kw, draw=False, backend='torch')
+        same = fit(**kw, draw=False, backend='torch', affine_step_control=default)
+        other = fit(**kw, draw=False, backend='torch', affine_step_control=not default)
+        assert all(torch.equal(base[k], same[k]) for k in result_keys(dim))
+        assert not torch.equal(base['A'], other['A'])
+        for control in (False, True):
+            engine = TE.TorchEngine(C.prepare_problem(dim, **kw, affine_step_control=control), 4)
+            engine.run(2)
+            assert ('step_multipliers' in engine.snapshot()) == control
+    kw = dict(R.step_control_problem(2), niter=2)
+    for bad in ('yes', None, 1.0):
+        with pytest.raises(ValueError, match='affine_step_control'):
+            _lddmm.LDDMM(**kw, draw=False, affine_step_control=bad)
+    # the constants are read from _lddmm_common when the problem is prepared
+    monkeypatch.setattr(C, 'AFFINE_STEP_GROW', 1.0)
+    assert C.prepare_problem(2, **kw).step_grow == 1.0
+    monkeypatch.setattr(C, 'AFFINE_STEP_GROW', 0.9)
+    with pytest.raises(ValueError, match='AFFINE_STEP_GROW'):
+        C.prepare_problem(2, **kw)
 
 
 # --------------------------------------------------------------------------- approved fixes
@@ -468,14 +537,15 @@ def _original():
 @pytest.mark.filterwarnings('ignore')
 def test_oracle_reproduces_original_bitwise():
     """Where no fix applies the oracle is the original, bit for bit (60 iterations, so the E-step
-    runs).  F2: the original's 'v' is the oracle's 'v_next'.  F1: compared with legacy_er3d."""
+    runs).  F2: the original's 'v' is the oracle's 'v_next'.  F1: compared with legacy_er3d, and
+    3D without the affine step control (the original had none)."""
     S = _original()
     kw = data_2d(CI=3, CJ=3, niter=62, diffeo_start=7, muA=torch.tensor([1, 1, 1]))
     o, r = S.LDDMM(**kw), R.LDDMM(**kw)
     assert torch.equal(r['A'], o['A']) and torch.equal(r['v_next'], o['v'])
     assert all(torch.equal(r[k], o[k]) for k in ('WM', 'WA', 'WB'))
     kw3 = data_3d(niter=57, diffeo_start=3, sigmaR=1e5, muB=torch.tensor([0]))
-    o, r = S.LDDMM_3D_to_slice(**kw3), R.LDDMM_3D_to_slice(**kw3, legacy_er3d=True)
+    o, r = S.LDDMM_3D_to_slice(**kw3), R.LDDMM_3D_to_slice(**kw3, legacy_er3d=True, affine_step_control=False)
     assert torch.equal(r['A'], o['A']) and torch.equal(r['v_next'], o['v'])
     assert all(torch.equal(r[k], o[k]) for k in ('WM', 'WA', 'WB', 'Xs'))
 

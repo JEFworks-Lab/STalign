@@ -15,7 +15,7 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
           niter=5000, diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
           sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=5e5, sigmaP=2e1,
           device='cpu', dtype=torch.float64, muB=None, muA=None,
-          *, draw='end', num_threads=None, backend='auto'):
+          *, draw='end', num_threads=None, backend='auto', affine_step_control=False):
     ''' Run LDDMM between a pair of images.
 
     This jointly estimates an affine transform A, and a diffeomorphism phi.
@@ -110,6 +110,14 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         on the CPU in float64, and the pure torch engine otherwise. 'cpp' raises an error if the
         compiled engine cannot run the problem; 'torch' always uses torch. Both give the same
         results up to rounding.
+    affine_step_control : bool, keyword only
+        If True, the step of each affine parameter (each entry of L and T) is scaled by its own
+        multiplier between 1e-3 and 1. The multiplier is halved whenever that parameter's
+        gradient changes sign from one iteration to the next (the previous step overshot) and
+        grows by 5% per iteration (up to 1) while the sign stays the same, so steps are never
+        larger than epL and epT. This stops the affine part from oscillating when epL or epT is
+        too large. Default False, which gives the plain gradient steps of earlier versions.
+        (LDDMM_3D_to_slice uses it by default.)
 
     Returns a dictionary
     -------
@@ -134,7 +142,8 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
     problem = prepare_problem(2, xI, I, xJ, J, pointsI=pointsI, pointsJ=pointsJ, L=L, T=T, A=A, v=v, xv=xv,
                               a=a, p=p, expand=expand, nt=nt, niter=niter, diffeo_start=diffeo_start,
                               epL=epL, epT=epT, epV=epV, sigmaM=sigmaM, sigmaB=sigmaB, sigmaA=sigmaA,
-                              sigmaR=sigmaR, sigmaP=sigmaP, device=device, dtype=dtype, muA=muA, muB=muB)
+                              sigmaR=sigmaR, sigmaP=sigmaP, device=device, dtype=dtype, muA=muA, muB=muB,
+                              affine_step_control=affine_step_control)
     return run_lddmm(problem, draw=draw, num_threads=num_threads, backend=backend)
 
 
@@ -144,7 +153,7 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
                       niter=5000, diffeo_start=0, epL=1e-6, epT=1e1, epV=1e3,
                       sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=DEFAULT_SIGMAR_3D, sigmaP=2e1,
                       device='cpu', dtype=torch.float64, muA=None, muB=None,
-                      *, draw='end', num_threads=None, backend='auto'):
+                      *, draw='end', num_threads=None, backend='auto', affine_step_control=True):
     ''' LDDMM for 3D to 2D slice mapping.
 
     Jointly estimates a 3D affine transform A and a 3D diffeomorphism phi that map the 3D source
@@ -167,11 +176,14 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
     expand : float
         Factor to expand size of velocity field around image boundaries (default 1.25)
     sigmaR : float
-        Standard deviation for regularization. Regularization is of the form
-        0.5/sigmaR^2 sum_{t=0}^{nt-1} int_X |L v_t|^2 dx with L = (1 - a^2 Laplacian)^p over
-        all three axes, a sum over time steps without dt as in LDDMM. (Before this version
-        the 3D regularizer took the Fourier transform over only two of the three axes; see
-        CHANGES.)
+        Standard deviation for regularization (default 2e6). Smaller sigmaR means a smoother
+        transformation. Regularization is of the form 0.5/sigmaR^2 sum_{t=0}^{nt-1} int_X |L v_t|^2 dx
+        with L = (1 - a^2 Laplacian)^p over all three axes, a sum over time steps without dt as
+        in LDDMM. Before this version the 3D regularizer took the Fourier transform over only
+        two of the three axes, which made it much stronger (and uneven); the default was 1e8.
+        With the corrected regularizer, 1e8 regularizes much less than the old code did (in the
+        3D tutorials the rms velocity became up to twice as large), and the new default 2e6
+        gives deformations of about the old size. See CHANGES.md.
     pointsI, pointsJ, sigmaP :
         Not used: there is no landmark term in 3D, and passing points issues a warning.
         Use L_T_from_points to initialize L and T from landmarks instead.
@@ -184,6 +196,14 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
         Same format as muA.
     draw, num_threads, backend : keyword only
         As in LDDMM.
+    affine_step_control : bool, keyword only
+        As in LDDMM, but True by default: each affine parameter's step is scaled by a multiplier
+        between 1e-3 and 1 that is halved when its gradient changes sign and grows by 5% per
+        iteration (up to 1) otherwise. With the default epT, plain gradient steps make the
+        translation jump back and forth by tens of micrometers per iteration until the end, so
+        the result depends on rounding: in the tutorials, changing the initial translation in
+        its last digit moved the cells by 24-84 um on average without the control, and by about
+        1e-12 um with it. False gives the plain gradient steps of earlier versions.
 
     Returns a dictionary
     -------
@@ -209,5 +229,6 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
     problem = prepare_problem(3, xI, I, xJ, J, L=L, T=T, A=A, v=v, xv=xv,
                               a=a, p=p, expand=expand, nt=nt, niter=niter, diffeo_start=diffeo_start,
                               epL=epL, epT=epT, epV=epV, sigmaM=sigmaM, sigmaB=sigmaB, sigmaA=sigmaA,
-                              sigmaR=sigmaR, sigmaP=sigmaP, device=device, dtype=dtype, muA=muA, muB=muB)
+                              sigmaR=sigmaR, sigmaP=sigmaP, device=device, dtype=dtype, muA=muA, muB=muB,
+                              affine_step_control=affine_step_control)
     return run_lddmm(problem, draw=draw, num_threads=num_threads, backend=backend)

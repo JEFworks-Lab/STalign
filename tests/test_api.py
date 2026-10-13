@@ -49,6 +49,9 @@ FIT_3D = dict(nt=4, a=10.0, expand=1.25, sigmaM=0.5, sigmaR=5e2, epT=1e-2, epL=1
 KEYS_2D = ('A', 'v', 'WM', 'WB', 'WA')
 KEYS_3D = KEYS_2D + ('Xs',)
 
+# defaults that were changed on purpose (see CHANGES.md): (function, parameter) -> (old, new)
+CHANGED_DEFAULTS = {('LDDMM_3D_to_slice', 'sigmaR'): (1e8, 2e6)}
+
 
 def data_2d(points=True, CJ=2, **kw):
     d = R.synthetic_2d(CI=3, CJ=CJ)
@@ -91,8 +94,8 @@ def test_public_functions():
 
 
 def test_signatures_extend_the_original():
-    '''Every original parameter keeps its name, position and default; new parameters are
-    keyword-only or come last with a default.'''
+    '''Every original parameter keeps its name, position and default (except the documented
+    CHANGED_DEFAULTS); new parameters are keyword-only or come last with a default.'''
     S = original_module()
     assert sorted(n for n in dir(S) if inspect.isfunction(getattr(S, n))
                   and getattr(S, n).__module__ == S.__name__) == sorted(ORIGINAL_FUNCTIONS)
@@ -102,7 +105,9 @@ def test_signatures_extend_the_original():
         assert [p.name for p in new[:len(old)]] == [p.name for p in old], name
         for p, q in zip(old, new):
             assert p.kind == q.kind, (name, p.name)
-            if isinstance(p.default, np.ndarray):
+            if (name, p.name) in CHANGED_DEFAULTS:
+                assert (p.default, q.default) == CHANGED_DEFAULTS[name, p.name], (name, p.name)
+            elif isinstance(p.default, np.ndarray):
                 assert np.array_equal(p.default, q.default), (name, p.name)
             else:
                 assert p.default == q.default, (name, p.name)
@@ -157,13 +162,17 @@ np.savez('outputs.npz', auto=STalign.backend_info()['auto'], **{{k: out[k].numpy
 
 # --------------------------------------------------------------------------- backends
 @needs_cpp
-@pytest.mark.parametrize('dim', [2, 3])
-def test_backends_agree(dim):
+@pytest.mark.parametrize('dim,control', [(2, None), (2, True), (3, None), (3, False)],
+                         ids=['2d', '2d_step_control', '3d_step_control', '3d'])
+def test_backends_agree(dim, control):
+    # control=None: the function's default (affine step control off in 2D, on in 3D)
     if dim == 2:
         kw, fit, keys = data_2d(), STalign.LDDMM, KEYS_2D
     else:
         kw, fit, keys = data_3d(), STalign.LDDMM_3D_to_slice, KEYS_3D
-    cpp =fit(**kw, draw=False, backend='cpp')
+    if control is not None:
+        kw['affine_step_control'] = control
+    cpp = fit(**kw, draw=False, backend='cpp')
     ref = fit(**kw, draw=False, backend='torch')
     auto = fit(**kw, draw=False)
     for k in keys:

@@ -2,9 +2,10 @@
 
 The engine is checked against the autograd oracle in tests/reference.py: gradients at
 non-trivial states (including sample points outside the source image and outside the
-velocity grid) and 300-iteration trajectories through the public front-end.  Also tested:
-the engine interface (snapshots, segmented runs, niter=0), results that are bitwise
-independent of the thread count, fork safety and concurrent calls from Python threads.
+velocity grid) and 300-iteration trajectories through the public front-end, with and without
+the affine step control.  Also tested: the engine interface (snapshots, segmented runs,
+niter=0), agreement with the torch engine, results that are bitwise independent of the
+thread count, fork safety and concurrent calls from Python threads.
 
 Skipped when the extension is not built (``python setup.py build_ext --inplace``).
 '''
@@ -30,6 +31,7 @@ try:
 except ImportError as e:  # extension not built, or a stale build
     pytest.skip(f'the C++ extension is not available ({e})', allow_module_level=True)
 from STalign import _lddmm_common as C  # noqa: E402
+from STalign import _lddmm_torch as TE  # noqa: E402
 import reference as R  # noqa: E402
 
 CppEngine = _lddmm_cpp.CppEngine
@@ -58,8 +60,18 @@ def problem_2d(niter=300, CI=3, CJ=2, points=False, **kw):
 
 def problem_3d(niter=300, **kw):
     s = R.synthetic_3d()
-    args = dict(FIT_3D, **kw)
+    args = {**FIT_3D, 'affine_step_control': True, **kw}  # on, as in LDDMM_3D_to_slice
     return C.prepare_problem(3, s['xI'], s['I'], s['xJ'], s['J'], niter=niter, **args), (s, args)
+
+
+def problem_step(dim, niter=300, **kw):
+    '''A problem on which the affine step control engages (reference.step_control_problem),
+    with the control on.'''
+    d = R.step_control_problem(dim)
+    s = {k: d.pop(k) for k in ('xI', 'I', 'xJ', 'J')}
+    d.pop('niter')
+    args = dict(d, affine_step_control=True, **kw)
+    return C.prepare_problem(dim, s['xI'], s['I'], s['xJ'], s['J'], niter=niter, **args), (s, args)
 
 
 def run_engine(problem, n, num_threads=THREADS):
@@ -127,6 +139,9 @@ TRAJECTORY_CASES = {
     '2d_diffeo_start_user_mu': lambda: problem_2d(diffeo_start=30, muA=[0.7, 0.8], muB=0),
     '2d_one_source_channel_nt5': lambda: problem_2d(CI=1, CJ=3, nt=5),
     '3d': lambda: problem_3d(muA=[3.0], muB=0),
+    '3d_no_step_control': lambda: problem_3d(affine_step_control=False),
+    '2d_step_control_points_diffeo_start': lambda: problem_step(2),
+    '3d_step_control_diffeo_start': lambda: problem_step(3, muA=[3.0], muB=0),
 }
 
 
@@ -139,9 +154,38 @@ def test_trajectory_matches_oracle(case):
     for k in ('A', 'v', 'WM', 'WA', 'WB') + (('Xs',) if problem.dim == 3 else ()):
         assert rel(out[k], ref[k]) < 1e-7, k
     assert float(ref['v'].abs().max()) > 0.5  # the fit really deforms
-    snap_esave = run_engine(problem, problem.niter)['Esave']
-    assert snap_esave.shape == ref['Esave'].shape
-    assert rel(snap_esave, ref['Esave']) < 1e-7
+    snap = run_engine(problem, problem.niter)
+    assert snap['Esave'].shape == ref['Esave'].shape
+    assert rel(snap['Esave'], ref['Esave']) < 1e-7
+    assert ('step_multipliers' in snap) == ('step_multipliers' in ref) == problem.affine_step_control
+    if problem.affine_step_control:
+        assert rel(snap['step_multipliers'], ref['step_multipliers']) < 1e-7
+
+
+@pytest.mark.parametrize('dim', [2, 3])
+def test_step_control_segmented_by_draws_matches_oracle(dim):
+    # the front-end splits the run at the draws (iterations 0, 70, 140, ...); the multipliers
+    # and previous gradients live in the engine and carry over between segments
+    problem, (s, args) = problem_step(dim)
+    ref = (R.LDDMM if dim == 2 else R.LDDMM_3D_to_slice)(s['xI'], s['I'], s['xJ'], s['J'], niter=problem.niter, **args)
+    assert float(ref['step_multipliers'].min()) < 0.05  # the control is active
+    whole = C.run_lddmm(problem, draw=False, num_threads=THREADS, backend='cpp')
+    drawn = C.run_lddmm(problem, draw=70, num_threads=THREADS, backend='cpp')
+    for k in ('A', 'v', 'WM', 'WA', 'WB') + (('Xs',) if dim == 3 else ()):
+        assert torch.equal(drawn[k], whole[k]), k
+        assert rel(drawn[k], ref[k]) < 1e-7, k
+
+
+@pytest.mark.parametrize('dim', [2, 3])
+def test_step_control_matches_torch_engine(dim):
+    problem, _ = problem_step(dim)
+    ours = run_engine(problem, problem.niter)
+    torch_engine = TE.TorchEngine(problem, THREADS)
+    torch_engine.run(problem.niter)
+    theirs = {k: x.numpy() for k, x in torch_engine.snapshot().items()}
+    assert ours.keys() == theirs.keys()
+    for k in ('A_eval', 'v_eval', 'L', 'T', 'v', 'WM', 'WA', 'WB', 'step_multipliers') + (('Xs',) if dim == 3 else ()):
+        assert rel(ours[k], theirs[k]) < 1e-9, k
 
 
 def test_estimated_and_fixed_mu_match_oracle_estep():
@@ -202,9 +246,14 @@ def test_niter_zero_returns_initial_state():
     assert out['Xs'].shape == problem.J.shape[1:] + (3,)
 
 
-def test_segmented_runs_are_identical():
-    # the iteration counter persists across run() calls (it % 5, it >= 50 and diffeo_start rules)
-    problem, _ = problem_2d(niter=0, points=True, diffeo_start=13)
+@pytest.mark.parametrize('make', [lambda: problem_2d(niter=0, points=True, diffeo_start=13)[0],
+                                  lambda: problem_step(2, niter=0, diffeo_start=13)[0],
+                                  lambda: problem_step(3, niter=0, diffeo_start=13)[0]],
+                         ids=['2d', '2d_step_control', '3d_step_control'])
+def test_segmented_runs_are_identical(make):
+    # the iteration counter persists across run() calls (it % 5, it >= 50 and diffeo_start
+    # rules), and so does the state of the affine step control
+    problem = make()
     whole = run_engine(problem, 120)
     engine = CppEngine(problem, THREADS)
     for n in (1, 12, 37, 50, 20):
@@ -251,8 +300,9 @@ def test_mu_forms_are_equivalent():
 
 
 # =========================================================================== threads
-@pytest.mark.parametrize('make', [lambda: problem_2d(niter=0, points=True)[0], lambda: problem_3d(niter=0)[0]],
-                         ids=['2d', '3d'])
+@pytest.mark.parametrize('make', [lambda: problem_2d(niter=0, points=True)[0], lambda: problem_3d(niter=0)[0],
+                                  lambda: problem_step(2, niter=0)[0], lambda: problem_step(3, niter=0)[0]],
+                         ids=['2d', '3d', '2d_step_control', '3d_step_control'])
 def test_results_do_not_depend_on_thread_count(make):
     problem = make()
     reference = run_engine(problem, 60, num_threads=1)

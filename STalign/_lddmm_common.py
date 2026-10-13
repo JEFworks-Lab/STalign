@@ -24,9 +24,24 @@ import numpy as np
 import torch
 from torch.nn.functional import grid_sample
 
-# Default sigmaR of LDDMM_3D_to_slice.  The 3D regularizer was corrected (it now transforms
-# over all three axes), so this default may be retuned; change it here only.
-DEFAULT_SIGMAR_3D = 1e8
+# Default sigmaR of LDDMM_3D_to_slice (change it here only).  The corrected 3D regularizer
+# (Fourier transform over all three axes) is much weaker than the old one at the same sigmaR:
+# at the old default 1e8 the rms velocity of the 3D tutorial fits became up to twice as large
+# as with the old code.  At 2e6 it is about as large as with the old code.
+DEFAULT_SIGMAR_3D = 2e6
+
+# Affine step control (affine_step_control=True; default in LDDMM_3D_to_slice only).  Every
+# affine parameter (the d*d entries of L, row-major, then the d entries of T) has a step
+# multiplier m, initially 1.  After each gradient, m is multiplied by AFFINE_STEP_SHRINK (but
+# kept >= AFFINE_STEP_FLOOR) when the parameter's gradient changed sign since the previous
+# iteration (the last step overshot), and by AFFINE_STEP_GROW (but kept <= AFFINE_STEP_CAP)
+# when it kept its sign; a zero product leaves m unchanged.  The step is then m * epL/fac or
+# m * epT/fac, never larger than without the control.  This is the sign rule of Rprop applied
+# to the gradient steps.
+AFFINE_STEP_SHRINK = 0.5
+AFFINE_STEP_GROW = 1.05
+AFFINE_STEP_FLOOR = 1e-3
+AFFINE_STEP_CAP = 1.0
 
 BACKENDS = ('auto', 'cpp', 'torch')
 
@@ -46,6 +61,18 @@ class Problem:
     modify them.  ``L``, ``T`` and ``v`` are the initial state and ``WM``, ``WB``, ``WA`` the
     initial weights.  In 3D the target has a slice axis: ``J`` is (C_J, 1, H, W) and ``xJ``
     is [array([z]), y, x].  ``muA`` / ``muB`` are None when they are estimated.
+
+    With ``affine_step_control`` the engines scale each affine step by a per-parameter
+    multiplier, updated every iteration before the affine update::
+
+        g = concat(dE/dL (row-major), dE/dT);  s = g * g_prev
+        m = where(s < 0, max(step_shrink * m, step_floor),
+                  where(s > 0, min(step_grow * m, step_cap), m));  g_prev = g
+        L -= (epL / fac) * m[:d*d].reshape(d, d) * dE/dL;  T -= (epT / fac) * m[d*d:] * dE/dT
+
+    with m = 1 and g_prev = 0 initially (fac = 10 once the diffeomorphism is on, else 1).
+    The state belongs to the engine and persists across ``engine.run`` calls; engines report
+    m as ``snapshot()['step_multipliers']`` (only with the control on).
     '''
     dim: int
     xI: list
@@ -81,6 +108,11 @@ class Problem:
     sigmaP: float
     device: torch.device
     dtype: torch.dtype
+    affine_step_control: bool = False
+    step_shrink: float = AFFINE_STEP_SHRINK
+    step_grow: float = AFFINE_STEP_GROW
+    step_floor: float = AFFINE_STEP_FLOOR
+    step_cap: float = AFFINE_STEP_CAP
 
 
 # =========================================================================== inputs
@@ -154,16 +186,25 @@ def coerce_mu(mu, C, name):
 def prepare_problem(dim, xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=None, A=None, v=None, xv=None,
                     a=500.0, p=2.0, expand=2.0, nt=3, niter=5000, diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
                     sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=5e5, sigmaP=2e1, device='cpu',
-                    dtype=torch.float64, muA=None, muB=None):
+                    dtype=torch.float64, muA=None, muB=None, affine_step_control=False):
     '''Validate and normalize the arguments of LDDMM (dim=2) or LDDMM_3D_to_slice (dim=3).
 
     Follows the original conventions: A excludes L and T, v requires xv, and the velocity grid
     is built from xI when neither is given.  2D landmarks must come in pairs; in 3D they are
-    dropped (the caller warns).
+    dropped (the caller warns).  The constants of the affine step control are read from this
+    module (AFFINE_STEP_*) at call time.
     '''
     device = torch.device(device)
     if not (isinstance(dtype, torch.dtype) and dtype.is_floating_point):
         raise ValueError(f'dtype must be a floating point torch dtype, got {dtype!r}')
+    if not isinstance(affine_step_control, (bool, np.bool_)):
+        raise ValueError(f'affine_step_control must be True or False, got {affine_step_control!r}')
+    step = dict(step_shrink=float(AFFINE_STEP_SHRINK), step_grow=float(AFFINE_STEP_GROW),
+                step_floor=float(AFFINE_STEP_FLOOR), step_cap=float(AFFINE_STEP_CAP))
+    if not (0.0 < step['step_shrink'] < 1.0 and step['step_grow'] >= 1.0
+            and 0.0 < step['step_floor'] <= step['step_cap'] <= 1.0):
+        raise ValueError(f'the affine step control needs 0 < AFFINE_STEP_SHRINK < 1, AFFINE_STEP_GROW >= 1 and '
+                         f'0 < AFFINE_STEP_FLOOR <= AFFINE_STEP_CAP <= 1, got {step}')
 
     # affine
     if A is not None:
@@ -232,7 +273,8 @@ def prepare_problem(dim, xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=Non
         muA=coerce_mu(muA, C, 'muA'), muB=coerce_mu(muB, C, 'muB'), pointsI=pointsI, pointsJ=pointsJ,
         a=float(a), p=float(p), nt=int(nt), niter=niter, diffeo_start=int(diffeo_start),
         epL=float(epL), epT=float(epT), epV=float(epV), sigmaM=float(sigmaM), sigmaB=float(sigmaB),
-        sigmaA=float(sigmaA), sigmaR=float(sigmaR), sigmaP=float(sigmaP), device=device, dtype=dtype)
+        sigmaA=float(sigmaA), sigmaR=float(sigmaR), sigmaP=float(sigmaP), device=device, dtype=dtype,
+        affine_step_control=bool(affine_step_control), **step)
 
 
 # =========================================================================== threads

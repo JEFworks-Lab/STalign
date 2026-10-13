@@ -47,7 +47,8 @@ class PyEngine {
            carr WB, std::optional<carr> muA, std::optional<carr> muB, std::optional<carr> pointsI,
            std::optional<carr> pointsJ, double sigmaM, double sigmaA, double sigmaB,
            double sigmaR, double sigmaP, double epL, double epT, double epV, int diffeo_start,
-           double DV, int num_threads)
+           double DV, bool affine_step_control, double step_shrink, double step_grow,
+           double step_floor, double step_cap, int num_threads)
       : I_(std::move(I)), J_(std::move(J)) {
     if (I_.ndim() != D + 1) throw std::invalid_argument("I must have shape (C_I, *nI)");
     if (J_.ndim() != D + 1) throw std::invalid_argument("J must have shape (C_J, *nJ)");
@@ -116,6 +117,17 @@ class PyEngine {
     in.params.epV = epV;
     in.params.diffeo_start = diffeo_start;
     in.params.DV = DV;
+    if (affine_step_control &&
+        !(step_shrink > 0.0 && step_shrink < 1.0 && step_grow >= 1.0 && step_floor > 0.0 &&
+          step_floor <= step_cap && step_cap <= 1.0))
+      throw std::invalid_argument(
+          "affine step control needs 0 < step_shrink < 1, step_grow >= 1 and "
+          "0 < step_floor <= step_cap <= 1");
+    in.params.affine_step_control = affine_step_control;
+    in.params.step_shrink = step_shrink;
+    in.params.step_grow = step_grow;
+    in.params.step_floor = step_floor;
+    in.params.step_cap = step_cap;
     e_ = std::make_unique<stalign::Engine<D>>(in, num_threads);
   }
 
@@ -194,6 +206,11 @@ class PyEngine {
   py::array_t<double> pointsIt() const {
     return to_numpy(std::vector<double>(e_->pIt), {(py::ssize_t)e_->pIt.size() / D, D});
   }
+  // affine step multipliers (D*D + D: L row-major, then T); all 1 without step control
+  py::array_t<double> step_multipliers() const {
+    const double* m = e_->step_m;
+    return to_numpy(std::vector<double>(m, m + D * D + D), {D * D + D});
+  }
   // [E, EM, ER, EP] of every iteration (E = EM + ER, as in the original's Esave)
   py::array_t<double> Esave() const {
     return to_numpy(std::vector<double>(e_->Ehist), {(py::ssize_t)e_->Ehist.size() / 4, 4});
@@ -227,12 +244,13 @@ void bind_engine(py::module_& m, const char* name, const char* doc) {
                     const std::vector<carr>&, carr, carr, carr, carr, carr, carr, carr,
                     std::optional<carr>, std::optional<carr>, std::optional<carr>,
                     std::optional<carr>, double, double, double, double, double, double, double,
-                    double, int, double, int>(),
+                    double, int, double, bool, double, double, double, double, int>(),
            "I"_a, "xI"_a, "J"_a, "xJ"_a, "v"_a, "xv"_a, "L"_a, "T"_a, "K"_a, "LL"_a, "WM"_a,
            "WA"_a, "WB"_a, py::kw_only(), "muA"_a = py::none(), "muB"_a = py::none(),
            "pointsI"_a = py::none(), "pointsJ"_a = py::none(), "sigmaM"_a, "sigmaA"_a,
            "sigmaB"_a, "sigmaR"_a, "sigmaP"_a, "epL"_a, "epT"_a, "epV"_a, "diffeo_start"_a,
-           "DV"_a, "num_threads"_a = 1)
+           "DV"_a, "affine_step_control"_a = false, "step_shrink"_a = 0.5, "step_grow"_a = 1.05,
+           "step_floor"_a = 1e-3, "step_cap"_a = 1.0, "num_threads"_a = 1)
       .def("run", &E::run, "n"_a, py::call_guard<py::gil_scoped_release>(),
            "Advance n iterations (the iteration counter persists across calls).")
       .def("gradient", &E::gradient,
@@ -251,6 +269,7 @@ void bind_engine(py::module_& m, const char* name, const char* doc) {
       .def_property_readonly("fAI", &E::fAI)
       .def_property_readonly("Xs", &E::Xs)
       .def_property_readonly("pointsIt", &E::pointsIt)
+      .def_property_readonly("step_multipliers", &E::step_multipliers)
       .def_property_readonly("Esave", &E::Esave);
 }
 
@@ -259,7 +278,7 @@ void bind_engine(py::module_& m, const char* name, const char* doc) {
 PYBIND11_MODULE(_stalign_cpp, m) {
   m.doc() = "C++ CPU (float64) engine for STalign's LDDMM and LDDMM_3D_to_slice";
   // bumped whenever the binding interface changes, so a stale in-place build is detected
-  m.attr("API_VERSION") = 1;
+  m.attr("API_VERSION") = 2;
   m.attr("MAX_CI") = stalign::MAX_CI;
   m.attr("MAX_CJ") = stalign::MAX_CJ;
   m.attr("MAX_NT") = stalign::MAX_NT;

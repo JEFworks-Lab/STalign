@@ -24,6 +24,19 @@ F2  The returned A and v are the last *evaluated* pair: ``A`` is the affine and 
     ``A_next`` / ``v_next`` hold the parameters after the final update (``v_next`` is what
     the original returned as ``v``), and ``Esave`` the energy history.
 F3  User-supplied muA / muB are coerced to one value per target channel (``coerce_mu``).
+
+and the optional affine step control (``affine_step_control``; on by default in 3D, as in the
+package, and off in 2D).  Each affine parameter (L row-major, then T) has a step multiplier m,
+initially 1, with the previous gradient g_prev initially 0.  Every iteration, after the
+backward pass and before the affine update::
+
+    g = concat(L.grad.ravel(), T.grad);  s = g * g_prev
+    m = where(s < 0, max(SHRINK * m, FLOOR), where(s > 0, min(GROW * m, CAP), m));  g_prev = g
+    L -= (epL / fac) * m[:d*d].reshape(d, d) * L.grad;  T -= (epT / fac) * m[d*d:] * T.grad
+
+where fac is the original's 1 + 9 * (it >= diffeo_start).  The v update is unchanged.  Off,
+the original update lines run unchanged.  The result's ``step_multipliers`` holds the final m.
+The default 3D sigmaR is the package's new default.
 """
 import warnings
 
@@ -32,6 +45,13 @@ import torch
 from torch.nn.functional import grid_sample
 
 DTYPE = torch.float64
+
+# affine step control constants (the package's defaults, _lddmm_common.AFFINE_STEP_*)
+SHRINK = 0.5
+GROW = 1.05
+FLOOR = 1e-3
+CAP = 1.0
+SIGMAR_3D = 2e6  # default sigmaR of LDDMM_3D_to_slice
 
 
 # --------------------------------------------------------------------------- helpers
@@ -224,7 +244,7 @@ def gradients(xI, I, xJ, J, L, T, v, xv, WM, a=500.0, p=2.0, sigmaM=1.0, sigmaR=
 
 # --------------------------------------------------------------------------- the loop
 def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter, diffeo_start,
-         epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, legacy_er3d):
+         epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, legacy_er3d, affine_step_control):
     xI, I, xJ, J, pointsI, pointsJ = _inputs(xI, I, xJ, J, pointsI, pointsJ)
     dim = len(xI)
     if A is not None:
@@ -264,6 +284,10 @@ def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter
     pdims = tuple(range(1, dim + 1))  # spatial dims of a stack of weights
     grid = (Ellipsis,) + (None,) * dim  # mu[..., None, None(, None)]
 
+    if affine_step_control:
+        m = torch.ones(dim * dim + dim, dtype=DTYPE)
+        g_prev = torch.zeros(dim * dim + dim, dtype=DTYPE)
+
     Esave = []
     A_eval, v_eval = to_A(L, T).detach(), v.detach().clone()
     Xs = None
@@ -281,8 +305,18 @@ def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter
         Esave.append(tosave)
         E.backward()
         with torch.no_grad():
-            L -= (epL / (1.0 + (it >= diffeo_start) * 9)) * L.grad
-            T -= (epT / (1.0 + (it >= diffeo_start) * 9)) * T.grad
+            if not affine_step_control:
+                L -= (epL / (1.0 + (it >= diffeo_start) * 9)) * L.grad
+                T -= (epT / (1.0 + (it >= diffeo_start) * 9)) * T.grad
+            else:
+                g = torch.cat((L.grad.reshape(-1), T.grad.reshape(-1)))
+                s = g * g_prev
+                m = torch.where(s < 0, torch.maximum(SHRINK * m, torch.tensor(FLOOR, dtype=DTYPE)),
+                                torch.where(s > 0, torch.minimum(GROW * m, torch.tensor(CAP, dtype=DTYPE)), m))
+                g_prev = g
+                fac = 1.0 + (it >= diffeo_start) * 9
+                L -= (epL / fac) * m[:dim * dim].reshape(dim, dim) * L.grad
+                T -= (epT / fac) * m[dim * dim:] * T.grad
             L.grad.zero_()
             T.grad.zero_()
             if it >= diffeo_start:
@@ -312,6 +346,8 @@ def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter
            'WM': WM.detach().clone(), 'WB': WB.detach().clone(), 'WA': WA.detach().clone(),
            'A_next': to_A(L, T).detach(), 'v_next': v.detach().clone(),
            'Esave': np.array(Esave) if Esave else np.zeros((0, 3))}
+    if affine_step_control:
+        out['step_multipliers'] = m.clone()
     if dim == 3:
         if Xs is None:  # niter == 0: sample points of the initial state
             with torch.no_grad():
@@ -322,21 +358,24 @@ def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter
 
 def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=None, A=None, v=None, xv=None,
           a=500.0, p=2.0, expand=2.0, nt=3, niter=5000, diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
-          sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=5e5, sigmaP=2e1, muB=None, muA=None):
+          sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=5e5, sigmaP=2e1, muB=None, muA=None,
+          affine_step_control=False):
     """Oracle of the 2D ``LDDMM`` (float64, CPU), same arguments and defaults as the public function."""
     if (pointsI is None) != (pointsJ is None):
         raise Exception('Must specify corresponding sets of points or none at all')
     return _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter, diffeo_start,
-                epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, False)
+                epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, False, affine_step_control)
 
 
 def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=None, A=None, v=None, xv=None,
                       a=500.0, p=2.0, expand=1.25, nt=3, niter=5000, diffeo_start=0, epL=1e-6, epT=1e1,
-                      epV=1e3, sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=1e8, sigmaP=2e1, muA=None,
-                      muB=None, legacy_er3d=False):
-    """Oracle of ``LDDMM_3D_to_slice`` (float64, CPU).  Landmarks are ignored, as in the original."""
+                      epV=1e3, sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=SIGMAR_3D, sigmaP=2e1, muA=None,
+                      muB=None, legacy_er3d=False, affine_step_control=True):
+    """Oracle of ``LDDMM_3D_to_slice`` (float64, CPU).  Landmarks are ignored, as in the original.
+
+    The original is legacy_er3d=True, affine_step_control=False (and sigmaR=1e8)."""
     return _run(xI, I, xJ, J, None, None, L, T, A, v, xv, a, p, expand, nt, niter, diffeo_start,
-                epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, legacy_er3d)
+                epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, legacy_er3d, affine_step_control)
 
 
 # --------------------------------------------------------------------------- synthetic test problems
@@ -421,3 +460,20 @@ def smooth_random_v(xv, nt, amp, seed):
     F2 = sum(torch.meshgrid(*[torch.fft.fftfreq(len(x), dtype=DTYPE) ** 2 for x in xv], indexing='ij'))
     v = torch.fft.ifftn(torch.fft.fftn(v, dim=dims) * torch.exp(-F2 / (2 * 0.06 ** 2))[..., None], dim=dims).real
     return v * (amp / v.abs().max())
+
+
+# Fit parameters for the affine step control tests: steps large enough that the affine
+# parameters oscillate, so that their multipliers shrink (some to the floor) and grow back.
+STEP_2D = dict(a=12.0, sigmaM=0.3, sigmaR=5e3, sigmaP=4.0, epT=1e-1, epL=1e-4, epV=0.2, niter=300,
+               diffeo_start=30)
+STEP_3D = dict(nt=4, a=10.0, expand=1.25, sigmaM=0.5, sigmaR=5e2, epT=1e-1, epL=1e-4, epV=5.0, niter=300,
+               diffeo_start=20, L=0.95 * rotation_3d(4.0, -3.0), T=[0.5, 0.3, -0.4])
+
+
+def step_control_problem(dim):
+    """Inputs and fit parameters (a dict of LDDMM / LDDMM_3D_to_slice keyword arguments) on
+    which the affine step control engages.  2D: three source and three target channels and
+    landmarks."""
+    if dim == 2:
+        return dict(synthetic_2d(CI=3, CJ=3), **STEP_2D)
+    return dict(synthetic_3d(), **STEP_3D)

@@ -38,7 +38,7 @@ pip install plotly scipy scikit-learn scikit-image
 
 ### Faster alignment with the C++ engine
 
-`STalign` includes an optional C++ engine for `LDDMM` and `LDDMM_3D_to_slice`. `pip` compiles it during installation if a C++17 compiler is available: the Xcode Command Line Tools on macOS (`xcode-select --install`), `g++` or `clang++` on Linux, or the Microsoft C++ Build Tools on Windows. Without a compiler the installation still succeeds and `STalign` uses its pure `torch` implementation (`pip install -v` shows a warning in the build log). Both compute the same iterations up to rounding (in long 3D alignments these small differences grow, see [CHANGES.md](CHANGES.md)); the C++ engine is faster. The engine has been tested on macOS; Linux and Windows builds are expected to work but have not been tested yet.
+`STalign` includes an optional C++ engine for `LDDMM` and `LDDMM_3D_to_slice`. `pip` compiles it during installation if a C++17 compiler is available: the Xcode Command Line Tools on macOS (`xcode-select --install`), `g++` or `clang++` on Linux, or the Microsoft C++ Build Tools on Windows. Without a compiler the installation still succeeds and `STalign` uses its pure `torch` implementation (`pip install -v` shows a warning in the build log). Both compute the same iterations up to rounding (in some long alignments these small differences grow, see [CHANGES.md](CHANGES.md)); the C++ engine is faster. The engine has been tested on macOS; Linux and Windows builds are expected to work but have not been tested yet.
 
 To check which one is used:
 
@@ -98,7 +98,7 @@ This version keeps the functions and arguments of earlier versions, aligns much 
 
 - `LDDMM` and `LDDMM_3D_to_slice` draw their figures once, at the end. `draw=True` redraws them every 10 iterations as before, and `draw=False` turns them off.
 - `transform_points_source_to_target` and the other source-to-target transforms use the exact inverse of the fitted transformation; cells can move by up to about 100 µm on the tutorial datasets. `exact_inverse=False` gives the previous approximation.
-- The regularization of `LDDMM_3D_to_slice` is corrected, so 3D alignments change, and `analyze3Dalign` returns corrected atlas coordinates.
+- The regularization of `LDDMM_3D_to_slice` is corrected (with a new default `sigmaR=2e6`) and the step size of each affine parameter is controlled (`affine_step_control=True`), so 3D alignments change and no longer depend on rounding. `analyze3Dalign` returns corrected atlas coordinates.
 
 See [CHANGES.md](CHANGES.md) for the full list.
 
