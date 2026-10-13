@@ -25,7 +25,7 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
     By default the fit starts with a coarse affine pre-alignment (prefit), and the
     regularization weight sigmaR and the step sizes epL, epT, epV are chosen from the images
     unless given (see their descriptions). Coordinates are assumed to be in micrometers.
-    legacy_defaults=True gives the fit of earlier versions.
+    legacy_defaults=True turns these defaults off.
 
     Parameters
     ----------
@@ -173,9 +173,11 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         default sigmaR=5e5 on 30 um images). Used only when sigmaR is None; larger values allow
         larger deformations. It assumes that coordinates are in micrometers.
     legacy_defaults : bool, keyword only
-        If True, use the defaults of earlier versions: no pre-fit (unless prefit=True),
-        niter=5000, epL=2e-8, epT=2e-1, epV=2e3, sigmaR=5e5, and the forward Euler map in the
-        landmark term. Results are then identical to those of earlier versions. Default False.
+        If True, use the defaults from before Round 2 (see CHANGES.md): no pre-fit (unless
+        prefit=True), niter=5000, epL=2e-8, epT=2e-1, epV=2e3, sigmaR=5e5, and the forward Euler
+        map in the landmark term. Results are then bit for bit those of this version without
+        the Round 2 changes (commit bec34e4). The earlier corrections listed in CHANGES.md
+        still apply, so results can differ from those of the original STalign. Default False.
 
     Returns a dictionary
     -------
@@ -301,8 +303,11 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
     sigma_disp : float, keyword only
         Prior displacement scale in micrometers (default 94.03), used when sigmaR is None.
     legacy_defaults : bool, keyword only
-        If True, use the defaults of earlier versions: no pre-fit (unless prefit=True) and
-        sigmaR=2e6. Results are then identical to those of earlier versions. Default False.
+        If True, use the defaults from before Round 2 (see CHANGES.md): no pre-fit (unless
+        prefit=True) and sigmaR=2e6. Results are then bit for bit those of this version without
+        the Round 2 changes (commit bec34e4). The earlier corrections still apply (the
+        regularizer over all three axes, the affine step control and the others listed in
+        CHANGES.md), so results differ from those of the original STalign. Default False.
 
     Returns a dictionary
     -------

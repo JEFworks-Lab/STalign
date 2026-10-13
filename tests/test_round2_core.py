@@ -6,9 +6,10 @@ and _prefit.py).
 * the physical sigmaR and the curvature-scaled steps: formulas and invariances; given values
   are used as is
 * the reported settings reproduce a fit, and both backends agree on the default path
-* legacy_defaults=True gives the fit of earlier versions bit for bit: against the explicit old
-  values, and against the package of commit bec34e4 when STALIGN_LEGACY_SRC points to a copy
-  of its source tree (with the C++ extension built for the 'cpp' backend), for example
+* legacy_defaults=True gives the fit of the package before Round 2 bit for bit: against the
+  explicit old values, and against the package of commit bec34e4 when STALIGN_LEGACY_SRC
+  points to a copy of its source tree (with the C++ extension built for the 'cpp' backend),
+  for example
 
       git archive bec34e4 STalign setup.py pyproject.toml requirements.txt | tar -x -C DIR
       (cd DIR && python setup.py build_ext --inplace)
