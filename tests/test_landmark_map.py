@@ -1,6 +1,8 @@
 '''The exact landmark map of LDDMM (Problem.landmark_map == 'exact', the default), on both
 engines.
 
+* its gradient with respect to L, T and v matches central finite differences of the landmark
+  energy EP (the Euler map's gradient does not)
 * an exactly singular Newton matrix M = I - Dv/nt falls back to the forward Euler step, with
   its gradient, in both engines and in the oracle, and is counted in the warning
 
@@ -39,6 +41,44 @@ def landmark_problem(d, state, params=PARAMS, **kw):
                                 niter=1, **state, **params, **kw)
     problem.WM = np.zeros_like(problem.WM)
     return problem
+
+
+# --------------------------------------------------------------------------- finite differences
+@pytest.fixture(scope='module')
+def fd_state():
+    '''synthetic_2d with landmarks; a velocity field large enough that the exact and the Euler
+    maps differ, on a grid that covers the source image only.'''
+    d = R.synthetic_2d(CI=1, CJ=1)
+    xv = [x.numpy() for x in R.velocity_grid([torch.tensor(x) for x in d['xI']], 1.0, 8.0)]
+    v = R.smooth_random_v(xv, 3, 4.0, seed=1).numpy()
+    dv = R.smooth_random_v(xv, 3, 1.0, seed=7).numpy()  # direction of the v derivative
+    state = dict(L=1.05 * R.rotation_2d(10.0), T=np.array([2.0, -1.5]), v=v, xv=xv)
+    return d, state, dv
+
+
+@pytest.mark.parametrize('backend', BACKENDS)
+def test_exact_landmark_gradient_matches_finite_differences(fd_state, backend):
+    d, state, dv = fd_state
+
+    def EP(**change):
+        return float(engine(backend, landmark_problem(d, dict(state, **change))).gradient()['EP'])
+
+    g = engine(backend, landmark_problem(d, state)).gradient()
+    assert float(g['EM']) == 0.0
+    fd = {}
+    hL, hT, hv = 1e-6, 1e-5, 1e-5
+    fd['Lgrad'] = np.array([[(EP(L=state['L'] + hL * E) - EP(L=state['L'] - hL * E)) / (2 * hL)
+                             for E in np.eye(4).reshape(2, 2, 2, 2)[i]] for i in range(2)])
+    fd['Tgrad'] = np.array([(EP(T=state['T'] + hT * e) - EP(T=state['T'] - hT * e)) / (2 * hT) for e in np.eye(2)])
+    fd['v'] = (EP(v=state['v'] + hv * dv) - EP(v=state['v'] - hv * dv)) / (2 * hv)
+    ours = {k: numpy(g[k]) for k in ('Lgrad', 'Tgrad')}
+    ours['v'] = float(np.sum(numpy(g['vgrad']) * dv))
+    for k in ('Lgrad', 'Tgrad', 'v'):
+        scale = np.abs(ours[k]).max()
+        assert scale > 0.1 and np.abs(ours[k] - fd[k]).max() < 1e-6 * scale, (k, ours[k], fd[k])
+    # the gradient of the Euler map (a different map) does not pass this test
+    euler = engine(backend, landmark_problem(d, state, landmark_map='euler')).gradient()
+    assert abs(float(np.sum(numpy(euler['vgrad']) * dv)) - fd['v']) > 1e-3 * abs(fd['v'])
 
 
 # --------------------------------------------------------------------------- singular Newton matrix
