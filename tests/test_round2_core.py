@@ -272,6 +272,47 @@ def test_prefit_tilted_slice_3d():
     assert err.mean() < 30.0  # um; 153 um at the start (the plane z = 0)
 
 
+def test_prefit_3d_keeps_the_initial_plane_on_ties():
+    '''An atlas that is constant along its first axis: every start sees the same slice up to
+    a stretch, so all 27 starts tie (within 1%), and the untilted, unshifted start wins.'''
+    d = um_3d()
+    I = np.repeat(d['I'][:, 10:11], d['I'].shape[1], axis=1)
+    J = I[:1, 0] + 0.02 * np.random.default_rng(0).standard_normal(I.shape[2:])
+    out = fit3d(dict(xI=d['xI'], I=I, xJ=d['xI'][1:], J=J), niter=0)
+    E = out['prefit']['energy']
+    assert E.max() <= 1.01 * E.min() and out['prefit']['best'] == 13
+    assert out['prefit']['starts'][13] == (0.0, 0.0, 0.0)
+
+
+def test_prefit_3d_tie_rule(monkeypatch):
+    '''The rule itself, on given energies (no optimization: each start keeps its plane):
+    among the starts within 1% of the lowest energy, the one with the smallest
+    |tilt 1| + |tilt 2| + |offset| / 100 (degrees, um) wins.'''
+    d = um_3d()
+    problem = C.prepare_problem(3, **d, niter=0, sigmaR=1.0)
+    starts = [(a, b, o) for a in P.TILTS_3D for b in P.TILTS_3D for o in P.OFFSETS_3D]
+    index = {s: k for k, s in enumerate(starts)}
+    energies = {}
+    monkeypatch.setattr(P, '_adam', lambda params, energy, iters, lr: torch.as_tensor(energies['E']))
+    # the source point of the target's tissue centroid (as the search computes it): the plane
+    # of the start with offset o passes through the initial plane's point plus o along its normal
+    xJc, Jc = P.pool_image(d['xJ'], d['J'][:, 0] if d['J'].ndim == 4 else d['J'], P.search_pool(d['xJ']))
+    cJ, _ = P.weighted_centroid(xJc, P.tissue_weights(Jc))
+    cases = [({(-6.0, -6.0, -300.0): 1.0, (0.0, 0.0, 0.0): 1.009}, (0.0, 0.0, 0.0)),
+             ({(-6.0, -6.0, -300.0): 1.0, (0.0, 0.0, 0.0): 1.02, (0.0, -6.0, 0.0): 1.005, (0.0, 0.0, 300.0): 1.008},
+              (0.0, 0.0, 300.0)),
+             ({(6.0, -6.0, 0.0): 1.0, (0.0, 0.0, 0.0): 1.02, (0.0, 6.0, 0.0): 1.011}, (6.0, -6.0, 0.0))]
+    for given, winner in cases:
+        E = np.full(len(starts), 2.0)
+        for s, e in given.items():
+            E[index[s]] = e
+        energies['E'] = E
+        L, T, info = P.affine_prefit(problem)
+        assert info['best'] == index[winner], (given, starts[info['best']])
+        x0 = np.linalg.solve(info['A'], np.r_[0.0, cJ, 1.0])[:3]  # source point of the centroid
+        np.testing.assert_allclose(x0, [winner[2], cJ[0], cJ[1]], rtol=0, atol=1e-9)
+
+
 def test_prefit_rules():
     data, _, _, _ = rotated_pair()
     points = dict(pointsI=np.array([[0.0, 0.0], [300.0, 100.0], [-200.0, 250.0]]))
