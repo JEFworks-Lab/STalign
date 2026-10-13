@@ -32,9 +32,10 @@ import pandas as pd
 # The second import is for the tutorials, which put this folder on sys.path and import this
 # file directly (the private modules are then top-level modules too).
 try:
-    from . import _raster
+    from . import _raster, _transforms
 except ImportError:
     import _raster
+    import _transforms
 
 
 def normalize(arr, t_min=0, t_max=1):
@@ -428,30 +429,7 @@ def interp(x,I,phii,**kwargs):
     
     This uses the torch library.
     '''
-    
-    # first we have to normalize phii to the range -1,1    
-    I = torch.as_tensor(I)
-    phii = torch.as_tensor(phii)
-    phii = torch.clone(phii)
-    for i in range(2):
-        phii[i] -= x[i][0]
-        phii[i] /= x[i][-1] - x[i][0]
-    # note the above maps to 0,1
-    phii *= 2.0
-    # to 0 2
-    phii -= 1.0
-    # done
-
-    # NOTE I should check that I can reproduce identity
-    # note that phii must now store x,y,z along last axis
-    # is this the right order?
-    # I need to put batch (none) along first axis
-    # what order do the other 3 need to be in?    
-    out = grid_sample(I[None],phii.flip(0).permute((1,2,0))[None],align_corners=True,**kwargs)
-    # note align corners true means square voxels with points at their centers
-    # post processing, get rid of batch dimension
-
-    return out[0]
+    return _transforms.interp(x,I,phii,**kwargs)
 
 def interp3D(x,I,phii,**kwargs):
     '''
@@ -481,29 +459,7 @@ def interp3D(x,I,phii,**kwargs):
     
     This uses the torch library.
     '''
-    # first we have to normalize phii to the range -1,1    
-    I = torch.as_tensor(I)
-    phii = torch.as_tensor(phii)
-    phii = torch.clone(phii)
-    for i in range(3):
-        phii[i] -= x[i][0]
-        phii[i] /= x[i][-1] - x[i][0]
-    # note the above maps to 0,1
-    phii *= 2.0
-    # to 0 2
-    phii -= 1.0
-    # done
-
-    # NOTE I should check that I can reproduce identity
-    # note that phii must now store x,y,z along last axis
-    # is this the right order?
-    # I need to put batch (none) along first axis
-    # what order do the other 3 need to be in?    
-    out = grid_sample(I[None],phii.flip(0).permute((1,2,3,0))[None],align_corners=True,**kwargs)
-    # note align corners true means square voxels with points at their centers
-    # post processing, get rid of batch dimension
-
-    return out[0]
+    return _transforms.interp3D(x,I,phii,**kwargs)
 
 
 def clip(I):
@@ -536,22 +492,23 @@ def v_to_phii(xv,v):
     xv : list of torch tensor 
         List of 1D tensors describing locations of sample points in v
     v : torch tensor
-        5D (nt,2,v0,v1) velocity field
+        4D (nt,v0,v1,2) velocity field, the layout LDDMM returns. The component-first
+        layout (nt,2,v0,v1) is also accepted (on a 2x2 grid, where the two are ambiguous,
+        the LDDMM layout is assumed).
     
     Returns
     -------
     phii: torch tensor
-        Inverse map (position field) computed by method of characteristics
+        Inverse map (position field) computed by method of characteristics, (2,v0,v1)
+
+    Notes
+    -----
+    This semi-Lagrangian scheme approximates the map build_transform(xv,v,A,'b') computes
+    for an identity A, up to interpolation error. Use build_transform for exactly the map
+    LDDMM fitted.
 
     '''
-    
-    XV = torch.stack(torch.meshgrid(xv))
-    phii = torch.clone(XV)
-    dt = 1.0/v.shape[0]
-    for t in range(v.shape[0]):
-        Xs = XV - v[t]*dt
-        phii = interp(xv,phii-XV,Xs)+Xs
-    return phii
+    return _transforms.v_to_phii(xv,v)
 
 def v_to_phii_3D(xv,v):
     ''' Integrate a 3D velocity field over time to return a 3D position field (diffeomorphism).
@@ -561,22 +518,23 @@ def v_to_phii_3D(xv,v):
     xv : list of torch tensor 
         List of 1D tensors describing locations of sample points in v
     v : torch tensor
-        5D (nt,3,v0,v1,v2) velocity field
+        5D (nt,v0,v1,v2,3) velocity field, the layout LDDMM_3D_to_slice returns. The
+        component-first layout (nt,3,v0,v1,v2) is also accepted (on a 3x3x3 grid, where the
+        two are ambiguous, the LDDMM layout is assumed).
     
     Returns
     -------
     phii: torch tensor
-        Inverse map (position field) computed by method of characteristics
+        Inverse map (position field) computed by method of characteristics, (3,v0,v1,v2)
+
+    Notes
+    -----
+    This semi-Lagrangian scheme approximates the map build_transform3D(xv,v,A,'b') computes
+    for an identity A, up to interpolation error. Use build_transform3D for exactly the map
+    LDDMM_3D_to_slice fitted.
 
     '''
-    
-    XV = torch.stack(torch.meshgrid(xv))
-    phii = torch.clone(XV)
-    dt = 1.0/v.shape[0]
-    for t in range(v.shape[0]):
-        Xs = XV - v[t]*dt
-        phii = interp3D(xv,phii-XV,Xs)+Xs
-    return phii
+    return _transforms.v_to_phii_3D(xv,v)
 
 def to_A(L,T):
     ''' Convert a linear transform matrix and a translation vector into an affine matrix.
@@ -1422,7 +1380,7 @@ def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
     }
 
 
-def build_transform(xv,v,A,direction='b',XJ=None):
+def build_transform(xv,v,A,direction='b',XJ=None,exact_inverse=True):
     ''' Create sample points to transform source to target from affine and velocity.
     
     Parameters
@@ -1430,7 +1388,7 @@ def build_transform(xv,v,A,direction='b',XJ=None):
     xv : list of array
         Sample points for velocity
     v : array
-        time dependent velocity field
+        time dependent velocity field, (nt,v0,v1,2). None for an affine only transform.
     A : array
         Affine transformation matrix
     direction : char
@@ -1438,55 +1396,36 @@ def build_transform(xv,v,A,direction='b',XJ=None):
         'f' is used for transforming points.
     XJ : array
         Sample points for target (meshgrid with ij index style).  Defaults to None 
-        to keep sampling on the xv.
+        to keep sampling on the xv. Can also be a list of 1D arrays (one per axis), or an
+        array of points with components along the last axis.
+    exact_inverse : bool
+        Only used for direction 'f'. If True (default), the forward map is the exact inverse
+        of the backward map, to about 1e-6 of a velocity grid spacing. If False, it is the
+        forward Euler integration used by earlier versions of STalign, which inverts the
+        backward map only up to a time discretization error (up to tens of microns on the
+        tutorial alignments).
     
     Returns
     -------
-    Xs : array
-        Sample points in mehsgrid format.
-    
-    
-    '''
-    
-    A = torch.tensor(A)
-    if v is not None: v = torch.tensor(v) 
-    if XJ is not None:
-        # check some types here
-        if isinstance(XJ,list):
-            if XJ[0].ndim == 1: # need meshgrid
-                XJ = torch.stack(torch.meshgrid([torch.tensor(x) for x in XJ],indexing='ij'),-1)
-            elif XJ[0].ndim == 2: # assume already meshgrid
-                XJ = torch.stack([torch.tensor(x) for x in XJ],-1)
-            else:
-                raise Exception('Could not understand variable XJ type')
-            
-        # if it is already in meshgrid form we just need to make sure it is a tensor
-        XJ = torch.tensor(XJ)
-    else:
-        XJ = torch.stack(torch.meshgrid([torch.tensor(x) for x in xv],indexing='ij'),-1)
-        
-    if direction == 'b':
-        Ai = torch.linalg.inv(A)
-        # transform sample points
-        Xs = (Ai[:-1,:-1]@XJ[...,None])[...,0] + Ai[:-1,-1]    
-        # now diffeo, not semilagrange here
-        if v is not None:
-            nt = v.shape[0]
-            for t in range(nt-1,-1,-1):
-                Xs = Xs + interp(xv,-v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
-    elif direction == 'f':
-        Xs = torch.clone(XJ)
-        if v is not None:
-            nt = v.shape[0]
-            for t in range(nt):
-                Xs = Xs + interp(xv,v[t].permute(2,0,1),Xs.permute(2,0,1)).permute(1,2,0)/nt
-        Xs = (A[:2,:2]@Xs[...,None])[...,0] + A[:2,-1]    
-            
-    else:
-        raise Exception(f'Direction must be "f" or "b" but you input {direction}')
-    return Xs 
+    Xs : torch tensor
+        Sample points in mehsgrid format, (...,2).
 
-def build_transform3D(xv,v,A,direction='b',XJ=None):
+    Notes
+    -----
+    The backward map ('b', target to source) is the map LDDMM fits: the inverse affine
+    transform, followed by explicit Euler steps of -v[t]/nt for t = nt-1 down to 0. The
+    exact forward map inverts each step by fixed-point iteration (an implicit Euler step of
+    the forward flow), starting from the forward Euler step. A RuntimeWarning is raised for
+    points that do not converge, which can only happen if v is too large for nt time steps.
+
+    Inputs can be numpy arrays or torch tensors, with integer or floating point values. The
+    computation uses the floating point dtype of A and v (float64 if both are integer) and
+    the device of v.
+    
+    '''
+    return _transforms.build_transform(xv,v,A,direction=direction,XJ=XJ,exact_inverse=exact_inverse)
+
+def build_transform3D(xv,v,A,direction='b',XJ=None,exact_inverse=True):
     ''' Create sample points to transform source to target from affine and velocity.
     
     Parameters
@@ -1494,7 +1433,7 @@ def build_transform3D(xv,v,A,direction='b',XJ=None):
     xv : list of array
         Sample points for velocity
     v : array
-        time dependent velocity field
+        time dependent velocity field, (nt,v0,v1,v2,3). None for an affine only transform.
     A : array
         Affine transformation matrix
     direction : char
@@ -1502,52 +1441,27 @@ def build_transform3D(xv,v,A,direction='b',XJ=None):
         'f' is used for transforming points.
     XJ : array
         Sample points for target (meshgrid with ij index style).  Defaults to None 
-        to keep sampling on the xv.
+        to keep sampling on the xv. Can also be a list of 1D arrays (one per axis), or an
+        array of points with components along the last axis, for example (N,3).
+    exact_inverse : bool
+        Only used for direction 'f'. If True (default), the forward map is the exact inverse
+        of the backward map, to about 1e-6 of a velocity grid spacing. If False, it is the
+        forward Euler integration, which inverts the backward map only up to a time
+        discretization error.
     
     Returns
     -------
-    Xs : array
-        Sample points in mehsgrid format.
-    
- 
+    Xs : torch tensor
+        Sample points in mehsgrid format, (...,3).
+
+    Notes
+    -----
+    After LDDMM_3D_to_slice the source is the atlas and the target is the slice: 'b' maps
+    slice positions to the atlas and 'f' maps atlas positions to the slice. See
+    build_transform for how the two maps are computed.
     
     '''
-    
-    A = torch.tensor(A)
-    v = torch.tensor(v)
-    if XJ is not None:
-        # check some types here
-        if isinstance(XJ,list):
-            if XJ[0].ndim == 1: # need meshgrid
-                XJ = torch.stack(torch.meshgrid([torch.tensor(x) for x in XJ],indexing='ij'),-1)
-            elif XJ[0].ndim == 3: # assume already meshgrid
-                XJ = torch.stack([torch.tensor(x) for x in XJ],-1)
-            else:
-                raise Exception('Could not understand variable XJ type')
-            
-        # if it is already in meshgrid form we just need to make sure it is a tensor
-        XJ = torch.tensor(XJ)
-    else:
-        XJ = torch.stack(torch.meshgrid([torch.tensor(x) for x in xv],indexing='ij'),-1)
-        
-    if direction == 'b':
-        Ai = torch.linalg.inv(A)
-        # transform sample points
-        Xs = (Ai[:-1,:-1]@XJ[...,None])[...,0] + Ai[:-1,-1]    
-        # now diffeo, not semilagrange here
-        nt = v.shape[0]
-        for t in range(nt-1,-1,-1):
-            Xs = Xs + interp3D(xv,-v[t].permute(3,0,1,2),Xs.permute(3,0,1,2)).permute(1,2,3,0)/nt
-    elif direction == 'f':
-        Xs = torch.clone(XJ)
-        nt = v.shape[0]
-        for t in range(nt):
-            Xs = Xs + interp(xv,v[t].permute(3,0,1,2),Xs.permute(3,0,1,2)).permute(1,2,0)/nt
-        Xs = (A[:-1,:-1]@Xs[...,None])[...,0] + A[:-1,-1]    
-            
-    else:
-        raise Exception(f'Direction must be "f" or "b" but you input {direction}')
-    return Xs 
+    return _transforms.build_transform3D(xv,v,A,direction=direction,XJ=XJ,exact_inverse=exact_inverse)
 
 def transform_image_source_with_A(A, XI, I, XJ):
     '''
@@ -1580,57 +1494,125 @@ def transform_image_source_with_A(A, XI, I, XJ):
         image I after affine transformation A, with channels along first axis
               
     '''
-    xv = None
-    v = None
-    AI= transform_image_source_to_target(xv, v, A, XI, I, XJ=XJ)
-    return AI
+    return _transforms.transform_image_source_with_A(A, XI, I, XJ)
 
 def transform_image_source_to_target(xv,v,A,xI,I,XJ=None):
     '''
-    Transform an image
-    '''
-    phii = build_transform(xv,v,A,direction='b',XJ=XJ)    
-    phiI = interp(xI,I,phii.permute(2,0,1),padding_mode="border")
-    return phiI
+    Transform an image from source to target space, by sampling it at the backward map.
 
-def transform_image_target_to_source(xv,v,A,xJ,J,XI=None):
-    '''
-    Transform an image
-    '''
-    phi = build_transform(xv,v,A,direction='f',XJ=XI)    
-    phiiJ = interp(xJ,J,phi.permute(2,0,1),padding_mode="border")
-    return phiiJ
+    Parameters
+    ----------
+    xv : list of array
+        Sample points for velocity
+    v : array
+        time dependent velocity field, (nt,v0,v1,2). None for an affine only transform.
+    A : array
+        Affine transformation matrix
+    xI : list of arrays
+        Locations of the pixels of I along each axis (row column order, not xy).
+    I : array
+        Source image, channels along the first axis.
+    XJ : list of arrays
+        Locations of the output pixels (see build_transform). Defaults to the velocity grid.
 
-def transform_points_source_to_target(xv,v,A,pointsI):
+    Returns
+    -------
+    phiI : torch tensor
+        I in target space, channels along the first axis.
+
+    Notes
+    -----
+    I is sampled with bilinear interpolation, clamped at its border. Inputs can be numpy
+    arrays or torch tensors of any numeric dtype.
     '''
-    Transform points.  Note points are in row column order, not xy.
+    return _transforms.transform_image_source_to_target(xv,v,A,xI,I,XJ=XJ)
+
+def transform_image_target_to_source(xv,v,A,xJ,J,XI=None,exact_inverse=True):
     '''
-    #phi = build_transform(xv,v,A,direction='f',XJ=XI)
-    if isinstance(pointsI,torch.Tensor):
-        pointsIt = torch.clone(pointsI)
-    else:
-        pointsIt = torch.tensor(pointsI)
-    nt = v.shape[0]
-    for t in range(nt):            
-        pointsIt += interp(xv,v[t].permute(2,0,1),pointsIt.T[...,None])[...,0].T/nt
-    pointsIt = (A[:2,:2]@pointsIt.T + A[:2,-1][...,None]).T
-    return pointsIt
+    Transform an image from target to source space, by sampling it at the forward map.
+
+    Parameters
+    ----------
+    xv : list of array
+        Sample points for velocity
+    v : array
+        time dependent velocity field, (nt,v0,v1,2). None for an affine only transform.
+    A : array
+        Affine transformation matrix
+    xJ : list of arrays
+        Locations of the pixels of J along each axis (row column order, not xy).
+    J : array
+        Target image, channels along the first axis.
+    XI : list of arrays
+        Locations of the output pixels (see build_transform). Defaults to the velocity grid.
+    exact_inverse : bool
+        If True (default), use the exact inverse of the backward map; if False, the forward
+        Euler map of earlier versions (see build_transform).
+
+    Returns
+    -------
+    phiiJ : torch tensor
+        J in source space, channels along the first axis.
+
+    Notes
+    -----
+    J is sampled with bilinear interpolation, clamped at its border. Inputs can be numpy
+    arrays or torch tensors of any numeric dtype.
+    '''
+    return _transforms.transform_image_target_to_source(xv,v,A,xJ,J,XI=XI,exact_inverse=exact_inverse)
+
+def transform_points_source_to_target(xv,v,A,pointsI,exact_inverse=True):
+    '''
+    Transform points from source to target space.  Note points are in row column order, not xy.
+
+    Parameters
+    ----------
+    xv : list of array
+        Sample points for velocity
+    v : array
+        time dependent velocity field, (nt,*nv,d). None for an affine only transform.
+    A : array
+        Affine transformation matrix, (d+1,d+1). With d=3 (after LDDMM_3D_to_slice) this maps
+        atlas points to the slice.
+    pointsI : array
+        (N,d) points in source space. Numpy array or torch tensor, integer or floating point;
+        it is not modified.
+    exact_inverse : bool
+        If True (default), use the exact inverse of the backward map LDDMM fits; if False, the
+        forward Euler map of earlier versions (see build_transform).
+
+    Returns
+    -------
+    pointsIt : torch tensor
+        (N,d) points in target space.
+    '''
+    return _transforms.transform_points_source_to_target(xv,v,A,pointsI,exact_inverse=exact_inverse)
 
 def transform_points_target_to_source(xv,v,A,pointsI):
     '''
-    Transform points.  Note points are in row column order, not xy.
+    Transform points from target to source space.  Note points are in row column order, not xy.
+
+    This is the backward map LDDMM fits, identical to build_transform(xv,v,A,direction='b')
+    evaluated at the points.
+
+    Parameters
+    ----------
+    xv : list of array
+        Sample points for velocity
+    v : array
+        time dependent velocity field, (nt,*nv,d). None for an affine only transform.
+    A : array
+        Affine transformation matrix, (d+1,d+1).
+    pointsI : array
+        (N,d) points in target space. Numpy array or torch tensor, integer or floating point;
+        it is not modified.
+
+    Returns
+    -------
+    pointsIt : torch tensor
+        (N,d) points in source space.
     '''
-    
-    if isinstance(pointsI,torch.Tensor):
-        pointsIt = torch.clone(pointsI)
-    else:
-        pointsIt = torch.tensor(pointsI)
-    Ai = torch.linalg.inv(A)
-    pointsIt = (Ai[:2,:2]@pointsIt.T + Ai[:2,-1][...,None]).T
-    nt = v.shape[0]
-    for t in range(nt):            
-        pointsIt += interp(xv,-v[t].permute(2,0,1),pointsIt.T[...,None])[...,0].T/nt
-    return pointsIt
+    return _transforms.transform_points_target_to_source(xv,v,A,pointsI)
 
 def calculate_tre(pointsI, pointsJ):
     ''' Target registration error (TRE) between two sets of corresponding points
@@ -1743,93 +1725,51 @@ def download_aba_image_labels(imageurl, labelurl, imagefile, labelfile):
     return imagefile, labelfile
 
 def analyze3Dalign(labelfile, xv,v,mat, xJ, dx, scale_x, scale_y, x, y, X_, Y_, namesdict, device='cpu'):
-	''' Create dataframe with region annotations and 3D coordinates of target brain slice
-		    
-		    Parameters
-		    ----------
-		    labelfile : array
-		    		File name of 3D atlas with region annotations.
-		    xv : list of array
-        		Sample points for velocity
-    		    v : array
-        		time dependent velocity field
-    		    A : array
-        		Affine transformation matrix
-    		    direction : char
-        		'f' for forward and 'b' for backward. 'b' is default and is used for transforming images.
-        		'f' is used for transforming points.
-    		    XJ : array
-        		Sample points for target (meshgrid with ij index style).  Defaults to None 
-       		to keep sampling on the xv.
-    
-		    dx : int
-		    	Step of rasterized image.
-		    scale_x : double
-		    	Value that x positions of atlas were scaled by
-		    scale_y : double
-		    	Value that y positions of atlas were scaled by
-		    x : array
-		    	X positions of target brain slice
-		    y : array
-		    	Y positions of target brain slice
-		    X_ : array
-		    	-
-		    Y_ : array
-		    	-
-		    namesdict : Dictionary
-		    		Dictionary of brain regions corresponding to region numbers
-		    
-		    Returns
-		    -------
-		    df : Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.
-	'''
-	# map the annotations
-	#xS = [np.arange(n)*d - (n-1)*d/2.0 for n,d in zip(nxS,dxS)]
-	vol,hdr = nrrd.read(labelfile)
-	L = vol
-	dxL = np.diag(hdr['space directions'])
-	nL = L.shape
-	xL = [np.arange(n)*d - (n-1)*d/2 for n,d in zip(nL,dxL)]
+    ''' Create dataframe with region annotations and 3D coordinates of target brain slice
 
-	# next we'll chose a set of points to sample on
-	# if we wanted to use the same resolution as our rasterized image, we would do this
-	res = np.array(dx)
-	XJ = np.stack(np.meshgrid(np.zeros(1),xJ[0],xJ[1],indexing='ij'),-1)
-	# if we want to use a different resolution
-	res = 10.0
-	XJ = np.stack(np.meshgrid(np.zeros(1), np.arange(xJ[0][0],xJ[0][-1],res), np.arange(xJ[1][0],xJ[1][-1],res), indexing='ij'),-1)
+    Each cell is mapped into the atlas with the backward map fitted by LDDMM_3D_to_slice
+    (build_transform3D, direction 'b'), evaluated at the cell's own position, and gets the
+    label of the nearest atlas voxel at that position.
 
+    Parameters
+    ----------
+    labelfile : str
+        File name of 3D atlas with region annotations (nrrd).
+    xv : list of array
+        Sample points for velocity
+    v : array
+        time dependent velocity field
+    mat : array
+        Affine transformation matrix
+    xJ : list of arrays
+        Pixel locations of the rasterized target image. Not used (kept for compatibility).
+    dx : float
+        Step of rasterized image. Not used (kept for compatibility).
+    scale_x : double
+        Value that x positions of atlas were scaled by. Not used (kept for compatibility).
+    scale_y : double
+        Value that y positions of atlas were scaled by. Not used (kept for compatibility).
+    x : array
+        X positions of target brain slice
+    y : array
+        Y positions of target brain slice
+    X_ : array
+        Not used (kept for compatibility).
+    Y_ : array
+        Not used (kept for compatibility).
+    namesdict : Dictionary
+        Dictionary of brain regions corresponding to region numbers
+    device : str
+        Not used (kept for compatibility); the computation runs on the device of v.
 
-	tform = build_transform3D(xv,v,mat,direction='b',XJ=torch.tensor(XJ,device=mat.device))
-
-	AphiL = interp3D(
-        	xL, 
-        	torch.tensor(L[None].astype(np.float64),dtype=torch.float64,device=tform.device),
-        	tform.permute(-1,0,1,2),
-        	mode='nearest',
-	)[0,0].int()
-	AphiL = AphiL.detach().cpu()
-
-	# now look at the cells and assign
-	q = np.stack((y,x))
-	qi = np.round(((q - np.stack([xJ[0][0],xJ[1][0]])[...,None])/res)).astype(int)
-	# by definition, no points should be out of bounds
-	# but if I change resolutions, there may be points out of bounds
-	df_ = pd.DataFrame()
-	labels = AphiL[qi[0],qi[1]]
-	col = ((x - X_[0])/dx).astype(int)
-	row = ((y - Y_[0])/dx).astype(int)
-	df_['coord0'] = tform[0,row,col,0].detach().cpu()
-	df_['coord1'] = tform[0,row,col,1].detach().cpu()
-	df_['coord2'] = tform[0,row,col,2].detach().cpu()
-	df_['x'] = x
-	df_['y'] = y
-	df_['struct_id'] = labels
-    
-	all_names = [namesdict[i] for i in df_['struct_id']]
-	df_['acronym'] = all_names  
-    
-	return df_ 
+    Returns
+    -------
+    df : DataFrame
+        One row per cell of the target brain slice: its 3D coordinates in the atlas
+        (coord0, coord1, coord2), x, y, the region annotation (struct_id, 0 outside the atlas)
+        and its acronym.
+    '''
+    return _transforms.analyze3Dalign(labelfile, xv,v,mat, xJ, dx, scale_x, scale_y, x, y, X_, Y_, namesdict, device=device)
 
 def plot_brain_regions(df):
     ''' Plot all brain regions in target brain slice with different color.
