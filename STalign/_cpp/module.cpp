@@ -48,7 +48,7 @@ class PyEngine {
            std::optional<carr> pointsJ, double sigmaM, double sigmaA, double sigmaB,
            double sigmaR, double sigmaP, double epL, double epT, double epV, int diffeo_start,
            double DV, bool affine_step_control, double step_shrink, double step_grow,
-           double step_floor, double step_cap, int num_threads)
+           double step_floor, double step_cap, int num_threads, bool landmark_exact)
       : I_(std::move(I)), J_(std::move(J)) {
     if (I_.ndim() != D + 1) throw std::invalid_argument("I must have shape (C_I, *nI)");
     if (J_.ndim() != D + 1) throw std::invalid_argument("J must have shape (C_J, *nJ)");
@@ -128,6 +128,7 @@ class PyEngine {
     in.params.step_grow = step_grow;
     in.params.step_floor = step_floor;
     in.params.step_cap = step_cap;
+    in.params.landmark_exact = landmark_exact;
     e_ = std::make_unique<stalign::Engine<D>>(in, num_threads);
   }
 
@@ -152,6 +153,7 @@ class PyEngine {
   }
 
   int iteration() const { return e_->it; }
+  long long landmark_unconverged() const { return e_->lm_unconverged; }
   py::array_t<double> L() const {
     std::vector<double> o(D * D);
     for (int a = 0; a < D; ++a)
@@ -244,19 +246,21 @@ void bind_engine(py::module_& m, const char* name, const char* doc) {
                     const std::vector<carr>&, carr, carr, carr, carr, carr, carr, carr,
                     std::optional<carr>, std::optional<carr>, std::optional<carr>,
                     std::optional<carr>, double, double, double, double, double, double, double,
-                    double, int, double, bool, double, double, double, double, int>(),
+                    double, int, double, bool, double, double, double, double, int, bool>(),
            "I"_a, "xI"_a, "J"_a, "xJ"_a, "v"_a, "xv"_a, "L"_a, "T"_a, "K"_a, "LL"_a, "WM"_a,
            "WA"_a, "WB"_a, py::kw_only(), "muA"_a = py::none(), "muB"_a = py::none(),
            "pointsI"_a = py::none(), "pointsJ"_a = py::none(), "sigmaM"_a, "sigmaA"_a,
            "sigmaB"_a, "sigmaR"_a, "sigmaP"_a, "epL"_a, "epT"_a, "epV"_a, "diffeo_start"_a,
            "DV"_a, "affine_step_control"_a = false, "step_shrink"_a = 0.5, "step_grow"_a = 1.05,
-           "step_floor"_a = 1e-3, "step_cap"_a = 1.0, "num_threads"_a = 1)
+           "step_floor"_a = 1e-3, "step_cap"_a = 1.0, "num_threads"_a = 1, "landmark_exact"_a = true)
       .def("run", &E::run, "n"_a, py::call_guard<py::gil_scoped_release>(),
            "Advance n iterations (the iteration counter persists across calls).")
       .def("gradient", &E::gradient,
            "Gradients at the current state without updating it (dict: Lgrad, Tgrad, "
            "vgrad = d(EM+EP)/dv, direction = K*dE/dv including ER, EM, ER, EP).")
       .def_property_readonly("iteration", &E::iteration)
+      .def_property_readonly("landmark_unconverged", &E::landmark_unconverged,
+                             "Exact landmark solves (landmark, time step) that did not converge.")
       .def_property_readonly("L", &E::L)
       .def_property_readonly("T", &E::T)
       .def_property_readonly("A_eval", &E::A_eval)
@@ -278,7 +282,7 @@ void bind_engine(py::module_& m, const char* name, const char* doc) {
 PYBIND11_MODULE(_stalign_cpp, m) {
   m.doc() = "C++ CPU (float64) engine for STalign's LDDMM and LDDMM_3D_to_slice";
   // bumped whenever the binding interface changes, so a stale in-place build is detected
-  m.attr("API_VERSION") = 2;
+  m.attr("API_VERSION") = 3;
   m.attr("MAX_CI") = stalign::MAX_CI;
   m.attr("MAX_CJ") = stalign::MAX_CJ;
   m.attr("MAX_NT") = stalign::MAX_NT;

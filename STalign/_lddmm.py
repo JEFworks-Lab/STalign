@@ -86,7 +86,10 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         changes the strength of the regularization.
     sigmaP: float
         Standard deviation for matching of points.
-        Cost is of the form 0.5/sigmaP^2 sum_i (source_point_i - target_point_i)^2
+        Cost is of the form 0.5/sigmaP^2 sum_i (source_point_i - target_point_i)^2, where the source
+        points are mapped to the target by the exact inverse of the fitted target-to-source map,
+        i.e. as transform_points_source_to_target maps them after the fit. (Earlier versions used
+        forward Euler steps, which invert that map only approximately.)
     device: str
         torch device. defaults to 'cpu'. Can also be 'cuda:0' for example.
     dtype: torch dtype

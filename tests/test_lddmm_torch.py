@@ -6,6 +6,7 @@
 * the approved fixes (F1-F6), input conventions, draw modes, threads and backend selection
 * the affine step control (on by default in 3D): trajectories with oscillating affine steps,
   segmented runs, defaults and validation
+* the landmark maps ('exact', the default, and 'euler'): gradients, trajectories and validation
 * the oracle itself against the frozen original STalign (skipped when it is not available)
 """
 import dataclasses
@@ -359,6 +360,76 @@ def test_draw_3d_and_draw_errors():
         _lddmm.LDDMM(**kw2, draw='sometimes')
 
 
+# --------------------------------------------------------------------------- landmark maps
+def fit_problem(dim=2, backend='torch', **kw):
+    """Fit through the front-end with Problem options that LDDMM does not take as arguments."""
+    return C.run_lddmm(C.prepare_problem(dim, **kw), draw=False, num_threads=4, backend=backend)
+
+
+def test_gradient_euler_landmark_map():
+    """The Euler map of earlier versions (the exact map is the default in the other tests)."""
+    d, state, WM = state_2d()
+    params = dict(a=8.0, sigmaM=0.5, sigmaR=50.0, sigmaP=2.0)
+    ref = R.gradients(d['xI'], d['I'], d['xJ'], d['J'], state['L'], state['T'], state['v'], state['xv'], WM,
+                      pointsI=d['pointsI'], pointsJ=d['pointsJ'], landmark_map='euler', **params)
+    assert relerr(ref['pointsIt'], R.gradients(d['xI'], d['I'], d['xJ'], d['J'], state['L'], state['T'], state['v'],
+                                               state['xv'], WM, pointsI=d['pointsI'], pointsJ=d['pointsJ'],
+                                               **params)['pointsIt']) > 1e-4  # the maps differ
+    engine = engine_at(2, d, state, WM, dict(params, landmark_map='euler'))
+    check_gradient(engine.gradient(), ref)
+
+
+def test_exact_landmark_map_is_the_returned_forward_map():
+    """The landmark term moves pointsI with the map transform_points_source_to_target applies to
+    the fitted A and v (to its 1e-6 cell tolerance), unlike the Euler map."""
+    from STalign import STalign as S
+    kw = data_2d(niter=80, diffeo_start=0)
+    cell = min(float(x[1] - x[0]) for x in C.velocity_grid(kw['xI'], kw['expand'], kw['a']))
+    for landmark_map, close in (('exact', True), ('euler', False)):
+        engine = TE.TorchEngine(C.prepare_problem(2, **kw, landmark_map=landmark_map), 4)
+        engine.run(80)
+        snap = engine.snapshot()
+        mapped = S.transform_points_source_to_target(engine.problem.xv, snap['v_eval'], snap['A_eval'], kw['pointsI'])
+        err = float((mapped - snap['pointsIt']).abs().max())
+        assert (err < 1e-5 * cell) == close, (landmark_map, err)
+    assert snap.get('landmark_unconverged') is None  # counted for the exact map only
+
+
+def test_trajectory_euler_landmark_map():
+    kw = data_2d(niter=200, diffeo_start=20)
+    assert_close(fit_problem(**kw, landmark_map='euler'), R.LDDMM(**kw, landmark_map='euler'),
+                 ('A', 'v', 'WM', 'WA', 'WB'), TRAJ_TOL)
+
+
+def unconverged_problem(nt=1):
+    """Landmarks in a velocity field too rough for its time steps to be invertible."""
+    d = R.synthetic_2d(CI=1, CJ=1, seed=0)
+    xv = [x.numpy() for x in R.velocity_grid([torch.tensor(x) for x in d['xI']], 1.0, 8.0)]
+    v = np.random.default_rng(0).uniform(-20.0, 20.0, size=(nt,) + tuple(len(x) for x in xv) + (2,))
+    return dict(d, v=v, xv=xv, a=8.0, niter=1, sigmaP=2.0)
+
+
+def test_unconverged_landmark_map_warns():
+    kw = unconverged_problem()
+    engine = TE.TorchEngine(C.prepare_problem(2, **kw), 4)
+    engine.run(1)
+    assert engine.snapshot()['landmark_unconverged'] > 0
+    with pytest.warns(RuntimeWarning, match='exact landmark map did not converge'):
+        out = fit_problem(**kw)
+    assert torch.isfinite(out['A']).all()
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        fit_problem(**kw, landmark_map='euler')
+
+
+def test_landmark_map_validation():
+    kw = data_2d(niter=1)
+    assert C.prepare_problem(2, **kw).landmark_map == 'exact' == C.Problem.landmark_map
+    for bad in ('Exact', 'implicit', None, 1):
+        with pytest.raises(ValueError, match='landmark_map'):
+            C.prepare_problem(2, **kw, landmark_map=bad)
+
+
 # --------------------------------------------------------------------------- threads
 def test_resolve_num_threads(monkeypatch):
     monkeypatch.delenv('STALIGN_NUM_THREADS', raising=False)
@@ -544,10 +615,11 @@ def _original():
 def test_oracle_reproduces_original_bitwise():
     """Where no fix applies the oracle is the original, bit for bit (60 iterations, so the E-step
     runs).  F2: the original's 'v' is the oracle's 'v_next'.  F1: compared with legacy_er3d, and
-    3D without the affine step control (the original had none)."""
+    3D without the affine step control (the original had none).  The landmarks move by the
+    original's Euler steps (landmark_map='euler')."""
     S = _original()
     kw = data_2d(CI=3, CJ=3, niter=62, diffeo_start=7, muA=torch.tensor([1, 1, 1]))
-    o, r = S.LDDMM(**kw), R.LDDMM(**kw)
+    o, r = S.LDDMM(**kw), R.LDDMM(**kw, landmark_map='euler')
     assert torch.equal(r['A'], o['A']) and torch.equal(r['v_next'], o['v'])
     assert all(torch.equal(r[k], o[k]) for k in ('WM', 'WA', 'WB'))
     kw3 = data_3d(niter=57, diffeo_start=3, sigmaR=1e5, muB=torch.tensor([0]))

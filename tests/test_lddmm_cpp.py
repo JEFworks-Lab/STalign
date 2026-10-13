@@ -3,9 +3,10 @@
 The engine is checked against the autograd oracle in tests/reference.py: gradients at
 non-trivial states (including sample points outside the source image and outside the
 velocity grid) and 300-iteration trajectories through the public front-end, with and without
-the affine step control.  Also tested: the engine interface (snapshots, segmented runs,
-niter=0), agreement with the torch engine, results that are bitwise independent of the
-thread count, fork safety and concurrent calls from Python threads.
+the affine step control, and with the exact and the Euler landmark map.
+Also tested: the engine interface (snapshots, segmented runs, niter=0), agreement with the
+torch engine, results that are bitwise independent of the thread count, fork safety and
+concurrent calls from Python threads.
 
 Skipped when the extension is not built (``python setup.py build_ext --inplace``).
 '''
@@ -101,8 +102,9 @@ GRADIENT_CASES = {
 }
 
 
-@pytest.mark.parametrize('case', GRADIENT_CASES)
-def test_gradient_matches_oracle(case):
+@pytest.mark.parametrize('case,landmark_map', [(case, 'exact') for case in GRADIENT_CASES]
+                         + [('2d_far_outside', 'euler')])
+def test_gradient_matches_oracle(case, landmark_map):
     dim, L, T, expand, amp, points, CI, CJ = GRADIENT_CASES[case]
     if dim == 2:
         s = R.synthetic_2d(CI=CI, CJ=CJ)
@@ -116,10 +118,11 @@ def test_gradient_matches_oracle(case):
         v = R.smooth_random_v(xv, 4, amp, seed=2).numpy()
     pI, pJ = (s['pointsI'], s['pointsJ']) if points else (None, None)
     problem = C.prepare_problem(dim, s['xI'], s['I'], s['xJ'], s['J'], pointsI=pI, pointsJ=pJ, L=L, T=T, v=v,
-                                xv=[x.numpy() for x in xv], a=a, **sig)
+                                xv=[x.numpy() for x in xv], a=a, landmark_map=landmark_map, **sig)
     problem.WM = np.random.default_rng(0).uniform(0.2, 1.0, problem.J.shape[1:])  # non-uniform weights
     got = CppEngine(problem, THREADS).gradient()
-    ref = R.gradients(s['xI'], s['I'], s['xJ'], s['J'], L, T, v, xv, problem.WM, a=a, pointsI=pI, pointsJ=pJ, **sig)
+    ref = R.gradients(s['xI'], s['I'], s['xJ'], s['J'], L, T, v, xv, problem.WM, a=a, pointsI=pI, pointsJ=pJ,
+                      landmark_map=landmark_map, **sig)
 
     for k in ('Lgrad', 'Tgrad', 'vgrad', 'direction'):
         assert rel(got[k], ref[k]) < 1e-9, k
@@ -136,6 +139,7 @@ def test_gradient_matches_oracle(case):
 TRAJECTORY_CASES = {
     '2d_estimated_mu': lambda: problem_2d(),
     '2d_points': lambda: problem_2d(points=True, sigmaP=2.0),
+    '2d_points_euler': lambda: problem_2d(points=True, sigmaP=2.0, landmark_map='euler'),
     '2d_diffeo_start_user_mu': lambda: problem_2d(diffeo_start=30, muA=[0.7, 0.8], muB=0),
     '2d_one_source_channel_nt5': lambda: problem_2d(CI=1, CJ=3, nt=5),
     '3d': lambda: problem_3d(muA=[3.0], muB=0),
@@ -182,10 +186,35 @@ def test_step_control_matches_torch_engine(dim):
     ours = run_engine(problem, problem.niter)
     torch_engine = TE.TorchEngine(problem, THREADS)
     torch_engine.run(problem.niter)
-    theirs = {k: x.numpy() for k, x in torch_engine.snapshot().items()}
+    theirs = {k: x.numpy() if isinstance(x, torch.Tensor) else x for k, x in torch_engine.snapshot().items()}
     assert ours.keys() == theirs.keys()
+    assert ours.get('landmark_unconverged', 0) == theirs.get('landmark_unconverged', 0) == 0
     for k in ('A_eval', 'v_eval', 'L', 'T', 'v', 'WM', 'WA', 'WB', 'step_multipliers') + (('Xs',) if dim == 3 else ()):
         assert rel(ours[k], theirs[k]) < 1e-9, k
+
+
+def test_landmark_maps_match_torch_engine():
+    for landmark_map in ('exact', 'euler'):
+        problem, _ = problem_2d(niter=150, points=True, sigmaP=2.0, landmark_map=landmark_map)
+        ours = run_engine(problem, problem.niter)
+        torch_engine = TE.TorchEngine(problem, THREADS)
+        torch_engine.run(problem.niter)
+        theirs = {k: x.numpy() if isinstance(x, torch.Tensor) else x for k, x in torch_engine.snapshot().items()}
+        assert ours.keys() == theirs.keys()
+        for k in ('A_eval', 'v_eval', 'L', 'T', 'v', 'WM', 'WA', 'WB', 'pointsIt', 'Esave'):
+            assert rel(ours[k], theirs[k]) < 1e-9, (landmark_map, k)
+
+
+def test_unconverged_landmark_map_is_counted_and_warns():
+    s = R.synthetic_2d(CI=1, CJ=1)
+    xv = [x.numpy() for x in R.velocity_grid(s['xI'], 1.0, 8.0)]
+    # a velocity field too rough for its single time step to be invertible
+    v = np.random.default_rng(0).uniform(-20.0, 20.0, size=(1,) + tuple(len(x) for x in xv) + (2,))
+    problem = C.prepare_problem(2, s['xI'], s['I'], s['xJ'], s['J'], pointsI=s['pointsI'], pointsJ=s['pointsJ'],
+                                v=v, xv=xv, a=8.0, niter=1)
+    assert run_engine(problem, 1)['landmark_unconverged'] > 0
+    with pytest.warns(RuntimeWarning, match='exact landmark map did not converge'):
+        C.run_lddmm(problem, draw=False, num_threads=THREADS, backend='cpp')
 
 
 def test_estimated_and_fixed_mu_match_oracle_estep():
@@ -208,6 +237,7 @@ def test_snapshot_contract_2d_with_points():
     shapes = {'L': (2, 2), 'T': (2,), 'A_eval': (3, 3), 'v': nv, 'v_eval': nv, 'WM': nJ, 'WB': nJ, 'WA': nJ,
               'AI': problem.I.shape[:1] + nJ, 'fAI': problem.J.shape, 'Esave': (7, 4),
               'pointsIt': problem.pointsI.shape}
+    assert snap.pop('landmark_unconverged') == 0  # the exact landmark map converged
     assert {k: snap[k].shape for k in snap} == shapes
     assert all(x.dtype == np.float64 for x in snap.values())
     # the caller owns the arrays

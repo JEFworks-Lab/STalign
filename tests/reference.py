@@ -37,6 +37,15 @@ backward pass and before the affine update::
 where fac is the original's 1 + 9 * (it >= diffeo_start).  The v update is unchanged.  Off,
 the original update lines run unchanged.  The result's ``step_multipliers`` holds the final m.
 The default 3D sigmaR is the package's new default.
+
+Round 2 adds an option of the 2D fit:
+
+landmark_map='exact' (default)  The landmarks move with the exact inverse of the backward map
+    instead of the original's forward Euler steps ('euler').  Each time step solves
+    p_{t+1} = p_t + v_t(p_{t+1}) / nt by fixed-point iteration (no gradient); then one Newton
+    step of that implicit equation, p_{t+1} = z + M^-1 (p_t + v_t(z)/nt - z) with z the fixed
+    point and M = I - Dv_t(z)/nt held constant (Dv_t by autograd), gives the implicit-function
+    gradient through autograd.
 """
 import warnings
 
@@ -52,6 +61,11 @@ GROW = 1.05
 FLOOR = 1e-3
 CAP = 1.0
 SIGMAR_3D = 2e6  # default sigmaR of LDDMM_3D_to_slice
+
+# exact landmark map: a fixed-point solve stops when no point moves by more than this fraction
+# of a velocity grid cell (or a few ulps of the coordinates), after at most LANDMARK_MAX_ITER sweeps
+LANDMARK_TOL = 1e-10
+LANDMARK_MAX_ITER = 100
 
 
 # --------------------------------------------------------------------------- helpers
@@ -150,11 +164,49 @@ def smooth(g, K):
     return torch.fft.ifftn(torch.fft.fftn(g, dim=dims) * K[..., None], dim=dims).real
 
 
+# --------------------------------------------------------------------------- landmarks
+def points_velocity(xv, vt, P):
+    """The velocity vt (nv0, nv1, 2) at the points P (N, 2) (bilinear, zero outside): (N, 2)."""
+    return interp(xv, vt.permute(2, 0, 1), P.T[..., None])[..., 0].T
+
+
+def landmark_tol(xv):
+    """Stopping tolerance of the exact landmark map: LANDMARK_TOL of the smallest velocity grid
+    cell, but at least a few ulps of the grid's coordinates."""
+    h = min(float(x[-1] - x[0]) / (len(x) - 1) for x in xv)
+    R = max(max(abs(float(x[0])), abs(float(x[-1]))) for x in xv)
+    return max(LANDMARK_TOL * h, 64.0 * np.finfo(np.float64).eps * R)
+
+
+def implicit_step(xv, vt, p, nt):
+    """One step of the exact landmark map: the solution of z = p + vt(z) / nt, differentiable
+    in p and vt by the implicit function theorem (see the module docstring)."""
+    tol = landmark_tol(xv)
+    f = vt.detach()
+    with torch.no_grad():
+        x = p.detach()
+        z = x + points_velocity(xv, f, x) / nt
+        for _ in range(LANDMARK_MAX_ITER):
+            zn = x + points_velocity(xv, f, z) / nt
+            moved = float((zn - z).abs().max())
+            z = zn
+            if moved <= tol:
+                break
+    with torch.enable_grad():
+        zz = z.clone().requires_grad_(True)
+        Dv = torch.stack([torch.autograd.grad(points_velocity(xv, f, zz)[:, k].sum(), zz)[0] for k in range(2)], 1)
+    M = torch.eye(2, dtype=p.dtype) - Dv / nt  # (N, 2, 2), constant
+    r = p + points_velocity(xv, vt, z) / nt - z
+    return z + torch.linalg.solve(M, r[..., None])[..., 0]
+
+
 # --------------------------------------------------------------------------- forward model
-def forward(xI, I, xJ, J, L, T, v, xv, WM, pointsI=None):
+def forward(xI, I, xJ, J, L, T, v, xv, WM, pointsI=None, landmark_map='exact'):
     """One forward pass of the original: sample points, deformed source, contrast fit.
 
     Returns dict(A, Xs, AI, fAI, pointsIt).  pointsIt is None without landmarks (always in 3D).
+    The landmarks move with the exact inverse of the backward map, or with the original's
+    forward Euler steps if landmark_map == 'euler'.
     """
     dim = len(xI)
     nt = v.shape[0]
@@ -169,7 +221,10 @@ def forward(xI, I, xJ, J, L, T, v, xv, WM, pointsI=None):
         if pointsI is not None and pointsI.shape[0] > 0:
             pointsIt = torch.clone(pointsI)
             for t in range(nt):
-                pointsIt = pointsIt + interp(xv, v[t].permute(2, 0, 1), pointsIt.T[..., None])[..., 0].T / nt
+                if landmark_map == 'euler':
+                    pointsIt = pointsIt + interp(xv, v[t].permute(2, 0, 1), pointsIt.T[..., None])[..., 0].T / nt
+                else:
+                    pointsIt = implicit_step(xv, v[t], pointsIt, nt)
             pointsIt = (A[:2, :2] @ pointsIt.T + A[:2, -1][..., None]).T
         AI = interp(xI, I, Xs.permute(2, 0, 1), padding_mode="border")
     else:
@@ -209,7 +264,7 @@ def _inputs(xI, I, xJ, J, pointsI=None, pointsJ=None):
 
 # --------------------------------------------------------------------------- gradients at one state
 def gradients(xI, I, xJ, J, L, T, v, xv, WM, a=500.0, p=2.0, sigmaM=1.0, sigmaR=5e5, sigmaP=2e1,
-              pointsI=None, pointsJ=None, legacy_er3d=False):
+              pointsI=None, pointsJ=None, legacy_er3d=False, landmark_map='exact'):
     """Gradients of the objective at one state, as one iteration of the loop computes them.
 
     2D if len(xI) == 2, else 3D-to-slice.  Inputs use the original layouts (v is
@@ -220,13 +275,15 @@ def gradients(xI, I, xJ, J, L, T, v, xv, WM, a=500.0, p=2.0, sigmaM=1.0, sigmaR=
       direction    : K * dE/dv, the direction the update subtracts (times epV)
       EM, ER, EP   : energies (EP is None without landmarks)
       Xs, AI, fAI  : sample points, deformed source and its contrast fit
+      pointsIt     : the transformed landmarks (None without landmarks)
+    landmark_map is 'exact' or 'euler' (see the module docstring).
     """
     xI, I, xJ, J, pointsI, pointsJ = _inputs(xI, I, xJ, J, pointsI, pointsJ)
     xv = [_t(x) for x in xv]
     L, T, v = (_t(x).requires_grad_(True) for x in (L, T, v))
     WM = _t(WM).reshape(J.shape[1:])
     LL, K, DV = kernels(xv, a, p)
-    f = forward(xI, I, xJ, J, L, T, v, xv, WM, pointsI)
+    f = forward(xI, I, xJ, J, L, T, v, xv, WM, pointsI, landmark_map)
     EM = torch.sum((f['fAI'] - J) ** 2 * WM) / 2.0 / sigmaM ** 2
     ER = regularizer(v, LL, DV, sigmaR, legacy_er3d)
     EP = None
@@ -239,12 +296,14 @@ def gradients(xI, I, xJ, J, L, T, v, xv, WM, a=500.0, p=2.0, sigmaM=1.0, sigmaR=
     total = gv + gvR
     return dict(Lgrad=gL, Tgrad=gT, vgrad=gv, vgrad_total=total, direction=smooth(total, K),
                 EM=EM.detach(), ER=ER.detach(), EP=None if EP is None else EP.detach(),
-                Xs=f['Xs'].detach(), AI=f['AI'].detach(), fAI=f['fAI'].detach())
+                Xs=f['Xs'].detach(), AI=f['AI'].detach(), fAI=f['fAI'].detach(),
+                pointsIt=None if f['pointsIt'] is None else f['pointsIt'].detach())
 
 
 # --------------------------------------------------------------------------- the loop
 def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter, diffeo_start,
-         epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, legacy_er3d, affine_step_control):
+         epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, legacy_er3d, affine_step_control,
+         landmark_map='exact'):
     xI, I, xJ, J, pointsI, pointsJ = _inputs(xI, I, xJ, J, pointsI, pointsJ)
     dim = len(xI)
     if A is not None:
@@ -292,7 +351,7 @@ def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter
     A_eval, v_eval = to_A(L, T).detach(), v.detach().clone()
     Xs = None
     for it in range(niter):
-        f = forward(xI, I, xJ, J, L, T, v, xv, WM, pointsI)
+        f = forward(xI, I, xJ, J, L, T, v, xv, WM, pointsI, landmark_map)
         A_eval, v_eval, Xs, fAI = f['A'].detach().clone(), v.detach().clone(), f['Xs'], f['fAI']
         EM = torch.sum((fAI - J) ** 2 * WM) / 2.0 / sigmaM ** 2
         ER = regularizer(v, LL, DV, sigmaR, legacy_er3d)
@@ -359,12 +418,14 @@ def _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter
 def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=None, A=None, v=None, xv=None,
           a=500.0, p=2.0, expand=2.0, nt=3, niter=5000, diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
           sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=5e5, sigmaP=2e1, muB=None, muA=None,
-          affine_step_control=False):
-    """Oracle of the 2D ``LDDMM`` (float64, CPU), same arguments and defaults as the public function."""
+          affine_step_control=False, landmark_map='exact'):
+    """Oracle of the 2D ``LDDMM`` (float64, CPU), same arguments and defaults as the public function,
+    with the landmark map of the module docstring.  The original is landmark_map='euler'."""
     if (pointsI is None) != (pointsJ is None):
         raise Exception('Must specify corresponding sets of points or none at all')
     return _run(xI, I, xJ, J, pointsI, pointsJ, L, T, A, v, xv, a, p, expand, nt, niter, diffeo_start,
-                epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, False, affine_step_control)
+                epL, epT, epV, sigmaM, sigmaB, sigmaA, sigmaR, sigmaP, muA, muB, False, affine_step_control,
+                landmark_map)
 
 
 def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=None, A=None, v=None, xv=None,
@@ -463,8 +524,10 @@ def smooth_random_v(xv, nt, amp, seed):
 
 
 # Fit parameters for the affine step control tests: steps large enough that the affine
-# parameters oscillate, so that their multipliers shrink (some to the floor) and grow back.
-STEP_2D = dict(a=12.0, sigmaM=0.3, sigmaR=5e3, sigmaP=4.0, epT=1e-1, epL=1e-4, epV=0.2, niter=300,
+# parameters oscillate, so that their multipliers shrink (nearly to the floor) and grow back.
+# (With epL=1e-4 and the exact landmark map, L oscillates with growing amplitude for ~20
+# iterations before its multiplier shrinks, which amplifies rounding differences ~1e4-fold.)
+STEP_2D = dict(a=12.0, sigmaM=0.3, sigmaR=5e3, sigmaP=4.0, epT=1e-1, epL=5e-5, epV=0.2, niter=300,
                diffeo_start=30)
 STEP_3D = dict(nt=4, a=10.0, expand=1.25, sigmaM=0.5, sigmaR=5e2, epT=1e-1, epL=1e-4, epV=5.0, niter=300,
                diffeo_start=20, L=0.95 * rotation_3d(4.0, -3.0), T=[0.5, 0.3, -0.4])

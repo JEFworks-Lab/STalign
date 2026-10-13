@@ -33,6 +33,10 @@ How it differs from the original (all equal up to rounding):
   crop slab, so its forward transform is three small dense DFTs.  Only increasing ``dim``
   orders are used: MPS computes rfftn/irfftn with a permuted dim order wrongly.
 * With user-supplied muA / muB the exp() terms of WA / WB are constant and computed once.
+* Exact landmark map: the fixed-point sweeps run on all landmarks at once and freeze each one
+  as it converges (as the C++ engine solves them one by one).  The Jacobians for the Newton
+  step and the implicit-function gradient come from one grid_sampler backward pass with a
+  batch of two unit output gradients.
 '''
 import math
 import os
@@ -53,6 +57,10 @@ _CHUNKS = 16
 _DENSE_DFT_MAX_CELLS = 12000
 # The tracked spectrum of v (used only for the reported ER) is recomputed this often.
 _RESYNC = 50
+# Exact landmark map: a fixed-point solve stops when no landmark moves by more than this
+# fraction of a velocity grid cell, after at most _LANDMARK_MAX_ITER sweeps (as the C++ engine).
+_LANDMARK_TOL = 1e-10
+_LANDMARK_MAX_ITER = 100
 
 
 # =========================================================================== threads
@@ -479,6 +487,68 @@ def _points_grad(pIf, pJf, A, vi, xv0_g, xvs_g, nt, sigmaP, vgrad):
     return PA.flip(1), EP, gL, gT
 
 
+def _landmark_tol(xv, dtype):
+    '''Stopping tolerance of the exact landmark map: _LANDMARK_TOL of the smallest velocity grid
+    cell, but at least a few ulps of the grid's coordinates.'''
+    h = min(float(x[-1] - x[0]) / (len(x) - 1) for x in xv)
+    R = max(max(abs(float(x[0])), abs(float(x[-1]))) for x in xv)
+    return max(_LANDMARK_TOL * h, 64.0 * torch.finfo(dtype).eps * R)
+
+
+def _points_grad_exact(pIf, pJf, A, vi, xv0_g, xvs_g, nt, sigmaP, vgrad, tol):
+    '''As _points_grad, with the exact landmark map (see ``_lddmm_common.Problem``).
+
+    Each time step solves z = p_t + v_t(z)/nt by fixed-point iteration from the Euler step (a
+    landmark stops once a sweep moves it by at most tol), then takes one Newton step
+    p_{t+1} = z + M^-1 (p_t + v_t(z)/nt - z) with M = I - Dv_t(z)/nt, which gives the solution
+    up to rounding.  The backward pass applies the implicit function theorem with the same z
+    and M: lambda = M^-T h is the gradient at p_t, and lambda/nt is splatted into dEP/dv_t at
+    z.  Returns (transformed pointsI, EP, dEP/dL, dEP/dT, number of solves that did not
+    converge within _LANDMARK_MAX_ITER sweeps).'''
+    P = pIf.shape[0]
+    grid = lambda p: ((p - xv0_g) / xvs_g * 2.0 - 1.0).view(1, 1, P, 2)
+    vel = lambda t, p: torch.grid_sampler(vi[t][None], grid(p), _BILINEAR, _ZEROS, True)[0, :, 0, :].T
+    eye = torch.eye(2, device=pIf.device, dtype=pIf.dtype)
+    unit = eye.view(2, 2, 1, 1).expand(2, 2, 1, P).contiguous()  # grad_output e_k for batch entry k
+    p, zs, Ms = pIf, [], []
+    unconverged = 0
+    for t in range(nt):
+        z = p + vel(t, p) / nt
+        active = torch.ones(P, dtype=torch.bool, device=p.device)
+        for _ in range(_LANDMARK_MAX_ITER):
+            zn = p + vel(t, z) / nt
+            moved = (zn - z).abs().amax(1)
+            z = torch.where(active[:, None], zn, z)
+            active &= moved > tol
+            if not bool(active.any()):
+                break
+        unconverged += int(active.sum())
+        # Jacobian Dv[p, k, d] = d v_k / d z_d (both in grid_sample order), from one backward
+        # pass with a batch of two unit output gradients
+        _, gg = _BWD[2](unit, vi[t][None].expand((2,) + tuple(vi[t].shape)), grid(z).expand(2, 1, P, 2),
+                        _BILINEAR, _ZEROS, True, [False, True])
+        M = eye - gg[:, 0].transpose(0, 1) * (2.0 / xvs_g) / nt
+        zs.append(z)
+        Ms.append(M)
+        p = z + torch.linalg.solve(M, (p + vel(t, z) / nt - z)[..., None])[..., 0]
+    Alf = A[:2, :2].flip(0).flip(1)
+    PA = p @ Alf.T + A[:2, 2].flip(0)
+    d = PA - pJf
+    EP = torch.sum(d ** 2) / 2.0 / sigmaP ** 2
+    q = d / sigmaP ** 2
+    gL = (q.T @ p).flip(0).flip(1)
+    gT = q.sum(0).flip(0)
+    h = q @ Alf
+    for t in range(nt - 1, -1, -1):
+        lam = torch.linalg.solve(Ms[t].transpose(1, 2), h[..., None])[..., 0]
+        if vgrad is not None:
+            go = (lam / nt).T.reshape(1, 2, 1, P).contiguous()
+            gin, _ = _BWD[2](go, vi[t][None], grid(zs[t]), _BILINEAR, _ZEROS, True, [True, False])
+            vgrad[t] += gin[0]
+        h = lam
+    return PA.flip(1), EP, gL, gT, unconverged
+
+
 # =========================================================================== smoothing
 class _Smooth2D:
     '''Smoothing K * dEM/dv and the regularizer ER for 2D velocities, P = nt*2 slices (n0, n1).
@@ -694,11 +764,14 @@ class TorchEngine:
             self.muB = None if P.muB is None else tensor(P.muB)
             self.EA = self.EB = None  # cached exp() terms for user-supplied muA / muB
             self.has_points = P.pointsI.shape[0] > 0
+            self.lm_exact = self.has_points and P.landmark_map == 'exact'
+            self.lm_unconverged = 0
             if self.has_points:
                 self.pIf = tensor(P.pointsI).flip(1).contiguous()
                 self.pJf = tensor(P.pointsJ).flip(1).contiguous()
                 self.xv0_g = torch.stack((xv[1][0], xv[0][0]))
                 self.xvs_g = torch.stack((xv[1][-1] - xv[1][0], xv[0][-1] - xv[0][0]))
+                self.lm_tol = _landmark_tol(P.xv, dt)
             self.Esave = torch.zeros((max(P.niter, 1), 4 if self.has_points else 3), device=dev, dtype=dt)
             # affine step control: one multiplier per affine parameter (L row-major, then T)
             # and the previous gradient, see _lddmm_common.Problem
@@ -731,9 +804,14 @@ class TorchEngine:
                 res['crop'] = (res['vgc'], slices)
             else:
                 res['vgrad'] = m.full_vgrad(res['vgc'], slices)
-        if self.has_points:
+        if self.lm_exact:
+            self.pointsIt, res['EP'], gL, gT, bad = _points_grad_exact(
+                self.pIf, self.pJf, A, self.vi, self.xv0_g, self.xvs_g, P.nt, P.sigmaP, res['vgrad'], self.lm_tol)
+            self.lm_unconverged += bad
+        elif self.has_points:
             self.pointsIt, res['EP'], gL, gT = _points_grad(self.pIf, self.pJf, A, self.vi, self.xv0_g, self.xvs_g,
                                                             P.nt, P.sigmaP, res['vgrad'])
+        if self.has_points:
             res['Lgrad'] = res['Lgrad'] + gL
             res['Tgrad'] = res['Tgrad'] + gT
         return res
@@ -829,6 +907,8 @@ class TorchEngine:
             snap['Xs'] = m.sample_points()
         if self.has_points:
             snap['pointsIt'] = self.pointsIt.clone()
+        if self.lm_exact:
+            snap['landmark_unconverged'] = self.lm_unconverged
         if self.step_m is not None:
             snap['step_multipliers'] = self.step_m.clone()
         return snap

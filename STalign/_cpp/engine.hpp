@@ -12,6 +12,11 @@
 //   deterministic reduction of the chunk buffers into dE/dv, points term,
 //   affine gradient, FFT smoothing (pocketfft), parameter update, EM weights.
 //
+// The landmark term (2D) maps the landmarks by forward Euler steps or, by default,
+// exactly by the inverse of the backward map (fixed-point solve of each implicit
+// step, implicit-function gradient), as described in STalign/_lddmm_common.py
+// (class Problem).
+//
 // The regulariser is ER = DV / (2 sigmaR^2 N) sum_k LL_k |fftn(v)_k|^2 with the
 // FFT over all spatial axes (N = number of velocity grid points).  Since the
 // smoothing kernel is K = 1/LL, the smoothed ER gradient is exactly
@@ -40,6 +45,12 @@ namespace stalign {
 constexpr int MAX_CI = 31;  // image channels
 constexpr int MAX_CJ = 64;  // target channels
 constexpr int MAX_NT = 64;  // velocity time steps
+
+// Exact landmark map: a fixed-point solve stops when a sweep moves no coordinate of the
+// landmark by more than LANDMARK_TOL velocity grid cells (or a few ulps of the grid's
+// coordinates), after at most LANDMARK_MAX_ITER sweeps.  (Same values in the torch engine.)
+constexpr double LANDMARK_TOL = 1e-10;
+constexpr int LANDMARK_MAX_ITER = 100;
 
 #if defined(__GNUC__) || defined(__clang__)
 #define STALIGN_UNLIKELY(x) __builtin_expect(!!(x), 0)
@@ -242,6 +253,45 @@ static inline void vback(const Grid<D>& g, const double* __restrict vt, const VS
   for (int d = 0; d < D; ++d) JTq[d] = acc[d] * g.scale[d];
 }
 
+// Spatial Jacobian of a velocity sample, Jac[k][d] = d v_k / d X_d (only corners inside
+// the grid contribute, as in vback).
+template <int D>
+static inline void vjacobian(const Grid<D>& g, const double* __restrict vt, const VSample<D>& s,
+                             double (&Jac)[D][D]) {
+  constexpr int NC = 1 << D;
+  double W[D][2];
+  i64 base = 0;
+  for (int d = 0; d < D; ++d) {
+    W[d][1] = s.f[d];
+    W[d][0] = 1.0 - s.f[d];
+    base += s.i0[d] * g.str[d];
+  }
+  for (int k = 0; k < D; ++k)
+    for (int d = 0; d < D; ++d) Jac[k][d] = 0.0;
+  for (int c = 0; c < NC; ++c) {
+    i64 off = base;
+    bool inb = true;
+    for (int d = 0; d < D; ++d) {
+      const int b = cbit<D>(c, d);
+      if (!s.interior) inb = inb && (b ? s.ok1[d] : s.ok0[d]);
+      off += b * g.str[d];
+    }
+    if (!inb) continue;
+    double dw[D];
+    for (int d = 0; d < D; ++d) dw[d] = cbit<D>(c, d) ? 1.0 : -1.0;
+    for (int e = 0; e < D; ++e) {
+      const double We = W[e][cbit<D>(c, e)];
+      for (int d = 0; d < D; ++d)
+        if (d != e) dw[d] *= We;
+    }
+    const double* p = vt + off * D;
+    for (int k = 0; k < D; ++k)
+      for (int d = 0; d < D; ++d) Jac[k][d] += dw[d] * p[k];
+  }
+  for (int k = 0; k < D; ++k)
+    for (int d = 0; d < D; ++d) Jac[k][d] *= g.scale[d];
+}
+
 // Splat accumulator: consecutive target pixels usually fall into the same
 // velocity cell (J is much finer than v), so interior splats are summed in a
 // small per-cell accumulator and written to the chunk buffer when the cell changes.
@@ -432,6 +482,8 @@ struct Params {
   // times step_shrink when the parameter's gradient changes sign, else times step_grow
   bool affine_step_control = false;
   double step_shrink = 0.5, step_grow = 1.05, step_floor = 1e-3, step_cap = 1.0;
+  // landmark term: the exact inverse of the backward map (else forward Euler steps)
+  bool landmark_exact = true;
 };
 
 // Problem description for Engine<D>.  Arrays are float64 in C order.  I and J are
@@ -499,6 +551,7 @@ class Engine {
   double gL[D][D], gT[D];      // affine gradient
   double E_last[4] = {0, 0, 0, 0};  // EM + ER, EM, ER, EP
   std::vector<double> Ehist;        // E_last of every iteration
+  i64 lm_unconverged = 0;           // exact landmark solves that did not converge
 
   Engine(const Inputs<D>& in, int num_threads) {
     if (in.nt < 1 || in.nt > MAX_NT) throw std::invalid_argument("nt out of range");
@@ -559,6 +612,13 @@ class Engine {
       pJ.assign(in.pointsJ, in.pointsJ + NP * D);
     }
     pIt.assign(NP * D, 0.0);
+    // exact landmark map: tolerance of the fixed-point solves (as the torch engine computes it)
+    double cell = std::numeric_limits<double>::infinity(), extent = 0.0;
+    for (int d = 0; d < D; ++d) {
+      cell = std::min(cell, (in.xVl[d] - in.xV0[d]) / double(in.nV[d] - 1));
+      extent = std::max(extent, std::max(std::fabs(in.xV0[d]), std::fabs(in.xVl[d])));
+    }
+    lm_tol = std::max(LANDMARK_TOL * cell, 64.0 * std::numeric_limits<double>::epsilon() * extent);
 
     // spectral setup (fields over the velocity grid)
     const i64 n2 = (D == 3) ? gV.n[2] : 1;
@@ -639,6 +699,7 @@ class Engine {
   // ---- points
   i64 NP = 0;
   std::vector<double> pI, pJ;
+  double lm_tol = 0.0;  // stopping tolerance of the exact landmark map
 
   // ---- spectral
   FieldFFT fft;
@@ -927,21 +988,58 @@ class Engine {
   }
 
   // Landmark term: forward + backward; adds its splats into gradV when `splat`.
-  // Points move forward in time, p <- p + v_t(p)/nt for t = 0..nt-1, then by A.
+  // Points move forward in time for t = 0..nt-1, then by A: by Euler steps
+  // p <- p + v_t(p)/nt, or (P.landmark_exact) by the implicit steps p <- z with
+  // z = p + v_t(z)/nt, solved by fixed-point iteration from the Euler step and finished
+  // by one Newton step z + M^-1 (p + v_t(z)/nt - z), M = I - Dv_t(z)/nt (the solution
+  // up to rounding, whatever the stopping tolerance).  The gradient uses the same z and M.
   double points_term(const double (&A)[D + 1][D + 1], double (&gA)[D][D + 1], bool splat) {
     const double dnt = double(nt);
     const double invsP2 = 1.0 / (P.sigmaP * P.sigmaP);
     double EP = 0.0;
     std::vector<double> Pt((nt + 1) * D);
+    // exact map: the fixed point z of each step before the Newton step, its M, and whether
+    // v_t has a sample there
+    std::vector<double> Zt(nt * D), Mt(nt * D * D);
+    std::vector<char> Zin(nt, 0);
     for (i64 ip = 0; ip < NP; ++ip) {
       for (int d = 0; d < D; ++d) Pt[d] = pI[ip * D + d];
       for (int t = 0; t < nt; ++t) {
         const double* Pc = &Pt[t * D];
         double* Pn = &Pt[(t + 1) * D];
+        const double* vt = &v[t * NV * D];
         VSample<D> s;
         double val[D] = {};
-        if (vsetup(gV, Pc, s)) vvalue(gV, &v[t * NV * D], s, val);
+        if (vsetup(gV, Pc, s)) vvalue(gV, vt, s, val);
         for (int d = 0; d < D; ++d) Pn[d] = Pc[d] + val[d] / dnt;
+        if (!P.landmark_exact) continue;
+        bool converged = false;
+        for (int k = 0; k < LANDMARK_MAX_ITER && !converged; ++k) {
+          double w[D] = {};
+          if (vsetup(gV, Pn, s)) vvalue(gV, vt, s, w);
+          double moved = 0.0;
+          for (int d = 0; d < D; ++d) {
+            const double z = Pc[d] + w[d] / dnt;
+            moved = std::max(moved, std::fabs(z - Pn[d]));
+            Pn[d] = z;
+          }
+          converged = !(moved > lm_tol);
+        }
+        if (!converged) ++lm_unconverged;
+        std::copy(Pn, Pn + D, &Zt[t * D]);
+        Zin[t] = vsetup(gV, Pn, s);
+        if (!Zin[t]) continue;  // v_t = 0 around z: z = Pc exactly
+        double w[D], Jac[D][D], M[D * D], r[D];
+        vvalue(gV, vt, s, w);
+        vjacobian(gV, vt, s, Jac);
+        double* Ms = &Mt[t * D * D];
+        for (int a = 0; a < D; ++a) {
+          for (int b = 0; b < D; ++b) Ms[a * D + b] = (a == b ? 1.0 : 0.0) - Jac[a][b] / dnt;
+          r[a] = Pc[a] + w[a] / dnt - Pn[a];
+        }
+        std::copy(Ms, Ms + D * D, M);
+        small_solve(D, 1, M, r);
+        for (int d = 0; d < D; ++d) Pn[d] += r[d];
       }
       const double* Pf = &Pt[nt * D];
       double pf[D], dp[D];
@@ -964,20 +1062,40 @@ class Engine {
         for (int d = 0; d < D; ++d) s += A[d][e] * dp[d];
         g[e] = s;
       }
+      i64 lo[D], lstr[D];  // splat straight into gradV
+      for (int d = 0; d < D; ++d) {
+        lo[d] = 0;
+        lstr[d] = gV.str[d];
+      }
       for (int t = nt - 1; t >= 0; --t) {
+        const double* vt = &v[t * NV * D];
         VSample<D> s;
-        if (!vsetup(gV, &Pt[t * D], s)) continue;
         double q[D], JTq[D];
+        if (P.landmark_exact) {
+          // implicit function theorem at the solution z: lambda = M^-T g is the gradient
+          // w.r.t. Pt[t], and lambda/nt is splatted at z
+          if (!Zin[t]) continue;  // v_t = 0 near z: lambda = g
+          vsetup(gV, &Zt[t * D], s);
+          const double* Ms = &Mt[t * D * D];
+          double MT[D * D], lam[D];
+          for (int a = 0; a < D; ++a) {
+            for (int b = 0; b < D; ++b) MT[a * D + b] = Ms[b * D + a];
+            lam[a] = g[a];
+          }
+          small_solve(D, 1, MT, lam);
+          for (int d = 0; d < D; ++d) {
+            q[d] = lam[d] / dnt;
+            g[d] = lam[d];
+          }
+          if (splat) vback<D, true>(gV, vt, s, q, 1.0, &gradV[t * NV * D], lo, lstr, JTq);
+          continue;
+        }
+        if (!vsetup(gV, &Pt[t * D], s)) continue;
         for (int d = 0; d < D; ++d) q[d] = g[d] / dnt;
         if (splat) {
-          i64 lo[D], lstr[D];
-          for (int d = 0; d < D; ++d) {
-            lo[d] = 0;
-            lstr[d] = gV.str[d];
-          }
-          vback<D, true>(gV, &v[t * NV * D], s, q, 1.0, &gradV[t * NV * D], lo, lstr, JTq);
+          vback<D, true>(gV, vt, s, q, 1.0, &gradV[t * NV * D], lo, lstr, JTq);
         } else {
-          vback<D, false>(gV, &v[t * NV * D], s, q, 1.0, nullptr, nullptr, nullptr, JTq);
+          vback<D, false>(gV, vt, s, q, 1.0, nullptr, nullptr, nullptr, JTq);
         }
         for (int d = 0; d < D; ++d) g[d] += JTq[d];
       }

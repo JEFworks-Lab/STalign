@@ -43,6 +43,11 @@ AFFINE_STEP_GROW = 1.05
 AFFINE_STEP_FLOOR = 1e-3
 AFFINE_STEP_CAP = 1.0
 
+# Map of the landmark term (2D): 'exact' moves pointsI with the exact inverse of the fitted
+# backward map (the map transform_points_source_to_target applies), 'euler' with the forward
+# Euler steps of earlier versions.
+LANDMARK_MAPS = ('exact', 'euler')
+
 BACKENDS = ('auto', 'cpp', 'torch')
 
 # Iterations per engine.run call.  Short segments keep long fits responsive to Ctrl-C.
@@ -73,6 +78,18 @@ class Problem:
     with m = 1 and g_prev = 0 initially (fac = 10 once the diffeomorphism is on, else 1).
     The state belongs to the engine and persists across ``engine.run`` calls; engines report
     m as ``snapshot()['step_multipliers']`` (only with the control on).
+
+    ``landmark_map`` (2D landmarks) is 'exact' or 'euler'.  'euler' moves the landmarks by
+    forward Euler steps, p <- p + v_t(p)/nt for t = 0..nt-1.  'exact' solves each step
+    implicitly, p_{t+1} = p_t + v_t(p_{t+1})/nt, which inverts the backward step
+    x <- x - v_t(x)/nt of the image term exactly; then EP uses the map that
+    transform_points_source_to_target applies to the fitted A, v.  Each step is solved by
+    fixed-point iteration from the Euler step until no point moves by more than 1e-10 of a
+    velocity grid cell (at most 100 sweeps), followed by one Newton step
+    p_{t+1} = z + M^-1 (p_t + v_t(z)/nt - z), M = I - Dv_t(z)/nt, at the last iterate z (so
+    the result does not depend on the tolerance), and differentiated by the implicit function
+    theorem with the same z and M: dp_{t+1} = M^-1 (dp_t + dv_t(z)/nt).  Engines report the
+    number of steps that did not converge as ``snapshot()['landmark_unconverged']``.
     '''
     dim: int
     xI: list
@@ -113,6 +130,7 @@ class Problem:
     step_grow: float = AFFINE_STEP_GROW
     step_floor: float = AFFINE_STEP_FLOOR
     step_cap: float = AFFINE_STEP_CAP
+    landmark_map: str = 'exact'
 
 
 # =========================================================================== inputs
@@ -186,19 +204,21 @@ def coerce_mu(mu, C, name):
 def prepare_problem(dim, xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=None, A=None, v=None, xv=None,
                     a=500.0, p=2.0, expand=2.0, nt=3, niter=5000, diffeo_start=0, epL=2e-8, epT=2e-1, epV=2e3,
                     sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=5e5, sigmaP=2e1, device='cpu',
-                    dtype=torch.float64, muA=None, muB=None, affine_step_control=False):
+                    dtype=torch.float64, muA=None, muB=None, affine_step_control=False, landmark_map='exact'):
     '''Validate and normalize the arguments of LDDMM (dim=2) or LDDMM_3D_to_slice (dim=3).
 
     Follows the original conventions: A excludes L and T, v requires xv, and the velocity grid
     is built from xI when neither is given.  2D landmarks must come in pairs; in 3D they are
     dropped (the caller warns).  The constants of the affine step control are read from this
-    module (AFFINE_STEP_*) at call time.
+    module (AFFINE_STEP_*) at call time.  ``landmark_map`` is described in :class:`Problem`.
     '''
     device = torch.device(device)
     if not (isinstance(dtype, torch.dtype) and dtype.is_floating_point):
         raise ValueError(f'dtype must be a floating point torch dtype, got {dtype!r}')
     if not isinstance(affine_step_control, (bool, np.bool_)):
         raise ValueError(f'affine_step_control must be True or False, got {affine_step_control!r}')
+    if not (isinstance(landmark_map, str) and landmark_map in LANDMARK_MAPS):
+        raise ValueError(f'landmark_map must be one of {LANDMARK_MAPS}, got {landmark_map!r}')
     step = dict(step_shrink=float(AFFINE_STEP_SHRINK), step_grow=float(AFFINE_STEP_GROW),
                 step_floor=float(AFFINE_STEP_FLOOR), step_cap=float(AFFINE_STEP_CAP))
     if not (0.0 < step['step_shrink'] < 1.0 and step['step_grow'] >= 1.0
@@ -274,7 +294,7 @@ def prepare_problem(dim, xI, I, xJ, J, pointsI=None, pointsJ=None, L=None, T=Non
         a=float(a), p=float(p), nt=int(nt), niter=niter, diffeo_start=int(diffeo_start),
         epL=float(epL), epT=float(epT), epV=float(epV), sigmaM=float(sigmaM), sigmaB=float(sigmaB),
         sigmaA=float(sigmaA), sigmaR=float(sigmaR), sigmaP=float(sigmaP), device=device, dtype=dtype,
-        affine_step_control=bool(affine_step_control), **step)
+        affine_step_control=bool(affine_step_control), landmark_map=landmark_map, **step)
 
 
 # =========================================================================== threads
@@ -393,7 +413,13 @@ def run_lddmm(problem, draw='end', num_threads=None, backend='auto'):
                 warnings.warn(f'LDDMM drawing failed ({type(e).__name__}: {e}); continuing without figures',
                               stacklevel=3)
                 draws = set()
-    return _result(problem, engine.snapshot())
+    snap = engine.snapshot()
+    if snap.get('landmark_unconverged'):
+        warnings.warn(f'The exact landmark map did not converge in {int(snap["landmark_unconverged"])} of the '
+                      f'(landmark, time step) solves of this fit; the landmark term used approximate positions '
+                      f'there. The velocity field may be too large for its nt time steps to be invertible.',
+                      RuntimeWarning, stacklevel=3)
+    return _result(problem, snap)
 
 
 def _result(problem, snap):
