@@ -1,9 +1,10 @@
 '''Shared front-end of the LDDMM functions: inputs, kernels, threads, figures and backends.
 
 The public functions in ``_lddmm.py`` turn their arguments into a :class:`Problem` with
-:func:`prepare_problem` and hand it to :func:`run_lddmm`.  That function picks a backend
-engine, runs the iterations in segments, draws the progress figures in between if asked, and
-assembles the returned dict.
+:func:`prepare_problem`, run the affine pre-fit and fill in the data-driven settings with
+:func:`resolve_defaults` (see ``_prefit.py``), and hand the problem to :func:`run_lddmm`.  That
+function picks a backend engine, runs the iterations in segments, draws the progress figures in
+between if asked, and assembles the returned dict.
 
 An engine implements::
 
