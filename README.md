@@ -30,6 +30,35 @@ pip install --upgrade "git+https://github.com/JEFworks-Lab/STalign.git"
 
 *All dependencies will be installed into your selected environment with the above command. Dependencies can be found in the requirements.txt file.*
 
+The tutorials also use `plotly`, `scipy`, `scikit-learn` and `scikit-image`:
+
+```
+pip install plotly scipy scikit-learn scikit-image
+```
+
+### Faster alignment with the C++ engine
+
+`STalign` includes an optional C++ engine for `LDDMM` and `LDDMM_3D_to_slice`. `pip` compiles it during installation if a C++17 compiler is available: the Xcode Command Line Tools on macOS (`xcode-select --install`), `g++` or `clang++` on Linux, or the Microsoft C++ Build Tools on Windows. Without a compiler the installation still succeeds and `STalign` uses its pure `torch` implementation (`pip install -v` shows a warning in the build log). Both compute the same iterations up to rounding (in long 3D alignments these small differences grow, see [CHANGES.md](CHANGES.md)); the C++ engine is faster. The engine has been tested on macOS; Linux and Windows builds are expected to work but have not been tested yet.
+
+To check which one is used:
+
+```python
+from STalign import STalign
+STalign.backend_info()
+# {'auto': 'cpp', 'cpp': True, 'cpp_error': None, 'num_threads': 16}
+```
+
+`'auto': 'cpp'` means that alignments on the CPU in float64 (the default) use the C++ engine. Otherwise `'cpp_error'` says why it is not available. Alignments on a GPU or in float32 always use `torch`. To choose explicitly, pass `backend='cpp'` or `backend='torch'` to `LDDMM` or `LDDMM_3D_to_slice`.
+
+The alignment uses at most `torch.get_num_threads()` CPU threads. To set a different maximum, set the environment variable `STALIGN_NUM_THREADS` (for example `export STALIGN_NUM_THREADS=8`) or pass `num_threads=8`. The result does not depend on the number of threads.
+
+If you use `STalign` from a clone of this repository without installing it (as the tutorials do with `sys.path.append`), build the C++ engine once, from the base directory of the clone:
+
+```
+pip install pybind11
+python setup.py build_ext --inplace
+```
+
 ### Installation using Pipfile from source
 
 This installation method is intended for users who sets up a Python environment with `pipenv`. `pipenv` allows users to create and activate a virtual environment with all dependencies within the Python project. For more information and installation instructions for `pipenv`, see https://pipenv.pypa.io/en/latest/.
@@ -62,6 +91,16 @@ To import STalign into your Python script, use:
 ```python
 from STalign import STalign
 ```
+
+## What changed
+
+This version keeps the functions and arguments of earlier versions, aligns much faster, and fixes several bugs, so alignments are close to, but not identical with, earlier results. For example, the 10,000 iterations of the MERFISH tutorial take about 11 s with the C++ engine and about 1.6 min with `torch`, instead of about 14 min. The changes most likely to matter for existing scripts:
+
+- `LDDMM` and `LDDMM_3D_to_slice` draw their figures once, at the end. `draw=True` redraws them every 10 iterations as before, and `draw=False` turns them off.
+- `transform_points_source_to_target` and the other source-to-target transforms use the exact inverse of the fitted transformation; cells can move by up to about 100 µm on the tutorial datasets. `exact_inverse=False` gives the previous approximation.
+- The regularization of `LDDMM_3D_to_slice` is corrected, so 3D alignments change, and `analyze3Dalign` returns corrected atlas coordinates.
+
+See [CHANGES.md](CHANGES.md) for the full list.
 
 ## Input Data
 To use this tool, you will need provide the following information:
