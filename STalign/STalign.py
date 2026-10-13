@@ -1,33 +1,17 @@
 ''' Tools for aligning spatial transcriptomics data
+
+The LDDMM fits (LDDMM, LDDMM_3D_to_slice), rasterization and the transforms of fitted
+mappings are implemented in private modules next to this file (_lddmm*.py, _raster.py,
+_transforms.py) and exposed here.  The LDDMM fits use a compiled C++ engine when it is
+installed and pure torch otherwise; backend_info() reports which.
 '''
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-import torch
-from torch.nn.functional import grid_sample
-
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd # for csv.
-from matplotlib import cm
-from matplotlib.lines import Line2D
 import os
-from os.path import exists,split,join,splitext
-from os import makedirs
-import glob
-import requests
 from collections import defaultdict
-import nrrd
-import torch
-from torch.nn.functional import grid_sample
-import tornado
-import sys
+
+import matplotlib.pyplot as plt
 import numpy as np
-import plotly.graph_objs as go
-import plotly.express as px
-import copy
-import pandas as pd
+import torch
 
 # The second import is for the tutorials, which put this folder on sys.path and import this
 # file directly (the private modules are then top-level modules too).
