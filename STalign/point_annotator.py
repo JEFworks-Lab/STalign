@@ -13,7 +13,6 @@ import matplotlib.transforms as mtransforms
 from glob import glob
 
 if __name__ == '__main__':
-    print('hello world')
 
     parser = argparse.ArgumentParser(
         prog='point_annotator',
@@ -33,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument(
         'output',nargs='*',
         default=None,
-        help='Defaults to source image input name with a suffix "_points.npy"',
+        help='Output names for the source and target points. Default to the input names with a suffix "_points.npy"',
     )
 
     # parser.add_argument(
@@ -56,8 +55,8 @@ if __name__ == '__main__':
         ind = int(args.filename[0])
         files = glob('/home/dtward/bmaproot/nafs/dtward/merfish/jean_fan_2021/OneDrive_1_8-5-2021/*_rasterized.npz')
         files.sort()
-        args.filename1 = files[ind]
-        print(f'special case, using index {ind} to select file {args.filename1}')
+        args.filename[0] = files[ind]
+        print(f'special case, using index {ind} to select file {args.filename[0]}')
         
     try:
         dataS = np.load(args.filename[0])
@@ -82,14 +81,12 @@ if __name__ == '__main__':
     print(f'target image contains ')
     print([k for k in dataT])
 
-    # get the source output name
-    if len(args.output) == 0:
-        outputS = args.filename[0].replace('.npz','_points.npy')
+    # get the source and target output names
+    if len(args.output) > 2:
+        parser.error('at most two output names (source, target) may be given')
+    outputS = args.output[0] if len(args.output) >= 1 else args.filename[0].replace('.npz','_points.npy')
     print(f'source output name {outputS}')
-
-    # get the target output name
-    if len(args.output) == 0:
-        outputT = args.filename[1].replace('.npz','_points.npy')
+    outputT = args.output[1] if len(args.output) >= 2 else args.filename[1].replace('.npz','_points.npy')
     print(f'target output name {outputT}')
 
     # let's draw the source image
@@ -165,6 +162,10 @@ if __name__ == '__main__':
             break
 
         print(points)
+        if len(points) % 2:
+            print(f'WARNING: odd number of clicks ({len(points)}); clicks must alternate source/target. '
+                  'Dropping the last, unpaired click.')
+            points = points[:-1]
         pointsS = points[::2]
         pointsT = points[1::2]
         

@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 from glob import glob
 
 if __name__ == '__main__':
-    print('hello world')
 
     parser = argparse.ArgumentParser(
         prog='curve_annotator',
@@ -24,7 +23,7 @@ if __name__ == '__main__':
         help='Filename for image data.  This should be a npz file containing "x,y" and "I" or "J"',
     )
     parser.add_argument(
-        '-o,','--output',
+        '-o','--output',
         default=None,
         help='Defaults to input name with a suffix "_curves.npy"',
     )
@@ -49,8 +48,7 @@ if __name__ == '__main__':
     print([k for k in data])
 
     # get the output name
-    if args.output is None:
-        output = args.filename.replace('.npz','_curves.npy')
+    output = args.output if args.output is not None else args.filename.replace('.npz','_curves.npy')
     print(f'output name {output}')
 
     # let's draw the image

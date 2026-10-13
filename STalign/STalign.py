@@ -29,9 +29,17 @@ import plotly.express as px
 import copy
 import pandas as pd
 
+# The second import is for the tutorials, which put this folder on sys.path and import this
+# file directly (the private modules are then top-level modules too).
+try:
+    from . import _raster
+except ImportError:
+    import _raster
+
+
 def normalize(arr, t_min=0, t_max=1):
     """Linearly normalizes an array between two specifed values.
-    
+
     Parameters
     ----------
     arr : numpy array
@@ -40,48 +48,59 @@ def normalize(arr, t_min=0, t_max=1):
         Lower bound of normalization range
     t_max : int or float
         Upper bound of normalization range
-    
+
     Returns
     -------
     norm_arr : numpy array
-        1D array with normalized arr values
-        
+        Array of the same shape as arr with normalized values.
+        A constant arr (zero range) maps to t_min.
+
     """
-    
-    diff = t_max - t_min
-    diff_arr = np.max(arr) - np.min(arr)
-    min_ = np.min(arr)
-        
-    norm_arr = ((arr - min_)/diff_arr * diff) + t_min
-    
-    return norm_arr
+    return _raster.normalize(arr, t_min=t_min, t_max=t_max)
 
 
 
 def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wavelet_magnitude=False,use_windowing=True):
     ''' Rasterize a spatial transcriptomics dataset into a density image
+
+    Each cell adds a Gaussian kernel centered on the cell, normalized to unit
+    sum over the pixels where it is evaluated and multiplied by the cell's
+    weight g.
     
-    Paramters
-    ---------
+    Parameters
+    ----------
     x : numpy array of length N
         x location of cells
     y : numpy array of length N
         y location of cells
     g : numpy array of length N
         RNA count of cells
-        If not given, density image is created
+        If not given, density image is created.  Unless g is all ones it is
+        min-max normalized to [0, 1] (see normalize), so cells at the minimum
+        of g contribute nothing, and a constant g gives an image of zeros.
+        Use rasterize_with_signal for an image of unnormalized values.
     dx : float
         Pixel size to rasterize data (default 30.0, in same units as x and y)
     blur : float or list of floats
-        Standard deviation of Gaussian interpolation kernel.  Units are in 
-        number of pixels.  Can be aUse a list to do multi scale.
+        Width of the Gaussian interpolation kernel, in pixels.  The kernel
+        standard deviation is 2*blur pixels (2*blur*dx in the units of x and
+        y).  Use a list to do multi scale (one channel per blur).
     expand : float
         Factor to expand sampled area beyond cells. Defaults to 1.1.
     draw : int
-        If True, draw a figure every draw points return its handle. Defaults to False (0).
+        If nonzero, draw the image in a new figure and return its handle.
+        Defaults to 10000.  The figure is drawn once, after all cells are
+        added (earlier versions redrew it every draw cells).
     wavelet_magnitude : bool
         If True, take the absolute value of difference between scales for raster images.
         When using this option blur should be sorted from greatest to least.
+    use_windowing : bool
+        If True (default), each cell's kernel is evaluated on a (2r+1) x (2r+1)
+        pixel window around the cell's nearest pixel (clipped at the image
+        border), r = ceil(4*max(blur)) pixels (about 2 standard deviations),
+        and normalized to unit sum on that window.  The window holds about 95%
+        of the Gaussian, so the kernel acts like one about 4% narrower.
+        If False, the untruncated kernel is evaluated on the whole image.
     
         
     Returns
@@ -93,175 +112,73 @@ def rasterize(x, y, g=np.ones(1), dx=30.0, blur=1.0, expand=1.1, draw=10000, wav
     M : numpy array
         A rasterized image with len(blur) channels along the first axis
     fig : matplotlib figure handle
-        If draw=True, returns a figure handle to the drawn figure.
+        Only returned if draw is nonzero: handle to the figure of the image.
         
     Raises
     ------    
     Exception 
         If wavelet_magnitude is set to true but blur is not sorted from greatest to least.
+    IndexError
+        If the image is empty (e.g. a single cell, or cells on a line).
         
-        
+    Notes
+    -----
+    Cells with NaN coordinates (possible with pandas inputs, whose min and
+    max skip NaN) are ignored, with a warning.
     
     Examples
     --------
     Rasterize a dataset at 30 micron pixel size, with three kernels.
     
-    >>> X,Y,M,fig = tools.rasterize(x,y,dx=30.0,blur=[2.0,1.0,0.5],draw=10000)
+    >>> X,Y,M,fig = STalign.rasterize(x,y,dx=30.0,blur=[2.0,1.0,0.5],draw=10000)
     
     Rasterize a dataset at 30 micron pixel size, with three kernels, using difference between scales.
     
-    >>> X,Y,M,fig = tools.rasterize(x,y,dx=30.0,blur=[2.0,1.0,0.5],draw=10000, wavelet_magnitude=True)
+    >>> X,Y,M,fig = STalign.rasterize(x,y,dx=30.0,blur=[2.0,1.0,0.5],draw=10000, wavelet_magnitude=True)
         
         
     '''
-    
-    # set blur to a list
-    if not isinstance(blur,list):
-        blur = [blur]
-    nb = len(blur)
-    blur = np.array(blur)
-    n = len(x)
-    maxblur = np.max(blur) # for windowing
-    
-    
-    
-    if wavelet_magnitude and np.any(blur != np.sort(blur)[::-1]):
-        raise Exception('When using wavelet magnitude, blurs must be sorted from greatest to least')
-    
-    minx = np.min(x)
-    maxx = np.max(x)
-    miny = np.min(y)
-    maxy = np.max(y)
-    minx,maxx = (minx+maxx)/2.0 - (maxx-minx)/2.0*expand, (minx+maxx)/2.0 + (maxx-minx)/2.0*expand
-    miny,maxy = (miny+maxy)/2.0 - (maxy-miny)/2.0*expand, (miny+maxy)/2.0 + (maxy-miny)/2.0*expand
-    X_ = np.arange(minx,maxx,dx)
-    Y_ = np.arange(miny,maxy,dx)
-    
-    X = np.stack(np.meshgrid(X_,Y_)) # note this is xy order, not row col order
-
-    W = np.zeros((X.shape[1],X.shape[2],nb))
-
-    
-    if draw: fig,ax = plt.subplots()
-    count = 0
-    
-    g = np.resize(g,x.size)
-    if(not (g==1.0).all()):
-        g = normalize(g)
-    
-    for x_,y_,g_ in zip(x,y,g):
-        # to speed things up I should index
-        # to do this I'd have to find row and column indices
-        #col = np.round((x_ - X_[0])/dx).astype(int)
-        #row = np.round((y_ - X_[1])/dx).astype(int)
-        #row0 = np.floor(row-blur*3).astype(int)
-        #row1 = np.ceil(row+blur*3).astype(int)        
-        #rows = np.arange(row0,row1+1)
-        
-
-        # this is incrementing one pixel at a time, it is way way faster, 
-        # but doesn't use a kernel
-        # I[c_,row,col] += 1.0
-        # W[row,col] += 1.0
-        if not use_windowing: # legacy version
-            k = np.exp( - ( (X[0][...,None] - x_)**2 + (X[1][...,None] - y_)**2 )/(2.0*(dx*blur*2)**2)  )
-            k /= np.sum(k,axis=(0,1),keepdims=True)
-            k *= g_
-            if wavelet_magnitude:
-                for i in reversed(range(nb)):
-                    if i == 0:
-                        continue
-                    k[...,i] = k[...,i] - k[...,i-1]
-
-            W += k
-        else: # use a small window
-            r = int(np.ceil(maxblur*4))
-            col = np.round((x_ - X_[0])/dx).astype(int)
-            row = np.round((y_ - Y_[0])/dx).astype(int)
-            
-            row0 = np.floor(row-r).astype(int)
-            row1 = np.ceil(row+r).astype(int)                    
-            col0 = np.floor(col-r).astype(int)
-            col1 = np.ceil(col+r).astype(int)
-            # we need boundary conditions
-            row0 = np.minimum(np.maximum(row0,0),W.shape[0]-1)
-            row1 = np.minimum(np.maximum(row1,0),W.shape[0]-1)
-            col0 = np.minimum(np.maximum(col0,0),W.shape[1]-1)
-            col1 = np.minimum(np.maximum(col1,0),W.shape[1]-1)
-            
-           
-            k =  np.exp( - ( (X[0][row0:row1+1,col0:col1+1,None] - x_)**2 + (X[1][row0:row1+1,col0:col1+1,None] - y_)**2 )/(2.0*(dx*blur*2)**2)  )
-            k /= np.sum(k,axis=(0,1),keepdims=True)  
-            k *= g_
-            if wavelet_magnitude:
-                for i in reversed(range(nb)):
-                    if i == 0:
-                        continue
-                    k[...,i] = k[...,i] - k[...,i-1]
-            W[row0:row1+1,col0:col1+1,:] += k #range of voxels -oka
-            
-        
-            
-        
-
-        if draw:
-            if not count%draw or count==(x.shape[0]-1):
-                print(f'{count} of {x.shape[0]}')
-
-                ax.cla()
-                toshow = W-np.min(W,axis=(0,1),keepdims=True)
-                toshow = toshow / np.max(toshow,axis=(0,1),keepdims=True)
-                
-                if nb >= 3:
-                    toshow = toshow[...,:3]
-                elif nb == 2:
-                    toshow = toshow[...,[0,1,0]]
-                elif nb == 1:
-                    toshow = toshow[...,[0,0,0]]
-                
-                ax.imshow(np.abs(toshow))
-                fig.canvas.draw()
-
-        count += 1
-    W = np.abs(W)
-    # we will permute so channels are on first axis
-    W = W.transpose((-1,0,1))
-    extent = (X_[0],X_[-1],Y_[0],Y_[-1])
-    
-    # rename
-    X = X_
-    Y = Y_
-    if draw:
-        output = X,Y,W,fig
-    else:
-        output = X,Y,W
-    return output
+    return _raster.rasterize(x, y, g=g, dx=dx, blur=blur, expand=expand, draw=draw,
+                             wavelet_magnitude=wavelet_magnitude, use_windowing=use_windowing)
     
 
     
 def rasterize_with_signal(x, y, s=None, dx=30.0, blur=1.0, expand=1.1, draw=0, wavelet_magnitude=False,use_windowing=True):
-    ''' Rasterize a spatial transcriptomics dataset into a density image
+    ''' Rasterize a spatial transcriptomics dataset with a signal per cell
+
+    Each cell adds a Gaussian kernel centered on the cell, normalized to unit
+    sum over the pixels where it is evaluated, divided by dx**2 and
+    multiplied by the cell's signal value(s), so the image is a signal
+    density per unit area.  See rasterize for the kernel and the window.
     
-    Paramters
-    ---------
+    Parameters
+    ----------
     x : numpy array of length N
         x location of cells
     y : numpy array of length N
         y location of cells
-    s : numpy array of length N by M for M signals
-        signal value should be length NxM
+    s : numpy array of length N, or N by M for M signals
+        Signal value of each cell, used as is (not normalized).  Signals may
+        be signed, and the image keeps their sign.  Each of the M columns
+        gives one channel.  If None, a density image is created.
     dx : float
         Pixel size to rasterize data (default 30.0, in same units as x and y)
     blur : float or list of floats
-        Standard deviation of Gaussian interpolation kernel.  Units are in 
-        number of pixels.  Can be aUse a list to do multi scale.
+        Width of the Gaussian interpolation kernel, in pixels.  The kernel
+        standard deviation is 2*blur pixels (2*blur*dx in the units of x and
+        y).  A list does multi scale, which is only possible if s is None.
     expand : float
         Factor to expand sampled area beyond cells. Defaults to 1.1.
     draw : int
-        If True, draw a figure every draw points return its handle. Defaults to False (0).
+        If nonzero, draw the image in a new figure and return its handle.
+        Defaults to 0.  The figure is drawn once, after all cells are added.
     wavelet_magnitude : bool
         If True, take the absolute value of difference between scales for raster images.
         When using this option blur should be sorted from greatest to least.
+        With a signal (a single blur) this only takes the absolute value.
+    use_windowing : bool
+        If True (default), evaluate each kernel on a window of about 2
+        standard deviations; if False, on the whole image (see rasterize).
     
         
     Returns
@@ -271,164 +188,35 @@ def rasterize_with_signal(x, y, s=None, dx=30.0, blur=1.0, expand=1.1, draw=0, w
     Y  : numpy array
         Locations of pixels along the y axis
     M : numpy array
-        A rasterized image with len(blur) channels along the last axis
+        A rasterized image with channels along the first axis: one per
+        column of s, or len(blur) if s is None
     fig : matplotlib figure handle
-        If draw=True, returns a figure handle to the drawn figure.
+        Only returned if draw is nonzero: handle to the figure of the image.
         
     Raises
     ------    
     Exception 
-        If wavelet_magnitude is set to true but blur is not sorted from greatest to least.
+        If s is given with more than one blur, or if wavelet_magnitude is set
+        to true but blur is not sorted from greatest to least.
+    IndexError
+        If s has fewer rows than there are cells, or if the image is empty.
         
         
     
     Examples
     --------
-    Rasterize a dataset at 30 micron pixel size, with three kernels.
+    Rasterize the total counts and the counts of two genes at 30 micron pixel size.
     
-    >>> X,Y,M,fig = tools.rasterize(x,y,dx=30.0,blur=[2.0,1.0,0.5],draw=10000)
+    >>> X,Y,M = STalign.rasterize_with_signal(x,y,s=np.stack((total,gene1,gene2),-1),dx=30.0,blur=1.0)
     
-    Rasterize a dataset at 30 micron pixel size, with three kernels, using difference between scales.
+    Rasterize the density at three scales, using difference between scales.
     
-    >>> X,Y,M,fig = tools.rasterize(x,y,dx=30.0,blur=[2.0,1.0,0.5],draw=10000, wavelet_magnitude=True)
+    >>> X,Y,M = STalign.rasterize_with_signal(x,y,dx=30.0,blur=[2.0,1.0,0.5],wavelet_magnitude=True)
         
         
     '''
-    
-    # set blur to a list
-    if not isinstance(blur,list):
-        blur = [blur]
-    nb = len(blur)
-    blur = np.array(blur)
-    n = len(x)
-    maxblur = np.max(blur) # for windowing
-    
-    if len(blur)>1 and s is not None:
-        raise Exception('when using a signal, we can only have one blur')
-    if s is not None:
-        s = np.array(s)
-        if s.ndim == 1:
-            s = s[...,None] # add a column of size 1
-        
-    
-    
-    if wavelet_magnitude and np.any(blur != np.sort(blur)[::-1]):
-        raise Exception('When using wavelet magnitude, blurs must be sorted from greatest to least')
-    
-    minx = np.min(x)
-    maxx = np.max(x)
-    miny = np.min(y)
-    maxy = np.max(y)
-    minx,maxx = (minx+maxx)/2.0 - (maxx-minx)/2.0*expand, (minx+maxx)/2.0 + (maxx-minx)/2.0*expand
-    miny,maxy = (miny+maxy)/2.0 - (maxy-miny)/2.0*expand, (miny+maxy)/2.0 + (maxy-miny)/2.0*expand
-    X_ = np.arange(minx,maxx,dx)
-    Y_ = np.arange(miny,maxy,dx)
-    
-    X = np.stack(np.meshgrid(X_,Y_)) # note this is xy order, not row col order
-
-    if s is None:
-        W = np.zeros((X.shape[1],X.shape[2],nb))
-    else:
-        W = np.zeros((X.shape[1],X.shape[2],s.shape[1]))
-    
-
-    
-    if draw: fig,ax = plt.subplots()
-    count = 0
-    
-
-    for x_,y_ in zip(x,y):
-        # to speed things up I shoul index
-        # to do this I'd have to find row and column indices
-        #col = np.round((x_ - X_[0])/dx).astype(int)
-        #row = np.round((y_ - X_[1])/dx).astype(int)
-        #row0 = np.floor(row-blur*3).astype(int)
-        #row1 = np.ceil(row+blur*3).astype(int)        
-        #rows = np.arange(row0,row1+1)
-        
-
-        # this is incrementing one pixel at a time, it is way way faster, 
-        # but doesn't use a kernel
-        # I[c_,row,col] += 1.0
-        # W[row,col] += 1.0
-        if not use_windowing: # legacy version
-            k = np.exp( - ( (X[0][...,None] - x_)**2 + (X[1][...,None] - y_)**2 )/(2.0*(dx*blur*2)**2)  )
-            k /= np.sum(k,axis=(0,1),keepdims=True)*dx**2
-            if wavelet_magnitude:
-                for i in reversed(range(nb)):
-                    if i == 0:
-                        continue
-                    k[...,i] = k[...,i] - k[...,i-1]
-            if s is None:
-                factor = 1.0
-            else:
-                factor = s[count]
-            W += k * factor
-        else: # use a small window
-            r = int(np.ceil(maxblur*4))
-            col = np.round((x_ - X_[0])/dx).astype(int)
-            row = np.round((y_ - Y_[0])/dx).astype(int)
-            
-            row0 = np.floor(row-r).astype(int)
-            row1 = np.ceil(row+r).astype(int)                    
-            col0 = np.floor(col-r).astype(int)
-            col1 = np.ceil(col+r).astype(int)
-            # we need boundary conditions
-            row0 = np.minimum(np.maximum(row0,0),W.shape[0]-1)
-            row1 = np.minimum(np.maximum(row1,0),W.shape[0]-1)
-            col0 = np.minimum(np.maximum(col0,0),W.shape[1]-1)
-            col1 = np.minimum(np.maximum(col1,0),W.shape[1]-1)
-            
-           
-            k = np.exp( - ( (X[0][row0:row1+1,col0:col1+1,None] - x_)**2 + (X[1][row0:row1+1,col0:col1+1,None] - y_)**2 )/(2.0*(dx*blur*2)**2)  )
-            k /= np.sum(k,axis=(0,1),keepdims=True)*dx**2
-            if wavelet_magnitude:
-                for i in reversed(range(nb)):
-                    if i == 0:
-                        continue
-                    k[...,i] = k[...,i] - k[...,i-1]
-            if s is None:
-                factor = 1.0
-            else:
-                factor = s[count]
-            W[row0:row1+1,col0:col1+1,:] += k * factor
-            
-        
-            
-        
-
-        if draw:
-            if not count%draw or count==(x.shape[0]-1):
-                print(f'{count} of {x.shape[0]}')
-
-                ax.cla()
-                toshow = W-np.min(W,axis=(0,1),keepdims=True)
-                toshow = toshow / np.max(toshow,axis=(0,1),keepdims=True)
-                
-                if nb >= 3:
-                    toshow = toshow[...,:3]
-                elif nb == 2:
-                    toshow = toshow[...,[0,1,0]]
-                elif nb == 1:
-                    toshow = toshow[...,[0,0,0]]
-                
-                ax.imshow(np.abs(toshow))
-                fig.canvas.draw()
-
-        count += 1
-    W = np.abs(W)
-    # we will permute so channels are on first axis
-    W = W.transpose((-1,0,1))
-    extent = (X_[0],X_[-1],Y_[0],Y_[-1])
-    
-    # rename
-    X = X_
-    Y = Y_
-    if draw:
-        output = X,Y,W,fig
-    else:
-        output = X,Y,W
-    return output
+    return _raster.rasterize_with_signal(x, y, s=s, dx=dx, blur=blur, expand=expand, draw=draw,
+                                         wavelet_magnitude=wavelet_magnitude, use_windowing=use_windowing)
     
         
 
@@ -457,37 +245,39 @@ def rasterizePCA(x, y, G):
         The normalized eigenvectors for the principal components
         V[:, i] corresponds to eigenvalue at W[i]
     Z : numpy array
-        X rotated to align with the principal component axes
+        Y rotated to align with the principal component axes (Z = V.T @ Y)
     nrows : int
         Row dimension of rasterized image
     ncols : int
         Column dimension of rasterized image
-    
+
     Notes
     -----
     Each value/row at the same index in x, y, and G should all correspond to the same cell.
     x[i] <-> y[i] <-> G[i,:]
-    
+
+    Each gene is rasterized with rasterize(x, y, g, dx=30.0, blur=1.0), which
+    min-max normalizes its counts; a constant gene gives an image of zeros.
+
     """
-    
+
     nrows=0
     ncols=0
-    
+
     for i in range(G.shape[1]):
         g = np.array(G.iloc[:,i])
-        
-        XI,YI,I = tools.rasterize(x,y,g,dx=30.0,blur=1.0,expand=1.1, draw=0, 
-                              wavelet_magnitude=True, use_windowing=True)
-        
+
+        XI,YI,I = rasterize(x,y,g,dx=30.0,blur=1.0,expand=1.1, draw=0, use_windowing=True)
+
         if(i==0):
             # dimensions
             nrows=YI.size
             ncols=XI.size
             X = np.empty([G.shape[1], nrows, ncols])
             Y = np.empty([G.shape[1], nrows*ncols])
-        
+
         # centers data
-        X[i] = np.array(I)
+        X[i] = I[0]
         I_ = I.ravel()
         meanI = np.mean(I_)
         I_ -= meanI
@@ -577,12 +367,13 @@ def saveRasters(X, Y, W, V, Z, scree_fig, nrows, ncols, name, path):
     name : str
         Name of the dataset the arrays originate from
     path : str
-        Absolute path to folder where files should be saved
-        
+        Path to folder where files should be saved (created if needed).
+        Files are named <name>_screefig.jpg, <name>_rgbfig.jpg and <name>_arrays.npz.
+
     Returns
     -------
     None
-    
+
     """
     
     I_pca = Z.reshape((Z.shape[0], nrows, ncols))
@@ -597,9 +388,11 @@ def saveRasters(X, Y, W, V, Z, scree_fig, nrows, ncols, name, path):
     axs[0].set_title("PCs 1-3")
     axs[1].set_title("PCs 4-6")
     
-    scree_fig.savefig(f"{path}{name}_screefig.jpg")
-    fig.savefig(f"{path}{name}_rgbfig.jpg")
-    np.savez(f"{path}{name}_arrays", X=X, Y=Y, W=W, V=V, Z=Z, I_pca=I_pca, I_rgb=I_rgb,
+    if path:
+        os.makedirs(path, exist_ok=True)
+    scree_fig.savefig(os.path.join(path, f"{name}_screefig.jpg"))
+    fig.savefig(os.path.join(path, f"{name}_rgbfig.jpg"))
+    np.savez(os.path.join(path, f"{name}_arrays"), X=X, Y=Y, W=W, V=V, Z=Z, I_pca=I_pca, I_rgb=I_rgb,
              screefig=scree_fig, rgbfig = fig)
     
     print(f"Saved all {name} files!\n")
@@ -660,7 +453,6 @@ def interp(x,I,phii,**kwargs):
 
     return out[0]
 
-# build an interp function from grid sample
 def interp3D(x,I,phii,**kwargs):
     '''
     Interpolate the 3D image I, with regular grid positions stored in x (1d arrays),
@@ -1630,7 +1422,6 @@ def LDDMM_3D_to_slice(xI,I,xJ,J,pointsI=None,pointsJ=None,
     }
 
 
-
 def build_transform(xv,v,A,direction='b',XJ=None):
     ''' Create sample points to transform source to target from affine and velocity.
     
@@ -1801,8 +1592,7 @@ def transform_image_source_to_target(xv,v,A,xI,I,XJ=None):
     phii = build_transform(xv,v,A,direction='b',XJ=XJ)    
     phiI = interp(xI,I,phii.permute(2,0,1),padding_mode="border")
     return phiI
-    
-    
+
 def transform_image_target_to_source(xv,v,A,xJ,J,XI=None):
     '''
     Transform an image
@@ -1810,7 +1600,7 @@ def transform_image_target_to_source(xv,v,A,xJ,J,XI=None):
     phi = build_transform(xv,v,A,direction='f',XJ=XI)    
     phiiJ = interp(xJ,J,phi.permute(2,0,1),padding_mode="border")
     return phiiJ
-    
+
 def transform_points_source_to_target(xv,v,A,pointsI):
     '''
     Transform points.  Note points are in row column order, not xy.
@@ -1825,6 +1615,7 @@ def transform_points_source_to_target(xv,v,A,pointsI):
         pointsIt += interp(xv,v[t].permute(2,0,1),pointsIt.T[...,None])[...,0].T/nt
     pointsIt = (A[:2,:2]@pointsIt.T + A[:2,-1][...,None]).T
     return pointsIt
+
 def transform_points_target_to_source(xv,v,A,pointsI):
     '''
     Transform points.  Note points are in row column order, not xy.
@@ -1841,8 +1632,25 @@ def transform_points_target_to_source(xv,v,A,pointsI):
         pointsIt += interp(xv,-v[t].permute(2,0,1),pointsIt.T[...,None])[...,0].T/nt
     return pointsIt
 
-#given two sets of points, caluclates the target registratoin error (TRE) and their mean/std
 def calculate_tre(pointsI, pointsJ):
+    ''' Target registration error (TRE) between two sets of corresponding points
+
+    Parameters
+    ----------
+    pointsI : array or torch tensor (N x 2)
+        Points, e.g. the output of transform_points_source_to_target
+    pointsJ : array or torch tensor (N x 2)
+        Corresponding points
+
+    Returns
+    -------
+    meanTRE : float
+        Mean distance between corresponding points
+    stdTRE : float
+        Standard deviation of the distances
+    '''
+    pointsI = pointsI.detach().cpu().numpy() if isinstance(pointsI, torch.Tensor) else np.asarray(pointsI)
+    pointsJ = pointsJ.detach().cpu().numpy() if isinstance(pointsJ, torch.Tensor) else np.asarray(pointsJ)
     TRE_i = np.sqrt(np.sum((pointsI - pointsJ)**2,axis=1))
     meanTRE = np.mean(TRE_i)
     stdTRE = np.std(TRE_i)
@@ -1851,75 +1659,88 @@ def calculate_tre(pointsI, pointsJ):
 
 #Download and store ontology
 def download_aba_ontology(url,file_name): 
-	''' Create 3D altas ontology
-	    
-	    Parameters
-	    ----------
-	    url : Link to url contain atlas ontology
-	    file_name : File name to save atlas ontology
-	    
-	    Returns
-	    -------
-	    ontology_name : File name to store ontologies
-	    namesdict : Dictionary of all brain rgeion names
-	'''
-	    
-   
-	r = requests.get(url)
-	print(r)
-	with open(file_name,'w') as f:
-        	f.write(r.text)
-	ontology_name = file_name
+    ''' Create 3D altas ontology
+        
+        Parameters
+        ----------
+        url : Link to url contain atlas ontology
+        file_name : File name to save atlas ontology
+        
+        Returns
+        -------
+        ontology_name : File name to store ontologies
+        namesdict : Dictionary of all brain rgeion names
 
-	O = pd.read_csv(ontology_name)
+        Raises
+        ------
+        requests.HTTPError
+            If the download fails (nothing is written then).
+    '''
+    # used only by the atlas helpers, so imported here rather than with this module
+    import pandas as pd
+    import requests
 
-	# store the ontology in a dictionary
-	namesdict = defaultdict(lambda: 'unk')
-	namesdict[0] = 'bg'
+    r = requests.get(url, timeout=(30, 300))
+    print(r)
+    r.raise_for_status()
+    with open(file_name,'w',encoding='utf-8') as f:
+        f.write(r.text)
+    ontology_name = file_name
 
-	# we need to add the structure names from the structure_id
-	for i,n in zip(O['id'],O['acronym']):
-        	namesdict[i] = n
-	return ontology_name,namesdict
+    O = pd.read_csv(ontology_name)
+
+    # store the ontology in a dictionary
+    namesdict = defaultdict(lambda: 'unk')
+    namesdict[0] = 'bg'
+
+    # we need to add the structure names from the structure_id
+    for i,n in zip(O['id'],O['acronym']):
+        namesdict[i] = n
+    return ontology_name,namesdict
 
 def download_aba_image_labels(imageurl, labelurl, imagefile, labelfile):
-	''' Create 3D altas image and region annotations
-		    
-		    Parameters
-		    ----------
-		    imageurl : array
-		    		Link containing atlas cell stained image.
-		    labelurl : array
-		    		Link containing atlas altas images for each voxel in imageurl.
-		    imagefile : array
-		    		File location to save imageurl information.
-		    labelfile : array
-		    		File location to save labelurl information.
-		    
-		    Returns
-		    -------
-		    imagefile : array
-		    		File location to save imageurl information.
-		    labelfile : array
-		    		File location to save labelurl information.	    
-		    
-	'''
-	url = imageurl
-	r = requests.get(url, stream=True)
-	with open(imagefile, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024): 
-                if chunk: # filter out keep-alive new chunks
-                    f.write(chunk)
-	imagefile = imagefile
+    ''' Create 3D altas image and region annotations
+            
+        Parameters
+        ----------
+        imageurl : array
+            Link containing atlas cell stained image.
+        labelurl : array
+            Link containing atlas altas images for each voxel in imageurl.
+        imagefile : array
+            File location to save imageurl information.
+        labelfile : array
+            File location to save labelurl information.
+        
+        Returns
+        -------
+        imagefile : array
+            File location to save imageurl information.
+        labelfile : array
+            File location to save labelurl information.
 
-	url = labelurl#'http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/annotation/ccf_2017/annotation_50.nrrd'
-	r = requests.get(url, stream=True)
-	with open(labelfile, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024): 
-                if chunk: # filter out keep-alive new chunks
-                    f.write(chunk)
-	labelfile = labelfile
-	return imagefile, labelfile
+        Raises
+        ------
+        requests.HTTPError
+            If a download fails (the file is not written then).
+    '''
+    import requests # used only by the atlas helpers, so imported here
+
+    def download(url, path):
+        # write to a temporary file and rename it when complete, so that a
+        # failed download never leaves a broken file at path
+        tmp = os.fspath(path) + '.part'
+        with requests.get(url, stream=True, timeout=(30, 300)) as r:
+            r.raise_for_status()
+            with open(tmp, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1 << 20):
+                    if chunk: # filter out keep-alive new chunks
+                        f.write(chunk)
+        os.replace(tmp, path)
+
+    download(imageurl, imagefile)
+    download(labelurl, labelfile) # e.g. 'http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/annotation/ccf_2017/annotation_50.nrrd'
+    return imagefile, labelfile
 
 def analyze3Dalign(labelfile, xv,v,mat, xJ, dx, scale_x, scale_y, x, y, X_, Y_, namesdict, device='cpu'):
 	''' Create dataframe with region annotations and 3D coordinates of target brain slice
@@ -2011,47 +1832,63 @@ def analyze3Dalign(labelfile, xv,v,mat, xJ, dx, scale_x, scale_y, x, y, X_, Y_, 
 	return df_ 
 
 def plot_brain_regions(df):
-	''' Plot all brain regions in target brain slice with different color.
-		    
-		    Parameters
-		    ----------
-		    df : DataFrame
-		    	Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.
-		    
-		    Returns
-		    -------
-		    None
-		    
-	'''
-	#plot brain regions
-	brain_regions = np.unique(df['acronym'])
-	fig,ax = plt.subplots()
-	for i in range(len(brain_regions)):
-            region_df = df[df['acronym']==brain_regions[i]]
-
-            ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
-            ax.legend()
+    ''' Plot all brain regions in target brain slice with different color.
+            
+        Parameters
+        ----------
+        df : DataFrame
+            Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.
+        
+        Returns
+        -------
+        fig : matplotlib figure
+        ax : matplotlib axes
+        
+    '''
+    #plot brain regions
+    brain_regions = np.unique(df['acronym'])
+    n = len(brain_regions)
+    # one color per region: qualitative colormaps for few regions, otherwise
+    # hues spaced by the golden ratio with alternating saturation and value
+    if n <= 10:
+        colors = plt.cm.tab10.colors[:n]
+    elif n <= 20:
+        colors = plt.cm.tab20.colors[:n]
+    else:
+        import colorsys
+        colors = [colorsys.hsv_to_rgb((k*0.618033988749895) % 1.0, 0.65 + 0.35*(k % 2), 0.95 - 0.35*((k//2) % 2))
+                  for k in range(n)]
+    fig,ax = plt.subplots()
+    for region,color in zip(brain_regions,colors):
+        region_df = df[df['acronym']==region]
+        ax.scatter(region_df['x'], region_df['y'], label = region, s= 0.1, color=color)
+    if n:
+        ax.legend(markerscale=20, loc='upper left', bbox_to_anchor=(1.0, 1.0), ncol=max(1, int(np.ceil(n/40))),
+                  fontsize='x-small')
+    return fig,ax
 
 def plot_subset_brain_regions(df, brain_regions):
-	''' Plot subset of brain regions in target brain slice with different color.
-		    
-		    Parameters
-		    ----------
-		    df : DataFrame
-		    	Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.
-		    brain_regions : array
-		    		Subset of brain regions of interest (i.e. ['CA1', 'CP', 'DG-sg'])
-		    
-		    Returns
-		    -------
-		    None
-		    
-	'''
-    	#plot brain regions
-	brain_regions = brain_regions
-	fig,ax = plt.subplots()
-	ax.scatter(df['x'], df['y'],color = 'grey',s= 0.1)   
-	for i in range(len(brain_regions)):
-	    region_df = df[df['acronym']==brain_regions[i]]
-	    ax.scatter(region_df['x'], region_df['y'], label = brain_regions[i],s= 0.1)   
-	    ax.legend()
+    ''' Plot subset of brain regions in target brain slice with different color.
+            
+        Parameters
+        ----------
+        df : DataFrame
+            Dataframe containing each cell in original target brain slice, region annotations and 3D coordinates in terms of the altas.
+        brain_regions : array
+            Subset of brain regions of interest (i.e. ['CA1', 'CP', 'DG-sg'])
+        
+        Returns
+        -------
+        fig : matplotlib figure
+        ax : matplotlib axes
+        
+    '''
+    #plot brain regions
+    fig,ax = plt.subplots()
+    ax.scatter(df['x'], df['y'],color = 'grey',s= 0.1)   
+    for region in brain_regions:
+        region_df = df[df['acronym']==region]
+        ax.scatter(region_df['x'], region_df['y'], label = region,s= 0.1)   
+    if len(brain_regions):
+        ax.legend(markerscale=20)
+    return fig,ax
