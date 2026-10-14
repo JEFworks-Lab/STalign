@@ -166,6 +166,7 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         pi_init ((0.9, 0.05, 0.05)), fix_muA (False), fix_muB (True: muB is not re-estimated).
         Only the weights change; the matching term keeps sigmaM. Worth trying where the target
         lacks tissue that the source has; it can make targets of uneven density worse.
+        align_cells uses it by default.
     prefit : 'auto', True or False, keyword only
         Coarse affine pre-alignment before LDDMM. The initial affine (L, T or A; identity by
         default) is rotated about the target tissue's centroid in 12 steps of 30 degrees, each

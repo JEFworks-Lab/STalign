@@ -54,6 +54,11 @@ def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500
         the source has. mixture=None turns it off (LDDMM's weights of earlier versions, with
         the fixed variances sigmaM^2, sigmaA^2 and sigmaB^2); a dict selects 'em' with some of
         its options changed (see LDDMM). The value you pass is used as given.
+        On the 64 synthetic cell-to-cell problems of the round 2 evaluation suite, the default
+        cut the geometric mean error of the 8 partial sections from 15.2 to 4.3 um (all 8
+        better), but raised that of the 6 sections of uneven cell density from 7.9 to 12.8 um
+        (by up to 99%) and made 5 of 8 serial heart sections 10-57% worse; the other 42
+        changed by less than 2%. Pass mixture=None where the target section is complete.
     **lddmm_kwargs
         Keyword arguments of LDDMM, for example pointsI and pointsJ, sigmaM, a, num_threads
         or backend. They apply at every level, except as noted below. Everything else
