@@ -79,7 +79,7 @@ setup(
     # the C++ engine compiles in pocketfft, whose BSD license must accompany binary distributions
     license_files=['LICENSE', 'STalign/_cpp/third_party/pocketfft/LICENSE.md'],
     packages=find_packages(include=['STalign', 'STalign.*']),
-    python_requires='>=3.8',
+    python_requires='>=3.10',
     install_requires=required,
     ext_modules=ext_modules,
     cmdclass=cmdclass,
