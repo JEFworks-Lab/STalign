@@ -60,6 +60,8 @@ jobs:
           git fetch --no-tags --depth=1 origin "$V1"
           git show "$V1:STalign/STalign.py" > "$RUNNER_TEMP/stalign_orig.py"
           echo "STALIGN_ORIGINAL=$RUNNER_TEMP/stalign_orig.py" >> "$GITHUB_ENV"
+          # it imports these at the top
+          python -m pip install plotly tornado
       - name: Run the tests
         run: python -m pytest -q
 
@@ -93,6 +95,8 @@ jobs:
           git fetch --no-tags --depth=1 origin "$V1"
           git show "$V1:STalign/STalign.py" > "$RUNNER_TEMP/stalign_orig.py"
           echo "STALIGN_ORIGINAL=$RUNNER_TEMP/stalign_orig.py" >> "$GITHUB_ENV"
+          # it imports these at the top
+          python -m pip install plotly tornado
       - name: Run the API tests
         run: |
           python -m pip uninstall -y STalign
