@@ -18,92 +18,66 @@ STalign enables:
 - alignment of ST datasets across technologies
 - alignment of ST datasets to a 3D common coordinate framework 
 
-## Installation & Import
-
-### Installation using pip
-
-This installation method is intended for users who sets up a Python environment without `pipenv`.
+## Installation
 
 ```
 pip install --upgrade "git+https://github.com/JEFworks-Lab/STalign.git"
 ```
 
-*All dependencies will be installed into your selected environment with the above command. Dependencies can be found in the requirements.txt file.*
-
-The tutorials also use `plotly`, `scipy`, `scikit-learn` and `scikit-image`:
+This installs `STalign` and the dependencies listed in `requirements.txt`. The tutorials also use `plotly`, `scipy`, `scikit-learn` and `scikit-image`:
 
 ```
 pip install plotly scipy scikit-learn scikit-image
 ```
 
-### Faster alignment with the C++ engine
-
-`STalign` includes an optional C++ engine for `LDDMM` and `LDDMM_3D_to_slice`. `pip` compiles it during installation if a C++17 compiler is available: the Xcode Command Line Tools on macOS (`xcode-select --install`), `g++` or `clang++` on Linux, or the Microsoft C++ Build Tools on Windows. Without a compiler the installation still succeeds and `STalign` uses its pure `torch` implementation (`pip install -v` shows a warning in the build log). Both compute the same iterations up to rounding (in some long alignments these small differences grow, see [CHANGES.md](CHANGES.md)); the C++ engine is faster. The engine has been tested on macOS (Apple clang) and Linux (gcc 11); Windows builds are expected to work but have not been tested yet.
-
-To check which one is used:
+To import `STalign` in Python:
 
 ```python
 from STalign import STalign
+```
+
+### The C++ engine (optional)
+
+If a C++17 compiler is available, `pip` also compiles a C++ engine for `LDDMM` and `LDDMM_3D_to_slice`: the Xcode Command Line Tools on macOS (`xcode-select --install`), `g++` or `clang++` on Linux, or the Microsoft C++ Build Tools on Windows. The compiler is optional: without one the installation still succeeds and `STalign` uses its pure `torch` implementation, which computes the same iterations up to rounding, only more slowly (see [Performance](#performance)). The engine has been tested on macOS (Apple clang) and Linux (gcc 11 and 13); Windows builds are expected to work but have not been tested yet.
+
+`backend_info()` tells which engine is used:
+
+```python
 STalign.backend_info()
 # {'auto': 'cpp', 'cpp': True, 'cpp_error': None, 'num_threads': 16}
 ```
 
-`'auto': 'cpp'` means that alignments on the CPU in float64 (the default) use the C++ engine. Otherwise `'cpp_error'` says why it is not available. Alignments on a GPU or in float32 always use `torch`. To choose explicitly, pass `backend='cpp'` or `backend='torch'` to `LDDMM` or `LDDMM_3D_to_slice`.
+`'auto': 'cpp'` means that alignments on the CPU in float64 (the default) use the C++ engine; otherwise `'cpp_error'` says why it is not available (`pip install -v` also shows a warning in the build log). Alignments on a GPU or in float32 always use `torch`, and `backend='cpp'` or `backend='torch'` chooses explicitly. An alignment uses at most `torch.get_num_threads()` CPU threads; the environment variable `STALIGN_NUM_THREADS` or the argument `num_threads` sets another maximum. Results do not depend on the number of threads.
 
-The alignment uses at most `torch.get_num_threads()` CPU threads. To set a different maximum, set the environment variable `STALIGN_NUM_THREADS` (for example `export STALIGN_NUM_THREADS=8`) or pass `num_threads=8`. The result does not depend on the number of threads.
-
-If you use `STalign` from a clone of this repository without installing it (as the tutorials do with `sys.path.append`), build the C++ engine once, from the base directory of the clone:
+To use `STalign` from a clone of this repository without installing it (as the tutorials do with `sys.path.append`), build the engine once, from the base directory of the clone:
 
 ```
 pip install pybind11 setuptools
 python setup.py build_ext --inplace
 ```
 
-### Installation using Pipfile from source
+### Installation with pipenv
 
-This installation method is intended for users who sets up a Python environment with `pipenv`. `pipenv` allows users to create and activate a virtual environment with all dependencies within the Python project. For more information and installation instructions for `pipenv`, see https://pipenv.pypa.io/en/latest/.
-
-Fork and `git clone` the `STalign` github repository.
-
-From the base directory of your local `STalign` git repo, create a `Pipfile.lock` file from `Pipfile` using:
+To work in a [`pipenv`](https://pipenv.pypa.io/en/latest/) environment, fork and `git clone` this repository. From its base directory, create a `Pipfile.lock` from the `Pipfile` and activate the environment (`exit` leaves it):
 
 ```
 pipenv install requests
-```
-
-> **_NOTE:_** Since `Pipfile.lock` is platform-dependent and different across operating systems, do not commit `Pipfile.lock` to the git repo if contributing to `STalign` or collaborating with other people.
-
-Activate the virtual environment using:
-
-```
 pipenv shell
 ```
 
-Deactivate the virtual environment using:
+`Pipfile.lock` depends on the platform: do not commit it if you contribute to `STalign` or share the repository with others.
 
-```
-exit
-```
+## What changed in version 2.0.0
 
-### Import
-To import STalign into your Python script, use: 
+Version 2.0.0 keeps the functions and arguments of earlier versions, aligns much faster, fixes several bugs and chooses more of the alignment settings from the data, so alignments differ from earlier results. For example, the 10,000 iterations of the MERFISH tutorial take about 10 s with the C++ engine and 1.5 min with `torch`, instead of about 9 min. The changes most likely to matter for existing scripts:
 
-```python
-from STalign import STalign
-```
+- `LDDMM` and `LDDMM_3D_to_slice` start with a coarse affine pre-alignment that finds large rotations (2D) and tilted slice planes (3D), and choose `sigmaR` and, in 2D, the step sizes from the images (coordinates in µm); `LDDMM` runs 2000 iterations by default. On held-out synthetic test problems the geometric mean alignment error fell to 0.43 times the previous one in 2D and 0.21 times in 3D. Arguments you pass are used as given; `prefit=False` turns the pre-alignment off and `legacy_defaults=True` all of these defaults.
+- `transform_points_source_to_target` and the other source-to-target transforms use the exact inverse of the fitted map; cells can move by up to about 100 µm on the tutorial datasets (`exact_inverse=False` gives the previous approximation). With landmarks, `LDDMM` matches them under this map.
+- The regularizer of `LDDMM_3D_to_slice` is corrected and the step of each affine parameter is controlled, so 3D alignments change and no longer depend on rounding. `analyze3Dalign` returns corrected atlas coordinates.
+- `LDDMM` and `LDDMM_3D_to_slice` draw their figures once, at the end (`draw=True` redraws them every 10 iterations as before, `draw=False` turns them off).
+- New: `align_cells` aligns two sets of cells in one call (see [Input Data](#input-data)), `rasterize(..., blur_um=...)` gives the kernel width in µm, and `LDDMM(mixture='em')` can help where the target section lacks tissue that the source has.
 
-## What changed
-
-This version keeps the functions and arguments of earlier versions, aligns much faster, fixes several bugs, and chooses more of the alignment settings from the data, so alignments differ from earlier results. For example, the 10,000 iterations of the MERFISH tutorial take about 10 s with the C++ engine and 1.5 min with `torch`, instead of about 9 min (see [Performance](#performance)). The changes most likely to matter for existing scripts:
-
-- `LDDMM` and `LDDMM_3D_to_slice` draw their figures once, at the end. `draw=True` redraws them every 10 iterations as before, and `draw=False` turns them off.
-- `transform_points_source_to_target` and the other source-to-target transforms use the exact inverse of the fitted transformation; cells can move by up to about 100 µm on the tutorial datasets. `exact_inverse=False` gives the previous approximation.
-- The regularization of `LDDMM_3D_to_slice` is corrected and the step size of each affine parameter is controlled (`affine_step_control=True`), so 3D alignments change and no longer depend on rounding. `analyze3Dalign` returns corrected atlas coordinates.
-- `LDDMM` and `LDDMM_3D_to_slice` start with a coarse affine pre-alignment that finds large rotations (2D) and tilted slice planes (3D), and choose `sigmaR` and, in 2D, the step sizes from the images (coordinates in µm); `LDDMM` runs 2000 iterations by default. On held-out synthetic test problems the geometric mean alignment error fell to 0.43 times the previous one in 2D and 0.21 times in 3D, and 2D fits took about half as long. Arguments you pass are used as before; `prefit=False` turns the pre-alignment off and `legacy_defaults=True` all of these defaults.
-- With landmarks, `LDDMM` matches them under the exact inverse of the fitted map (the map `transform_points_source_to_target` applies) instead of forward Euler steps.
-- New: `align_cells` aligns two sets of cells in one call (see below), `rasterize(..., blur_um=...)` gives the kernel width in µm, and `LDDMM(mixture='em')` can help when the target section lacks tissue that the source has (`align_cells` uses it by default).
-
-See [CHANGES.md](CHANGES.md) for the full list.
+[CHANGES.md](CHANGES.md) lists every change with its measured effect.
 
 ## Performance
 
@@ -146,4 +120,3 @@ To use this tool, you will need provide the following information:
 ## Usage
 
 To use `STalign`, please refer to our [tutorials](https://jef.works/STalign/tutorials.html) with usage examples.
-
