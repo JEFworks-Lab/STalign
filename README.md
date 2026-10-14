@@ -55,7 +55,7 @@ The alignment uses at most `torch.get_num_threads()` CPU threads. To set a diffe
 If you use `STalign` from a clone of this repository without installing it (as the tutorials do with `sys.path.append`), build the C++ engine once, from the base directory of the clone:
 
 ```
-pip install pybind11
+pip install pybind11 setuptools
 python setup.py build_ext --inplace
 ```
 
