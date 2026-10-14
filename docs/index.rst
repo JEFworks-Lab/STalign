@@ -13,5 +13,6 @@ Welcome to STalign's documentation!
    overview
    tutorials
    STalign
+   CHANGES
    
    

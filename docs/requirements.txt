@@ -14,4 +14,5 @@ plotly
 myst_parser
 autodocsumm
 nbsphinx
+ipython
 furo
