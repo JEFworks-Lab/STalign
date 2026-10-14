@@ -257,17 +257,23 @@ def test_curvature_matches_its_definition():
 
 
 def test_velocity_curvature_is_the_largest_eigenvalue():
-    '''velocity_curvature = lambda_max(K H) / nt, against a dense eigenvalue computation.'''
-    d = blob_identity(n=16, dx=60.0)
+    '''velocity_curvature = lambda_max(K H) / nt, against a dense eigenvalue computation; also
+    where the two largest eigenvalues are close (one slightly elongated blob: shifts along its
+    two axes), on which a single power iteration can settle on the second one.'''
+    x = [np.arange(16) * 60.0 - 450.0] * 2
+    one = blob_image(x, np.array([[30.0, -20.0]]), np.array([150.0]), np.array([[1.0]]))
+    one = np.exp(-((np.meshgrid(*x, indexing='ij')[0] - 30.0) ** 2 * (1 / 1.1 ** 2 - 1)) / (2 * 150.0 ** 2)) * one
     pI = np.array([[-300.0, 200.0], [100.0, 350.0]])
-    problem = C.prepare_problem(2, **d, pointsI=pI, pointsJ=pI, niter=1, epL=1.0, epT=1.0, epV=1.0, sigmaR=1.0)
-    curv = P._Curvature(problem)
-    n = problem.K.size * 2
-    H = np.stack([curv.apply(e.reshape(problem.K.shape + (2,))).ravel() for e in np.eye(n)], 1)
-    K = np.stack([np.fft.ifft2(np.fft.fft2(e.reshape(problem.K.shape + (2,)), axes=(0, 1))
-                               * problem.K[..., None], axes=(0, 1)).real.ravel() for e in np.eye(n)], 1)
-    lam = np.max(np.linalg.eigvals(K @ H).real)
-    assert P.velocity_curvature(problem) == pytest.approx(lam / problem.nt, rel=1e-3)
+    for d, pts in ((blob_identity(n=16, dx=60.0), dict(pointsI=pI, pointsJ=pI)), (dict(xI=x, I=one, xJ=x, J=one), {})):
+        problem = C.prepare_problem(2, **d, **pts, niter=1, epL=1.0, epT=1.0, epV=1.0, sigmaR=1.0)
+        curv = P._Curvature(problem)
+        n = problem.K.size * 2
+        H = np.stack([curv.apply(e.reshape(problem.K.shape + (2,))).ravel() for e in np.eye(n)], 1)
+        K = np.stack([np.fft.ifft2(np.fft.fft2(e.reshape(problem.K.shape + (2,)), axes=(0, 1))
+                                   * problem.K[..., None], axes=(0, 1)).real.ravel() for e in np.eye(n)], 1)
+        lam = np.sort(np.linalg.eigvals(K @ H).real)
+        assert P.velocity_curvature(problem) == pytest.approx(lam[-1] / problem.nt, rel=1e-8)
+    assert lam[-2] > 0.8 * lam[-1]  # the second case is nearly degenerate
 
 
 @pytest.mark.parametrize('backend', BACKENDS)

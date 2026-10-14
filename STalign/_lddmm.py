@@ -79,7 +79,7 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         keep gradient descent stable, from the curvature of the energy at the initial affine
         (the image term with the same assumptions as G, the landmarks and the regularizer):
         epV to at most 1 / (lambda_v + DV / sigmaR^2), where lambda_v is the largest eigenvalue
-        of the kernel-smoothed curvature of the image and landmark terms in v (by power
+        of the kernel-smoothed curvature of the image and landmark terms in v (by subspace
         iteration) and DV the area of a velocity grid cell; epL and epT by a common factor, so
         that the largest eigenvalue of the affine curvature scaled by the steps (divided by 10,
         as during the deformation, unless diffeo_start > 0) is at most 0.5. This matters for

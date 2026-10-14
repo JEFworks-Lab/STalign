@@ -63,12 +63,14 @@ CURVATURE_REF = 1.1
 # keeps epV (lambda_v + DV / sigmaR^2) <= STEP_LIMIT_V and the default affine steps keep the
 # largest eigenvalue of their scaled affine Hessian <= STEP_LIMIT_AFFINE (see stable_steps), so
 # the joint step stays below 1.5 (lambda_max of a block matrix <= the sum over its blocks).
-# The power iteration for lambda_v stops after POWER_ITERATIONS steps or when its estimate
-# changes by less than POWER_TOL (relative).
+# lambda_v comes from a subspace iteration on a block of EIG_BLOCK vectors (so that nearly
+# equal largest eigenvalues cannot stall it), which stops after EIG_ITERATIONS steps or when
+# the largest Ritz value changes by less than EIG_TOL (relative).
 STEP_LIMIT_V = 1.0
 STEP_LIMIT_AFFINE = 0.5
-POWER_ITERATIONS = 100
-POWER_TOL = 1e-4
+EIG_BLOCK = 8
+EIG_ITERATIONS = 100
+EIG_TOL = 1e-6
 
 
 # =========================================================================== images
@@ -791,17 +793,17 @@ class _Curvature:
                 self.M[p, c] += np.bincount(cell, weights=ww * S[:, c], minlength=n0 * n1)
 
     def apply(self, u):
-        '''H u for a field u (n0, n1, 2) on the velocity grid: the Hessian of the energy in the
-        nodes' displacement.'''
+        '''H u for a field u (n0, n1, 2) on the velocity grid, or for each field of a block
+        (n0, n1, 2, B): the Hessian of the energy in the nodes' displacement.'''
         out = np.zeros_like(u)
         b0, b1, n0, n1 = self.box
-        M = self.M.reshape(len(_PAIRS), 3, n0, n1)
+        M = self.M.reshape((len(_PAIRS), 3, n0, n1) + (1,) * (u.ndim - 3))
         uc = [u[b0 + da:b0 + da + n0, b1 + db:b1 + db + n1] for da, db in _CORNERS]
-        acc = [np.zeros((n0, n1, 2)) for _ in _CORNERS]
+        acc = [np.zeros((n0, n1) + u.shape[2:]) for _ in _CORNERS]
         for p, (a, b) in enumerate(_PAIRS):
             for x, y in ((a, b), (b, a)) if a != b else ((a, b),):
-                acc[x][..., 0] += M[p, 0] * uc[y][..., 0] + M[p, 1] * uc[y][..., 1]
-                acc[x][..., 1] += M[p, 1] * uc[y][..., 0] + M[p, 2] * uc[y][..., 1]
+                acc[x][:, :, 0] += M[p, 0] * uc[y][:, :, 0] + M[p, 1] * uc[y][:, :, 1]
+                acc[x][:, :, 1] += M[p, 1] * uc[y][:, :, 0] + M[p, 2] * uc[y][:, :, 1]
         for (da, db), t in zip(_CORNERS, acc):
             out[b0 + da:b0 + da + n0, b1 + db:b1 + db + n1] += t
         return out
@@ -812,33 +814,35 @@ def velocity_curvature(problem, curvature=None):
     terms in v at v = 0 (as in _Curvature) and K the kernel that smooths the gradient.
 
     At v = 0 a change dv moves every sample point by -sum_t dv_t / nt, so the largest
-    eigenvalue over v is that over a field u shared by the nt time steps divided by nt; it is
-    found by power iteration (u <- K H u, with the Rayleigh quotient <u, H u> / <u, LL u>) from
-    a fixed pseudo-random start.  The velocity step v <- v - epV (K dE/dv) is then stable for
+    eigenvalue over v is that over a field u shared by the nt time steps divided by nt.  It is
+    that of the symmetric K^1/2 H K^1/2, found by subspace iteration with Rayleigh-Ritz on a
+    block of EIG_BLOCK vectors from a fixed pseudo-random start.  (A single power iteration can
+    settle on the second eigenvalue for many steps when the first is close to it and the start
+    has little of its eigenvector.)  The velocity step v <- v - epV (K dE/dv) is stable for
     epV (lambda_v + DV / sigmaR^2) < 2, DV / sigmaR^2 being the regularizer's contribution.
     Returns 0 without image curvature or landmarks in the velocity grid.'''
     c = curvature if curvature is not None else _Curvature(problem, affine=False)
     if c.M is None or not np.any(c.M):
         return 0.0
-    K, LL = problem.K, problem.LL
+    n = 2 * problem.K.size
+    B = min(EIG_BLOCK, n)
+    shape = problem.K.shape + (2, B)
+    root = np.sqrt(problem.K)[..., None, None]
 
-    def smooth(u):
-        return np.fft.ifft2(np.fft.fft2(u, axes=(0, 1)) * K[..., None], axes=(0, 1)).real
+    def op(Y):  # K^1/2 H K^1/2 Y for a block Y (n, B)
+        u = np.fft.ifft2(np.fft.fft2(Y.reshape(shape), axes=(0, 1)) * root, axes=(0, 1)).real
+        return np.fft.ifft2(np.fft.fft2(c.apply(u), axes=(0, 1)) * root, axes=(0, 1)).real.reshape(n, B)
 
-    u = smooth(np.random.default_rng(0).standard_normal(K.shape + (2,)))
+    Y, _ = np.linalg.qr(np.random.default_rng(0).standard_normal((n, B)))
     lam = 0.0
-    for _ in range(POWER_ITERATIONS):
-        norm2 = float(np.sum(np.abs(np.fft.fft2(u, axes=(0, 1))) ** 2 * LL[..., None])) / K.size
-        if not norm2 > 0:
-            break
-        u = u / math.sqrt(norm2)
-        Hu = c.apply(u)
-        new = float(np.sum(u * Hu))
-        done = abs(new - lam) <= POWER_TOL * abs(new)
+    for _ in range(EIG_ITERATIONS):
+        Z = op(Y)
+        new = float(np.linalg.eigvalsh(0.5 * (Y.T @ Z + Z.T @ Y))[-1])
+        done = abs(new - lam) <= EIG_TOL * abs(new)
         lam = new
-        if done:
+        if done or not lam > 0:
             break
-        u = smooth(Hu)
+        Y, _ = np.linalg.qr(Z)
     return max(lam, 0.0) / problem.nt
 
 
