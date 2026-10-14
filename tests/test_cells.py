@@ -143,6 +143,36 @@ def test_level_arguments(monkeypatch):
     assert [c['kw']['draw'] for c in calls] == [False, True]
 
 
+def test_mixture_is_em_by_default(monkeypatch):
+    '''align_cells passes mixture='em' to every level unless told otherwise (LDDMM's default is
+    None); mixture=None turns the mixture EM off, and any other value is passed as given.'''
+    assert inspect.signature(STalign.align_cells).parameters['mixture'].default == 'em'
+    assert inspect.signature(STalign.LDDMM).parameters['mixture'].default is None
+    calls = recording_lddmm(monkeypatch, fake_lddmm)
+    src, tgt = cells_and_map()
+    cells = (src[:, 0], src[:, 1], tgt[:, 0], tgt[:, 1])
+    opts = dict(start=10, every=2)
+    for given, expected in (({}, 'em'), (dict(mixture=None), None), (dict(mixture='em'), 'em'),
+                            (dict(mixture=opts), opts)):
+        calls.clear()
+        STalign.align_cells(*cells, levels=[(4, 1), (2, 1)], **given)
+        assert len(calls) == 2 and all(c['kw']['mixture'] == expected for c in calls), given
+
+    # the real fit: the default is LDDMM with mixture='em', mixture=None is LDDMM without it
+    monkeypatch.setattr(_cells, 'LDDMM', STalign.LDDMM)
+    kw = dict(levels=[(4, 60)], prefit=False, draw=False, **FIT)
+    on, off = STalign.align_cells(*cells, **kw), STalign.align_cells(*cells, mixture=None, **kw)
+    r = on['rasters']
+    xJ, J = _cells._pool([r['YJ'], r['XJ']], r['J'], 4)
+    xI, I = _cells._pool([r['YI'], r['XI']], r['I'], on['levels'][0]['source_factor'])
+    lddmm = dict(niter=60, prefit=False, draw=False, **FIT)
+    ref_on, ref_off = STalign.LDDMM(xI, I, xJ, J, mixture='em', **lddmm), STalign.LDDMM(xI, I, xJ, J, **lddmm)
+    for out, ref in ((on, ref_on), (off, ref_off)):
+        for k in ('A', 'v', 'WM', 'WB'):
+            assert torch.equal(out[k], ref[k]), k
+    assert not torch.equal(on['WM'], off['WM'])
+
+
 def test_bad_arguments():
     src, tgt = cells_and_map()
     x, y = src[:, 0], src[:, 1]

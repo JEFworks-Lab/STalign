@@ -19,7 +19,8 @@ except ImportError:
     from _raster import rasterize
 
 
-def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500)), **lddmm_kwargs):
+def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500)), *, mixture='em',
+                **lddmm_kwargs):
     ''' Align two sets of cells with LDDMM on density images, coarse to fine.
 
     Both sets of cells are rasterized with rasterize at pixel size dx and a Gaussian kernel of
@@ -45,6 +46,14 @@ def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500
         images mean-pooled by the integer factor (the source by the factor that gives it about
         the same pixel size as the target under the current affine). The default
         ((4, 500), (2, 500)) runs 500 iterations at 4*dx = 60 and then 500 at 2*dx = 30.
+    mixture : 'em', None or dict, keyword only
+        LDDMM's mixture argument, passed to every level. The default is 'em', unlike LDDMM's
+        (None): LDDMM's mixture EM, which estimates the noise of the matching term from the
+        residual and gives a low matching weight to target pixels that look like background
+        where the deformed source has tissue, as where the target section lacks cells that
+        the source has. mixture=None turns it off (LDDMM's weights of earlier versions, with
+        the fixed variances sigmaM^2, sigmaA^2 and sigmaB^2); a dict selects 'em' with some of
+        its options changed (see LDDMM). The value you pass is used as given.
     **lddmm_kwargs
         Keyword arguments of LDDMM, for example pointsI and pointsJ, sigmaM, a, num_threads
         or backend. They apply at every level, except as noted below. Everything else
@@ -60,11 +69,6 @@ def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500
           balance between the landmark and the image terms does not change with the
           number of pixels.
         * draw: applies to the last level; the other levels are not drawn.
-        * mixture='em' (LDDMM's mixture EM) applies at every level. Pass it where the target
-          lacks tissue that the source has: on the 8 partial-section problems of the round 2
-          evaluation suite it cut the geometric mean error of align_cells from 18.8 to 5.0 um
-          (all 8 better), where without it some of these alignments end up worse than the
-          initial affine.
 
     Returns
     -------
@@ -118,7 +122,7 @@ def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500
 
     defaults = {k: p.default for k, p in inspect.signature(LDDMM).parameters.items()
                 if p.default is not inspect.Parameter.empty}
-    kw = dict(lddmm_kwargs)
+    kw = dict(lddmm_kwargs, mixture=mixture)
     first = {k: kw.pop(k) for k in ('L', 'T', 'A', 'v', 'xv', 'prefit', 'diffeo_start') if k in kw}
     draw = kw.pop('draw', defaults['draw'])
     landmarks = kw.get('pointsI') is not None or kw.get('pointsJ') is not None
