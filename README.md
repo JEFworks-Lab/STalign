@@ -21,7 +21,7 @@ STalign enables:
 ## Installation
 
 ```
-pip install --upgrade "git+https://github.com/slowkow/STalign.git"
+pip install --upgrade "git+https://github.com/JEFworks-Lab/STalign.git"
 ```
 
 This installs `STalign` and the dependencies listed in `requirements.txt`. The tutorials also use `plotly`, `scipy`, `scikit-learn` and `scikit-image`:
