@@ -78,15 +78,18 @@ def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500
     Returns
     -------
     out : dict
-        LDDMM's result for the last level ('A', 'v', 'xv', 'WM', 'WB', 'WA', ...), with
-        'rasters': dict
+        LDDMM's result for the last level ('A', 'v', 'xv', 'WM', 'WB', 'WA', ...), with two
+        more entries:
+
+        'rasters' : dict
             The density images and their pixel locations: 'XI', 'YI', 'I' for the source and
             'XJ', 'YJ', 'J' for the target, as returned by rasterize. The fitted map takes
             [YI, XI] to [YJ, XJ] (row, column order, as LDDMM's xI and xJ).
-        'levels': list of dict
+        'levels' : list of dict
             One per level: 'factor' and 'source_factor' (the pooling factors of the target
             and the source images), 'niter', and the pooled pixel locations 'xI' and 'xJ'.
             The weights 'WM', 'WB' and 'WA' are on the last level's 'xJ'.
+
         If LDDMM reports its affine pre-fit ('prefit'), the record is the first level's.
 
     Raises

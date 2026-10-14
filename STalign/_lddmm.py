@@ -100,10 +100,10 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         we may label some pixels in target as artifact, and not enforce matching here.
     sigmaR: float
         Standard deviation for regularization. Smaller sigmaR means a smoother resulting transformation.
-        Regularization is of the form: 0.5/sigmaR^2 sum_{t=0}^{nt-1} int_X |L v_t|^2 dx with
-        L = (1 - a^2 Laplacian)^p, i.e. a sum over the nt time steps without a dt = 1/nt factor
-        (nt times 0.5/sigmaR^2 int_0^1 int_X |Lv|^2 dx dt). Changing nt at a fixed sigmaR therefore
-        changes the strength of the regularization.
+        Regularization is of the form ``0.5/sigmaR^2 sum_{t=0}^{nt-1} int_X |L v_t|^2 dx`` with
+        ``L = (1 - a^2 Laplacian)^p``, i.e. a sum over the nt time steps without a dt = 1/nt
+        factor (nt times ``0.5/sigmaR^2 int_0^1 int_X |Lv|^2 dx dt``). Changing nt at a fixed
+        sigmaR therefore changes the strength of the regularization.
         Default None: computed from sigma_disp as
         sigma_disp * sqrt(12 pi) * a * sqrt(nt) * (dx / 30) * sigmaM / s_J, where dx is the
         target pixel size in source units (under the affine after the pre-fit) and s_J the
@@ -263,8 +263,9 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
         Factor to expand size of velocity field around image boundaries (default 1.25)
     sigmaR : float
         Standard deviation for regularization. Smaller sigmaR means a smoother
-        transformation. Regularization is of the form 0.5/sigmaR^2 sum_{t=0}^{nt-1} int_X |L v_t|^2 dx
-        with L = (1 - a^2 Laplacian)^p over all three axes, a sum over time steps without dt as
+        transformation. Regularization is of the form
+        ``0.5/sigmaR^2 sum_{t=0}^{nt-1} int_X |L v_t|^2 dx`` with ``L = (1 - a^2 Laplacian)^p``
+        over all three axes, a sum over time steps without dt as
         in LDDMM. Earlier versions took its Fourier transform over only two of the three axes,
         which made it much stronger (and uneven), with the default 1e8.
         Default None: computed from sigma_disp as
