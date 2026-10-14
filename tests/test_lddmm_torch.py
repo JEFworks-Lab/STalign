@@ -685,7 +685,14 @@ def test_float32_and_padding():
 @pytest.mark.skipif(not torch.backends.mps.is_available(), reason='no MPS device')
 def test_mps_float32_smoke():
     kw = data_2d(niter=20, diffeo_start=5)
-    out = _lddmm.LDDMM(**kw, draw=False, device='mps', dtype=torch.float32)
+    try:
+        out = _lddmm.LDDMM(**kw, draw=False, device='mps', dtype=torch.float32)
+    except RuntimeError as e:
+        # The virtual GPUs of hosted macOS CI runners report MPS but their Metal compiler rejects
+        # some of torch's own kernels; that is the machine, not STalign.
+        if 'pipeline state' in str(e) or 'CompilerError' in str(e):
+            pytest.skip(f'the Metal compiler of this machine rejects a torch kernel: {str(e)[:80]}')
+        raise
     assert out['v'].device.type == 'mps'
     assert relerr(out['A'].cpu(), torch_lddmm(**kw)['A']) < 1e-4
 
