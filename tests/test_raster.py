@@ -4,10 +4,11 @@ The fast implementation is compared with `reference_rasterize` below: the
 original per-cell loop of STalign (before the speedup) with the approved fixes
 applied (abs only for wavelet_magnitude; normalize of a constant gives t_min).
 Criterion: identical grids, shape, layout and NaN / inf pattern, and finite
-values within 1e-12 * max|W|.  When the frozen original is available
-(dev/ref/stalign_orig.py or the file named by the environment variable
-STALIGN_ORIGINAL; not distributed), the reference is also checked against it
-bit for bit.
+values within 1e-12 * max|W|.  When the frozen original (version 1.0's
+STalign/STalign.py) is available, the reference is also checked against it bit
+for bit.  It is the file named by the environment variable STALIGN_ORIGINAL,
+for example from `git show b2068ed:STalign/STalign.py` (as the CI workflow
+does), or else dev/ref/stalign_orig.py.
 """
 import importlib.util
 import os
@@ -139,7 +140,7 @@ def cells(n, seed=0, extent=3000.0, dtype=np.float64):
 
 
 def frozen_original():
-    '''The frozen original STalign.py, if available (STALIGN_ORIGINAL or dev/ref/stalign_orig.py).'''
+    '''Version 1.0's STalign.py, if available (STALIGN_ORIGINAL or dev/ref/stalign_orig.py).'''
     path = os.environ.get('STALIGN_ORIGINAL') or os.path.join(REPO, 'dev', 'ref', 'stalign_orig.py')
     if not os.path.exists(path):
         pytest.skip('the frozen original STalign.py is not available (set STALIGN_ORIGINAL)')

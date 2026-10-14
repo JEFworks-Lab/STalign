@@ -692,7 +692,7 @@ def test_mps_float32_smoke():
 
 # --------------------------------------------------------------------------- the oracle itself
 def _original():
-    """The frozen original STalign.py, if available (STALIGN_ORIGINAL or dev/ref/stalign_orig.py)."""
+    """Version 1.0's STalign.py, if available (STALIGN_ORIGINAL or dev/ref/stalign_orig.py)."""
     path = os.environ.get('STALIGN_ORIGINAL') or os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'dev', 'ref', 'stalign_orig.py')
     if not os.path.exists(path):

@@ -9,9 +9,10 @@ that is zero outside the velocity grid (grid_sample with align_corners=True and 
 The exact forward map (the default) is checked by the round trip b(f(x)) = x. The synthetic
 velocity fields are smooth, vary in time and vanish at the edge of their grid; they deform
 by up to ~7 grid cells, with max|Dv|/nt ~ 0.3 (the tutorial fits have 0.05 to 0.21).
-When the frozen original implementation (dev/ref/stalign_orig.py, or the file named by the
-environment variable STALIGN_ORIGINAL) or the reference fits (dev/bench/ref, dev/data/allen)
-are present, the tests also compare with them.
+When the frozen original implementation (version 1.0's STalign/STalign.py: the file named by
+the environment variable STALIGN_ORIGINAL, for example from `git show b2068ed:STalign/STalign.py`
+as the CI workflow does, or else dev/ref/stalign_orig.py) or the reference fits (dev/bench/ref,
+dev/data/allen, not distributed) are present, the tests also compare with them.
 """
 import importlib.util
 import itertools
@@ -34,7 +35,7 @@ DEV = os.path.join(REPO, 'dev')
 
 
 def _original():
-    '''The frozen original STalign.py, if available (STALIGN_ORIGINAL or dev/ref/stalign_orig.py).'''
+    '''Version 1.0's STalign.py, if available (STALIGN_ORIGINAL or dev/ref/stalign_orig.py).'''
     path = os.environ.get('STALIGN_ORIGINAL') or os.path.join(DEV, 'ref', 'stalign_orig.py')
     if not os.path.exists(path):
         pytest.skip('the frozen original STalign.py is not available (set STALIGN_ORIGINAL)')
