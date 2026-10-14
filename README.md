@@ -133,7 +133,7 @@ To use this tool, you will need provide the following information:
 - Source: Arrays of x and y positions of cells
 - Target: Arrays of x and y positions of cells
 
-`STalign.align_cells(xI, yI, xJ, yJ)` aligns two such sets of cells in one call: it rasterizes them at 15 µm and runs `LDDMM` coarse to fine, which had 0.39 times the error of `LDDMM` on the 15, 30 or 60 µm rasters of our tests (but 10–14% more error where those had 15 µm pixels; see [CHANGES.md](CHANGES.md)). By default it uses `LDDMM`'s mixture model (`mixture='em'`), which helps where the target lacks tissue that the source has but made targets of uneven cell density worse in our tests; `mixture=None` turns it off. Its result works with the transform functions like that of `LDDMM`.
+`STalign.align_cells(xI, yI, xJ, yJ)` aligns two such sets of cells in one call: it rasterizes them at 15 µm and runs `LDDMM` coarse to fine, which had 0.39 times the error of `LDDMM` on the 15, 30 or 60 µm rasters of our tests (but 5–14% more error where those had 15 µm pixels; see [CHANGES.md](CHANGES.md)). By default it uses `LDDMM`'s mixture model (`mixture='em'`), which helps where the target lacks tissue that the source has but made targets of uneven cell density worse in our tests; `mixture=None` turns it off. Its result works with the transform functions like that of `LDDMM`.
 
 ### single-cell and spot-resolution ST alignment
 - Source: Arrays of x and y positions of cells from single-cell resolution ST data
