@@ -75,7 +75,16 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         times sigmaM^2 * 1.1 / G, where G estimates the curvature of the image matching term
         from the target's variance and the source's gradients under the initial affine (after
         the pre-fit). This adapts the steps to the image intensities and pixel size, where the
-        old defaults could be far too large or too small. A given value is used as is.
+        old defaults could be far too large or too small. Each is then lowered where needed to
+        keep gradient descent stable, from the curvature of the energy at the initial affine
+        (the image term with the same assumptions as G, the landmarks and the regularizer):
+        epV to at most 1 / (lambda_v + DV / sigmaR^2), where lambda_v is the largest eigenvalue
+        of the kernel-smoothed curvature of the image and landmark terms in v (by power
+        iteration) and DV the area of a velocity grid cell; epL and epT by a common factor, so
+        that the largest eigenvalue of the affine curvature scaled by the steps (divided by 10,
+        as during the deformation, unless diffeo_start > 0) is at most 0.5. This matters for
+        small images (G grows with the tissue area, the stable epV does not), landmarks, a small
+        sigma_disp and coordinates far from the origin. A given value is used as is.
     sigmaM : float
         Standard deviation of image matching term for Gaussian mixture modeling in cost function.
         This term generally controls matching accuracy with smaller corresponding to more accurate.

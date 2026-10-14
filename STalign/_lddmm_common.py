@@ -27,7 +27,8 @@ from torch.nn.functional import grid_sample
 
 # Settings left as None are chosen by resolve_defaults (see there): sigmaR from the prior
 # displacement scale SIGMA_DISP (um), and in 2D the steps STEPS_2D scaled to the curvature of
-# the image term and NITER_2D iterations.  In 3D the steps and niter have fixed defaults.
+# the image term and NITER_2D iterations, lowered where they would make gradient descent
+# unstable.  In 3D the steps and niter have fixed defaults.
 SIGMA_DISP = 94.03
 NITER_2D = 2000
 STEPS_2D = {'epL': 2e-8, 'epT': 2e-1, 'epV': 2e3}
@@ -430,8 +431,9 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
        them.  If the target has no tissue (_prefit.has_tissue; a constant image), it is
        skipped with a warning; if it fails, it warns and the fit starts from the given L and T.
     2. sigmaR = _prefit.physical_sigmaR(problem, sigma_disp).
-    3. 2D: epL, epT, epV = _prefit.curvature_steps(problem, STEPS_2D) for those left as None;
-       3D: FIXED_3D.
+    3. 2D: epL, epT, epV = _prefit.stable_steps(problem, _prefit.curvature_steps(problem,
+       STEPS_2D)) for those left as None (the scaled steps, lowered where they would make
+       gradient descent unstable); 3D: FIXED_3D.
     4. niter: NITER_2D in 2D, FIXED_3D['niter'] in 3D.
 
     With legacy_defaults=True the settings left as None take the values of LEGACY_DEFAULTS,
@@ -491,7 +493,7 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
             if problem.sigmaR is None:
                 problem.sigmaR = prefit_mod.physical_sigmaR(problem, sigma_disp)
             if dim == 2 and steps:
-                steps = prefit_mod.curvature_steps(problem, steps)
+                steps = prefit_mod.stable_steps(problem, prefit_mod.curvature_steps(problem, steps))
         finally:
             torch.set_num_threads(torch_threads)
     for k, val in steps.items():

@@ -8,6 +8,9 @@
   intensity scale of the target or the smoothness scale a.
 * :func:`curvature_steps`: gradient descent steps scaled by a curvature estimate of the image
   matching term (2D).
+* :func:`stable_steps`: those steps capped where gradient descent would be unstable (2D): the
+  curvature of the energy in the velocity field and in the affine at the initial state, from
+  the image term (the same assumptions as curvature_steps), the landmarks and the regularizer.
 
 The pre-fit matches the target J with a linear contrast map of the source [1, I_1, ..., I_C]
 (least squares with LDDMM's 0.1 ridge), with weights that are 1 on target tissue and lower
@@ -54,6 +57,18 @@ PRIOR_CONSTANT = {2: 12.0, 3: 64.0}
 
 # curvature_steps: the curvature at which the step sizes of earlier versions are kept.
 CURVATURE_REF = 1.1
+
+# stable_steps: gradient descent with step size e on a quadratic of curvature c is stable when
+# e c < 2 and decreases the energy monotonically when e c <= 1.  The default velocity step
+# keeps epV (lambda_v + DV / sigmaR^2) <= STEP_LIMIT_V and the default affine steps keep the
+# largest eigenvalue of their scaled affine Hessian <= STEP_LIMIT_AFFINE (see stable_steps), so
+# the joint step stays below 1.5 (lambda_max of a block matrix <= the sum over its blocks).
+# The power iteration for lambda_v stops after POWER_ITERATIONS steps or when its estimate
+# changes by less than POWER_TOL (relative).
+STEP_LIMIT_V = 1.0
+STEP_LIMIT_AFFINE = 0.5
+POWER_ITERATIONS = 100
+POWER_TOL = 1e-4
 
 
 # =========================================================================== images
@@ -605,3 +620,267 @@ def curvature_steps(problem, steps):
     G = curvature_proxy(problem.xI, problem.I, problem.xJ, problem.J, problem.L, problem.T)
     f = problem.sigmaM ** 2 * CURVATURE_REF / G if np.isfinite(G) and G > 0 else 1.0
     return {k: float(val) * f for k, val in steps.items()}
+
+
+# =========================================================================== stability (2D)
+_CHUNK = 1 << 18  # target pixels per chunk of the curvature passes (bounds their memory)
+
+
+def _target_points(problem, start, stop):
+    '''Sample points X = A^-1 y (source coordinates, (n, 2)) of the target pixels start:stop
+    (row-major) under the problem's affine.'''
+    xJ = problem.xJ
+    k = np.arange(start, stop)
+    Y = np.stack((xJ[0][k // len(xJ[1])], xJ[1][k % len(xJ[1])]), 1)
+    return (Y - problem.T) @ np.linalg.inv(problem.L).T
+
+
+def _source_at(problem, X):
+    '''The source and its gradient at points X (n, 2): AI (C_I, n) and grad (C_I, n, 2), with
+    LDDMM's interpolation of the source (bilinear, border padding: along an axis on which a
+    point lies outside the source the gradient is 0).'''
+    I = problem.I
+    idx = []
+    for d, x in enumerate(problem.xI):
+        n, h = len(x), float(x[1] - x[0]) if len(x) > 1 else 1.0
+        u = (X[:, d] - float(x[0])) / h
+        outside = (u < 0) | (u > n - 1)
+        u = np.clip(u, 0, n - 1)
+        i = np.clip(np.floor(u).astype(np.int64), 0, max(n - 2, 0))
+        idx.append((i, np.minimum(i + 1, n - 1), u - i, outside, h))
+    (i0, j0, f0, o0, h0), (i1, j1, f1, o1, h1) = idx
+    AI = np.empty((I.shape[0], len(X)))
+    grad = np.empty((I.shape[0], len(X), 2))
+    for k, Ik in enumerate(I):
+        a, b, c, d = Ik[i0, i1], Ik[i0, j1], Ik[j0, i1], Ik[j0, j1]
+        AI[k] = (1 - f0) * ((1 - f1) * a + f1 * b) + f0 * ((1 - f1) * c + f1 * d)
+        grad[k, :, 0] = np.where(o0, 0.0, ((1 - f1) * (c - a) + f1 * (d - b)) / h0)
+        grad[k, :, 1] = np.where(o1, 0.0, ((1 - f0) * (b - a) + f0 * (d - c)) / h1)
+    return AI, grad
+
+
+def _cells(xv, P):
+    '''Bilinear cell (i0, i1), fractions (f0, f1) of points P (n, 2) on the velocity grid xv and
+    whether they lie in it (LDDMM samples v with zero padding; points outside are dropped).'''
+    out = []
+    inside = np.ones(len(P), bool)
+    for d, x in enumerate(xv):
+        n, h = len(x), float(x[1] - x[0])
+        u = (P[:, d] - float(x[0])) / h
+        inside &= (u >= 0) & (u <= n - 1)
+        i = np.clip(np.floor(u).astype(np.int64), 0, n - 2)
+        out += [i, np.clip(u - i, 0.0, 1.0)]
+    return out, inside
+
+
+# corners of a velocity grid cell and the (a, b) pairs a <= b of corners
+_CORNERS = ((0, 0), (0, 1), (1, 0), (1, 1))
+_PAIRS = [(a, b) for a in range(4) for b in range(a, 4)]
+
+
+class _Curvature:
+    '''Gauss-Newton curvature of LDDMM's 2D energy at v = 0 and the problem's affine.
+
+    The image term is taken with matching weights WM = 1 (their upper bound) and the contrast
+    of a perfectly correlated source, |c_k|^2 = sum_c var J_c / var AI_k for source channel k
+    (averaged over the source channels), the assumptions of curvature_proxy.  A displacement
+    u_j of target pixel j's sample point X_j (source coordinates) then changes the image term
+    by u_j^T S_j u_j / 2 with
+
+        S_j = (sum_c var J_c) / sigmaM^2 * mean_k g_kj g_kj^T / var AI_k,   g_kj = grad I_k(X_j),
+
+    and a displacement u_i of landmark i (source coordinates, mapped by L) changes the landmark
+    term by u_i^T S_i u_i / 2 with S_i = L^T L / sigmaP^2.  Both are accumulated over the
+    bilinear velocity grid cells (moments of the corner weights) for velocity_curvature, and
+    into the 6x6 Hessian of (L, T) for affine_hessian.
+    '''
+
+    def __init__(self, problem, velocity=True, affine=True):
+        P = problem
+        N = int(np.prod(P.J.shape[1:]))
+        J = P.J.reshape(P.J.shape[0], -1)
+        vJ = float(sum(np.var(Jc) for Jc in J if np.ptp(Jc) > 0))
+        self.problem = P
+        Li = np.linalg.inv(P.L)
+        xv = P.xv
+        lm = len(P.pointsI) > 0
+        # pass 1: variance of the source channels on the sample points, and the box of
+        # velocity grid cells that holds the sample points and landmarks
+        CI = P.I.shape[0]
+        cnt, mean, m2 = 0, np.zeros(CI), np.zeros(CI)
+        lo, hi = np.array([len(xv[0]), len(xv[1])]), np.array([-1, -1])
+
+        def grow(X):
+            (i0, _, i1, _), inside = _cells(xv, X)
+            if inside.any():
+                lo[:] = np.minimum(lo, [i0[inside].min(), i1[inside].min()])
+                hi[:] = np.maximum(hi, [i0[inside].max(), i1[inside].max()])
+        for s in range(0, N, _CHUNK):
+            X = _target_points(P, s, min(N, s + _CHUNK))
+            AI, _ = _source_at(P, X)
+            n, mu = AI.shape[1], AI.mean(1)
+            m2 += ((AI - mu[:, None]) ** 2).sum(1) + (mu - mean) ** 2 * cnt * n / (cnt + n)
+            mean += (mu - mean) * n / (cnt + n)
+            cnt += n
+            if velocity:
+                grow(X)
+        if velocity and lm:
+            grow(P.pointsI)
+        var = m2 / max(cnt, 1)
+        use = [k for k in range(CI) if var[k] > 0 and np.ptp(P.I[k]) > 0]
+        w = vJ / P.sigmaM ** 2 / len(use) if use and vJ > 0 else 0.0
+        self.M, self.box = None, None
+        if velocity and np.all(hi >= lo):
+            self.box = (int(lo[0]), int(lo[1]), int(hi[0] - lo[0] + 1), int(hi[1] - lo[1] + 1))
+            self.M = np.zeros((len(_PAIRS), 3, self.box[2] * self.box[3]))
+        self.H = np.zeros((6, 6)) if affine else None
+        chunks = list(range(0, N, _CHUNK)) if w > 0 else []
+        # pass 2: the tensors S, accumulated
+        for s in chunks:
+            X = _target_points(P, s, min(N, s + _CHUNK))
+            _, grad = _source_at(P, X)
+            S = np.zeros((len(X), 3))  # S00, S01, S11
+            for k in use:
+                g = grad[k]
+                S += np.stack((g[:, 0] * g[:, 0], g[:, 0] * g[:, 1], g[:, 1] * g[:, 1]), 1) / var[k]
+            S *= w
+            self._add(X, S)
+            if affine:
+                # a change dTheta of Theta = [L | T] moves X_j by -L^-1 dTheta Z_j, Z_j = (X_j, 1):
+                # the Hessian (row-major Theta) is sum_j U_j (x) Z_j Z_j^T with U_j = L^-T S_j L^-1
+                (p, q), (r, t) = Li
+                U = np.stack((p * p * S[:, 0] + 2 * p * r * S[:, 1] + r * r * S[:, 2],
+                              p * q * S[:, 0] + (p * t + r * q) * S[:, 1] + r * t * S[:, 2],
+                              q * q * S[:, 0] + 2 * q * t * S[:, 1] + t * t * S[:, 2]), 1)
+                ZZ = np.stack((X[:, 0] * X[:, 0], X[:, 0] * X[:, 1], X[:, 0], X[:, 1] * X[:, 1], X[:, 1],
+                               np.ones(len(X))), 1)
+                self._add_affine(U.T @ ZZ)
+        if lm:
+            LtL = P.L.T @ P.L / P.sigmaP ** 2
+            self._add(P.pointsI, np.tile([LtL[0, 0], LtL[0, 1], LtL[1, 1]], (len(P.pointsI), 1)))
+            if affine:
+                Z = np.concatenate((P.pointsI, np.ones((len(P.pointsI), 1))), 1)
+                self.H += np.kron(np.eye(2), Z.T @ Z) / P.sigmaP ** 2
+        if affine:
+            order = [0, 1, 3, 4, 2, 5]  # (L00, L01, T0, L10, L11, T1) -> (L00, L01, L10, L11, T0, T1)
+            self.H = self.H[np.ix_(order, order)]
+
+    def _add_affine(self, R):
+        '''Add sum_j U_j (x) Z_j Z_j^T to H from R = sum_j u_j z_j^T (3 x 6), u_j the unique
+        entries (00, 01, 11) of U_j and z_j those (00, 01, 02, 11, 12, 22) of Z_j Z_j^T.'''
+        sym2 = ((0, 1), (1, 2))
+        sym3 = ((0, 1, 2), (1, 3, 4), (2, 4, 5))
+        for a in range(2):
+            for b in range(2):
+                for s in range(3):
+                    for t in range(3):
+                        self.H[3 * a + s, 3 * b + t] += R[sym2[a][b], sym3[s][t]]
+
+    def _add(self, X, S):
+        '''Add the tensors S (n, 3) at points X to the cell moments.'''
+        if self.M is None:
+            return
+        (i0, f0, i1, f1), inside = _cells(self.problem.xv, X)
+        b0, b1, n0, n1 = self.box
+        cell = (i0[inside] - b0) * n1 + (i1[inside] - b1)
+        f0, f1, S = f0[inside], f1[inside], S[inside]
+        w = ((1 - f0) * (1 - f1), (1 - f0) * f1, f0 * (1 - f1), f0 * f1)
+        for p, (a, b) in enumerate(_PAIRS):
+            ww = w[a] * w[b]
+            for c in range(3):
+                self.M[p, c] += np.bincount(cell, weights=ww * S[:, c], minlength=n0 * n1)
+
+    def apply(self, u):
+        '''H u for a field u (n0, n1, 2) on the velocity grid: the Hessian of the energy in the
+        nodes' displacement.'''
+        out = np.zeros_like(u)
+        b0, b1, n0, n1 = self.box
+        M = self.M.reshape(len(_PAIRS), 3, n0, n1)
+        uc = [u[b0 + da:b0 + da + n0, b1 + db:b1 + db + n1] for da, db in _CORNERS]
+        acc = [np.zeros((n0, n1, 2)) for _ in _CORNERS]
+        for p, (a, b) in enumerate(_PAIRS):
+            for x, y in ((a, b), (b, a)) if a != b else ((a, b),):
+                acc[x][..., 0] += M[p, 0] * uc[y][..., 0] + M[p, 1] * uc[y][..., 1]
+                acc[x][..., 1] += M[p, 1] * uc[y][..., 0] + M[p, 2] * uc[y][..., 1]
+        for (da, db), t in zip(_CORNERS, acc):
+            out[b0 + da:b0 + da + n0, b1 + db:b1 + db + n1] += t
+        return out
+
+
+def velocity_curvature(problem, curvature=None):
+    '''lambda_v: the largest eigenvalue of K H_v (2D), H_v the Hessian of the image and landmark
+    terms in v at v = 0 (as in _Curvature) and K the kernel that smooths the gradient.
+
+    At v = 0 a change dv moves every sample point by -sum_t dv_t / nt, so the largest
+    eigenvalue over v is that over a field u shared by the nt time steps divided by nt; it is
+    found by power iteration (u <- K H u, with the Rayleigh quotient <u, H u> / <u, LL u>) from
+    a fixed pseudo-random start.  The velocity step v <- v - epV (K dE/dv) is then stable for
+    epV (lambda_v + DV / sigmaR^2) < 2, DV / sigmaR^2 being the regularizer's contribution.
+    Returns 0 without image curvature or landmarks in the velocity grid.'''
+    c = curvature if curvature is not None else _Curvature(problem, affine=False)
+    if c.M is None or not np.any(c.M):
+        return 0.0
+    K, LL = problem.K, problem.LL
+
+    def smooth(u):
+        return np.fft.ifft2(np.fft.fft2(u, axes=(0, 1)) * K[..., None], axes=(0, 1)).real
+
+    u = smooth(np.random.default_rng(0).standard_normal(K.shape + (2,)))
+    lam = 0.0
+    for _ in range(POWER_ITERATIONS):
+        norm2 = float(np.sum(np.abs(np.fft.fft2(u, axes=(0, 1))) ** 2 * LL[..., None])) / K.size
+        if not norm2 > 0:
+            break
+        u = u / math.sqrt(norm2)
+        Hu = c.apply(u)
+        new = float(np.sum(u * Hu))
+        done = abs(new - lam) <= POWER_TOL * abs(new)
+        lam = new
+        if done:
+            break
+        u = smooth(Hu)
+    return max(lam, 0.0) / problem.nt
+
+
+def affine_hessian(problem, curvature=None):
+    '''The 6x6 Hessian of the image and landmark terms in (L00, L01, L10, L11, T0, T1) at
+    v = 0 (as in _Curvature).'''
+    c = curvature if curvature is not None else _Curvature(problem, velocity=False)
+    return c.H
+
+
+def stable_steps(problem, steps):
+    '''Cap default steps (2D) where gradient descent on the energy would be unstable.
+
+    `steps` holds the steps to cap (the ones the caller did not give).  epV is lowered to
+    STEP_LIMIT_V / (lambda_v + DV / sigmaR^2) if it is larger (velocity_curvature).  The
+    default ones of epL and epT are multiplied by a common factor so that the largest
+    eigenvalue of D H D <= STEP_LIMIT_AFFINE, with H the affine Hessian (affine_hessian)
+    restricted to their entries and D^2 their steps divided by 10 (the engines divide the
+    affine steps by 10 while the diffeomorphism is on), or by 1 if diffeo_start > 0.
+
+    The curvature is that of a perfectly correlated source with WM = 1, so the caps hold for
+    any matching weights; a step that is already small enough is returned unchanged.  The
+    curvature of the image term is intensive in v (it does not grow with the tissue area) but
+    the steps of curvature_steps are not, so the cap matters for small images, and for
+    landmarks, small sigmaR, and coordinates far from the origin (the affine).
+    '''
+    steps = dict(steps)
+    affine = [k for k in ('epL', 'epT') if k in steps]
+    if 'epV' not in steps and not affine:
+        return steps
+    curv = _Curvature(problem, velocity='epV' in steps, affine=bool(affine))
+    if 'epV' in steps:
+        lam = velocity_curvature(problem, curv) + problem.DV / problem.sigmaR ** 2
+        if lam > 0 and steps['epV'] * lam > STEP_LIMIT_V:
+            steps['epV'] = STEP_LIMIT_V / lam
+    if affine:
+        idx = ([0, 1, 2, 3] if 'epL' in steps else []) + ([4, 5] if 'epT' in steps else [])
+        fac = 10.0 if problem.diffeo_start <= 0 else 1.0
+        d = np.sqrt(np.array([steps['epL'] if i < 4 else steps['epT'] for i in idx]) / fac)
+        H = curv.H[np.ix_(idx, idx)]
+        lam = float(np.linalg.eigvalsh(d[:, None] * H * d[None, :])[-1])
+        if lam > STEP_LIMIT_AFFINE:
+            for k in affine:
+                steps[k] *= STEP_LIMIT_AFFINE / lam
+    return steps

@@ -184,10 +184,12 @@ def test_curvature_proxy_matches_its_definition():
 def test_curvature_steps():
     data, _, _, _ = rotated_pair()
 
-    def steps(**kw):
-        problem = C.prepare_problem(2, **dict(data, **kw), epL=None, epT=None, epV=None, sigmaR=1.0)
-        C.resolve_defaults(problem, prefit=False)
-        return np.array([problem.epL, problem.epT, problem.epV])
+    def steps(resolve=False, **kw):
+        problem = C.prepare_problem(2, **dict(data, **kw), epL=None, epT=None, epV=None, sigmaR=5e5)
+        if resolve:  # the steps the fit uses (capped by stable_steps)
+            C.resolve_defaults(problem, prefit=False)
+            return np.array([problem.epL, problem.epT, problem.epV])
+        return np.array([P.curvature_steps(problem, C.STEPS_2D)[k] for k in ('epL', 'epT', 'epV')])
 
     base = steps()
     G = P.curvature_proxy(data['xI'], data['I'], data['xJ'], data['J'], np.eye(2), np.zeros(2))
@@ -196,15 +198,145 @@ def test_curvature_steps():
     np.testing.assert_allclose(steps(J=10 * data['J']), base / 100, rtol=1e-12)
     np.testing.assert_allclose(steps(sigmaM=3.0), base * 9, rtol=1e-12)
     np.testing.assert_allclose(steps(I=7 * data['I'] + 2), base, rtol=1e-10)
-    # a given step is kept, the others are scaled
-    problem = C.prepare_problem(2, **data, epL=None, epT=None, epV=55.0, sigmaR=1.0)
+    # a given step is kept, the others are scaled (and capped)
+    problem = C.prepare_problem(2, **data, epL=None, epT=None, epV=55.0, sigmaR=5e5)
     C.resolve_defaults(problem, prefit=False)
-    assert (problem.epL, problem.epT, problem.epV) == (base[0], base[1], 55.0)
+    capped = P.stable_steps(problem, dict(epL=base[0], epT=base[1]))
+    assert (problem.epL, problem.epT, problem.epV) == (capped['epL'], capped['epT'], 55.0)
     # a constant target has no curvature: the unscaled steps (np.var of a constant 0.3 is not 0)
     for c in (1.0, 0.3):
-        np.testing.assert_array_equal(steps(J=np.full_like(data['J'], c)), [2e-8, 2e-1, 2e3])
+        for resolve in (False, True):
+            np.testing.assert_array_equal(steps(resolve, J=np.full_like(data['J'], c)), [2e-8, 2e-1, 2e3])
     # a constant source channel is skipped
     np.testing.assert_array_equal(steps(I=np.concatenate((data['I'], np.full_like(data['I'], 0.3)))), base)
+
+
+# --------------------------------------------------------------------------- stable steps
+def blob_identity(n=40, dx=30.0, seed=5):
+    '''A blob image of n x n pixels of dx um (40 x 40: 1.2 mm across), as source and target.'''
+    rng = np.random.default_rng(seed)
+    x = [np.arange(n) * dx - (n - 1) * dx / 2] * 2
+    cen = rng.uniform(-0.35, 0.35, size=(10, 2)) * n * dx
+    I = blob_image(x, cen, rng.uniform(70, 140, size=10), rng.uniform(0.3, 1.0, size=(10, 1)))
+    return dict(xI=x, I=I, xJ=x, J=I)
+
+
+def test_curvature_matches_its_definition():
+    '''The quadratic forms of _Curvature (cell moments, velocity grid; affine Hessian) against
+    their definition: target pixel j's sample point X_j = A^-1 y_j moves by u, the image term by
+    u^T S_j u / 2, S_j = sum_c var J_c / sigmaM^2 * mean_k g_kj g_kj^T / var AI_k with g_kj the
+    gradient of the source (bilinear, border padding) at X_j, and landmark i by L u.'''
+    d = blob_identity(n=16, dx=60.0)
+    I = np.concatenate((d['I'], np.sqrt(d['I'])))
+    L, T = 1.1 * R.rotation_2d(17.0), np.array([25.0, -40.0])  # between source pixels, some outside it
+    pI = np.array([[-300.0, 200.0], [100.0, 350.0], [250.0, -150.0]])
+    problem = C.prepare_problem(2, d['xI'], I, d['xJ'], d['J'], pointsI=pI, pointsJ=pI + 7.0, L=L, T=T, niter=1,
+                                epL=1.0, epT=1.0, epV=1.0, sigmaR=1.0, sigmaM=0.7, sigmaP=15.0)
+    curv = P._Curvature(problem)
+    Y = np.stack(np.meshgrid(*d['xJ'], indexing='ij'), 0).reshape(2, -1)
+    X = torch.tensor(np.linalg.solve(L, Y - T[:, None]), requires_grad=True)
+    AI = R.interp(d['xI'], torch.tensor(I), X[:, None], padding_mode='border')[:, 0]
+    g = [torch.autograd.grad(AI[k].sum(), X, retain_graph=True)[0].numpy().T for k in range(2)]
+    var = AI.detach().numpy().var(1)
+    S = np.var(d['J']) / 0.7 ** 2 * sum(np.einsum('ni,nj->nij', gk, gk) / vk for gk, vk in zip(g, var)) / 2
+    rng = np.random.default_rng(3)
+    u = rng.standard_normal(problem.K.shape + (2,))
+    xv = problem.xv
+    su = R.interp(xv, torch.tensor(u).permute(2, 0, 1), X.detach()[:, None])[:, 0].numpy().T
+    sp = R.interp(xv, torch.tensor(u).permute(2, 0, 1), torch.tensor(pI.T)[:, None])[:, 0].numpy().T
+    form = np.einsum('ni,nij,nj->', su, S, su) + np.sum((sp @ L.T) ** 2) / 15.0 ** 2
+    assert np.sum(u * curv.apply(u)) == pytest.approx(form, rel=1e-10)
+    # affine: dTheta = [dL | dT] moves X_j by -L^-1 dTheta (X_j, 1) and landmark i by dTheta (p_i, 1)
+    dth = rng.standard_normal((2, 3))
+    Z = np.concatenate((X.detach().numpy().T, np.ones((Y.shape[1], 1))), 1)
+    du = (Z @ dth.T) @ np.linalg.inv(L).T
+    Zp = np.concatenate((pI, np.ones((3, 1))), 1)
+    form = np.einsum('ni,nij,nj->', du, S, du) + np.sum((Zp @ dth.T) ** 2) / 15.0 ** 2
+    vec = np.concatenate((dth[:, :2].ravel(), dth[:, 2]))  # (L00, L01, L10, L11, T0, T1)
+    assert vec @ P.affine_hessian(problem) @ vec == pytest.approx(form, rel=1e-10)
+
+
+def test_velocity_curvature_is_the_largest_eigenvalue():
+    '''velocity_curvature = lambda_max(K H) / nt, against a dense eigenvalue computation.'''
+    d = blob_identity(n=16, dx=60.0)
+    pI = np.array([[-300.0, 200.0], [100.0, 350.0]])
+    problem = C.prepare_problem(2, **d, pointsI=pI, pointsJ=pI, niter=1, epL=1.0, epT=1.0, epV=1.0, sigmaR=1.0)
+    curv = P._Curvature(problem)
+    n = problem.K.size * 2
+    H = np.stack([curv.apply(e.reshape(problem.K.shape + (2,))).ravel() for e in np.eye(n)], 1)
+    K = np.stack([np.fft.ifft2(np.fft.fft2(e.reshape(problem.K.shape + (2,)), axes=(0, 1))
+                               * problem.K[..., None], axes=(0, 1)).real.ravel() for e in np.eye(n)], 1)
+    lam = np.max(np.linalg.eigvals(K @ H).real)
+    assert P.velocity_curvature(problem) == pytest.approx(lam / problem.nt, rel=1e-3)
+
+
+@pytest.mark.parametrize('backend', BACKENDS)
+def test_velocity_curvature_predicts_the_stable_step(backend):
+    '''Gradient descent is stable below epV = 2 / (lambda_v + DV / sigmaR^2) and diverges above.
+    The target is the source shifted by a few um, so the fit has something to do.'''
+    d = blob_identity()
+    start = dict(T=[3.0, -2.0], prefit=False, niter=300, backend=backend)
+    problem = C.prepare_problem(2, **d, T=start['T'], niter=None, epL=None, epT=None, epV=None, sigmaR=None)
+    C.resolve_defaults(problem, prefit=False)
+    limit = 2.0 / (P.velocity_curvature(problem) + problem.DV / problem.sigmaR ** 2)
+    assert problem.epV == pytest.approx(limit / 2.0, rel=1e-12)  # the cap applies here
+    assert float(fit2d(d, epV=0.9 * limit, **start)['v'].abs().max()) < 5.0
+    assert float(fit2d(d, epV=1.1 * limit, **start)['v'].abs().max()) > 20.0
+
+
+@pytest.mark.parametrize('backend', BACKENDS)
+def test_default_steps_are_stable_on_a_small_image(backend):
+    '''A 1.2 mm image fitted to itself, with landmarks and a small sigma_disp: the default steps
+    keep the map at the identity, while the uncapped curvature_steps diverge.'''
+    d = blob_identity()
+    p = np.random.default_rng(1).uniform(-400, 400, size=(6, 2))
+    for kw in (dict(), dict(pointsI=p, pointsJ=p), dict(sigma_disp=10.0), dict(pointsI=p, pointsJ=p, sigma_disp=10.0)):
+        out = fit2d(d, niter=300, backend=backend, **kw)
+        assert float(out['v'].abs().max()) < 1.0, kw
+        assert np.abs(out['A'].numpy() - np.eye(3)).max() < 1.0, kw
+    problem = C.prepare_problem(2, **d, niter=None, epL=None, epT=None, epV=None, sigmaR=None)
+    C.resolve_defaults(problem, prefit=False)
+    rule = P.curvature_steps(problem, C.STEPS_2D)
+    assert rule['epV'] > 4 * problem.epV
+    assert float(fit2d(d, niter=300, backend=backend, epV=rule['epV'])['v'].abs().max()) > 20.0
+
+
+def test_default_affine_steps_are_stable_far_from_the_origin():
+    '''Landmarks 20 mm from the origin: the landmark term's curvature in L grows with |x|^2.'''
+    d = blob_identity()
+    sh = 20000.0
+    d = dict(xI=[x + sh for x in d['xI']], I=d['I'], xJ=[x + sh for x in d['xJ']], J=d['J'])
+    p = np.random.default_rng(1).uniform(-400, 400, size=(6, 2)) + sh
+    out = fit2d(d, pointsI=p, pointsJ=p, niter=300)
+    assert np.abs(out['A'].numpy() - np.eye(3)).max() < 1e-3
+    assert float(out['v'].abs().max()) < 1.0
+    problem = C.prepare_problem(2, **d, pointsI=p, pointsJ=p, niter=None, epL=None, epT=None, epV=None, sigmaR=None)
+    C.resolve_defaults(problem)
+    rule = P.curvature_steps(problem, C.STEPS_2D)
+    assert problem.epL < rule['epL'] / 4 and problem.epL / rule['epL'] == pytest.approx(problem.epT / rule['epT'])
+    with warnings.catch_warnings():  # diverges: the landmark map does not converge
+        warnings.simplefilter('ignore', RuntimeWarning)
+        out = fit2d(d, pointsI=p, pointsJ=p, niter=300, epL=rule['epL'], epT=rule['epT'])
+    assert np.abs(out['A'].numpy() - np.eye(3)).max() > 1.0
+
+
+def test_stable_steps_keeps_small_steps():
+    '''Steps below the caps are returned unchanged (the fit is then the one of curvature_steps);
+    the affine cap uses the engines' factor 10 only when the diffeomorphism is on from the start.'''
+    d = blob_identity()
+    problem = C.prepare_problem(2, **d, niter=1, epL=None, epT=None, epV=None, sigmaR=5e5)
+    lam = P.velocity_curvature(problem) + problem.DV / problem.sigmaR ** 2
+    H = P.affine_hessian(problem)
+    small = dict(epV=0.5 / lam, epL=1e-12, epT=1e-6)
+    assert P.stable_steps(problem, small) == small
+    big = P.stable_steps(problem, dict(epV=2.0 / lam, epL=1e-3, epT=1e3))
+    assert big['epV'] == pytest.approx(1.0 / lam, rel=1e-12)
+    D = np.sqrt(np.array([big['epL']] * 4 + [big['epT']] * 2) / 10.0)
+    assert np.linalg.eigvalsh(D[:, None] * H * D[None, :])[-1] == pytest.approx(0.5, rel=1e-10)
+    problem.diffeo_start = 50
+    late = P.stable_steps(problem, dict(epL=1e-3, epT=1e3))
+    assert late['epL'] == pytest.approx(big['epL'] / 10, rel=1e-10)
+
 
 
 # --------------------------------------------------------------------------- pre-fit
@@ -402,7 +534,7 @@ def test_settings_reproduce_the_fit(default_fits):
     assert settings['niter'] == 60 and settings['sigmaR'] > 0 and min(settings[k] for k in ('epL', 'epT', 'epV')) > 0
     again = fit2d(data, A=out['prefit']['A'], prefit=False, backend=backend, **settings)
     assert all(torch.equal(again[k], out[k]) for k in KEYS_2D)
-    assert float(out['v'].abs().max()) > 1.0  # the deformation is on
+    assert float(out['v'].abs().max()) > 0.1  # the deformation is on
     # without the pre-fit, from a given L and T
     start = dict(L=R.rotation_2d(35.0), T=[30.0, -50.0])
     out = fit2d(data, niter=60, prefit=False, backend=backend, **start)
