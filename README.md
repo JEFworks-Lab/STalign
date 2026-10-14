@@ -71,7 +71,7 @@ pipenv shell
 
 Version 2.0.0 keeps the functions and arguments of earlier versions, aligns much faster, fixes several bugs and chooses more of the alignment settings from the data, so alignments differ from earlier results. For example, the 10,000 iterations of the MERFISH tutorial take about 10 s with the C++ engine and 1.5 min with `torch`, instead of about 9 min. The changes most likely to matter for existing scripts:
 
-- `LDDMM` and `LDDMM_3D_to_slice` start with a coarse affine pre-alignment that finds large rotations (2D) and tilted slice planes (3D), and choose `sigmaR` and, in 2D, the step sizes from the images (coordinates in µm); `LDDMM` runs 2000 iterations by default. On held-out synthetic test problems the geometric mean alignment error fell to 0.43 times the previous one in 2D and 0.21 times in 3D. Arguments you pass are used as given; `prefit=False` turns the pre-alignment off and `legacy_defaults=True` all of these defaults.
+- `LDDMM` and `LDDMM_3D_to_slice` start with a coarse affine pre-alignment that finds large rotations (2D) and tilted slice planes (3D), and choose `sigmaR` and, in 2D, the step sizes from the images (coordinates in µm); `LDDMM` runs 2000 iterations by default. Arguments you pass are used as given; `prefit=False` turns the pre-alignment off, and `legacy_defaults=True` all of these defaults (it keeps the corrections below). On held-out synthetic test problems, the geometric mean alignment error with the new defaults was 0.43 times that with `legacy_defaults=True` in 2D and 0.21 times in 3D.
 - `transform_points_source_to_target` and the other source-to-target transforms use the exact inverse of the fitted map; cells can move by up to about 100 µm on the tutorial datasets (`exact_inverse=False` gives the previous approximation). With landmarks, `LDDMM` matches them under this map.
 - The regularizer of `LDDMM_3D_to_slice` is corrected and the step of each affine parameter is controlled, so 3D alignments change and no longer depend on rounding. `analyze3Dalign` returns corrected atlas coordinates.
 - `LDDMM` and `LDDMM_3D_to_slice` draw their figures once, at the end (`draw=True` redraws them every 10 iterations as before, `draw=False` turns them off).
@@ -83,7 +83,7 @@ Version 2.0.0 keeps the functions and arguments of earlier versions, aligns much
 
 Time of the tutorials' alignments (`LDDMM` or `LDDMM_3D_to_slice`) with their own data, parameters and numbers of iterations, on a Mac / on Linux (end to end adds rasterizing the cells and transforming them):
 
-| tutorial | iterations | previous version | C++ engine | `torch` engine |
+| tutorial | iterations | version 1.0 | C++ engine | `torch` engine |
 |---|---|---|---|---|
 | MERFISH to MERFISH | 10,000 | 9.2 min / 12.1 min | 10 s / 45 s | 1.5 min / 1.7 min |
 | MERFISH, simulated deformation | 1,000 | 2.3 min / 3.8 min | 4.2 s / 14 s | 19 s / 31 s |
@@ -98,7 +98,7 @@ Time of the tutorials' alignments (`LDDMM` or `LDDMM_3D_to_slice`) with their ow
 | **all 10 tutorials** | | 60.6 min / 119.3 min | 1.6 min / 8.2 min | 7.5 min / 22.0 min |
 | **all 10, end to end** | | 61.1 min / 120.2 min | 1.7 min / 8.2 min | 7.5 min / 22.1 min |
 
-Measured on an Apple M1 Ultra (macOS, 16 threads) and an AMD Ryzen 5 5560U (Linux, 8 threads), one alignment at a time, on the CPU in float64 without figures; the previous version ran with 2 threads or with 16 (Linux: 8), whichever was faster, for 100–300 iterations (all of them for Xenium to Xenium and Visium to Visium), extrapolated to the tutorial's number from its steady time per iteration. Of these times, the new affine pre-fit and step sizes take up to 6 s on the Mac (12 s on Linux); `legacy_defaults=True` skips them. Rasterizing 86,000 cells takes 31 ms instead of 1.8 s, and transforming all cells of a tutorial takes at most 0.07 s (Mac). The method and more numbers are in [CHANGES.md](CHANGES.md).
+Measured on an Apple M1 Ultra (macOS, 16 threads) and an AMD Ryzen 5 5560U (Linux, 8 threads), one alignment at a time, on the CPU in float64 without figures; version 1.0 ran with 2 threads or with 16 (Linux: 8), whichever was faster, for 100–300 iterations (all of them for Xenium to Xenium and Visium to Visium), extrapolated to the tutorial's number from its steady time per iteration. Of these times, the new affine pre-fit and step sizes take up to 6 s on the Mac (12 s on Linux); `legacy_defaults=True` skips them. Rasterizing 86,000 cells takes 31 ms instead of 1.8 s, and transforming all cells of a tutorial takes at most 0.07 s (Mac). The method and more numbers are in [CHANGES.md](CHANGES.md).
 
 ## Input Data
 To use this tool, you will need provide the following information:
