@@ -11,9 +11,14 @@ Development build of the extension inside the source tree:
 
     python setup.py build_ext --inplace
 """
+import re
 import sys
 
 from setuptools import find_packages, setup
+
+# the version is defined once, as STalign.__version__
+with open('STalign/__init__.py') as f:
+    version = re.search(r"^__version__ = '([^']+)'$", f.read(), re.M).group(1)
 
 with open('requirements.txt') as f:
     required = [line.strip() for line in f if line.strip() and not line.startswith('#')]
@@ -69,7 +74,7 @@ else:
 setup(
     name='STalign',
     author='JEFworks',
-    version='1.0',
+    version=version,
     description='aligning spatial transcriptomics data',
     packages=find_packages(include=['STalign', 'STalign.*']),
     python_requires='>=3.8',

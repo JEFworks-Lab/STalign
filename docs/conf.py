@@ -6,6 +6,7 @@
 import sys
 import os
 sys.path.insert(0,os.path.abspath('..'))
+import STalign  # noqa: E402  (this checkout's package, for its version)
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -13,7 +14,7 @@ sys.path.insert(0,os.path.abspath('..'))
 project = 'STalign'
 copyright = '2023, JEFworks Lab'
 author = 'Manjari Anant, Kalen Clifton, Daniel Tward, Jean Fan, et al.'
-release = '1.0'
+release = STalign.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
