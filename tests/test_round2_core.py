@@ -85,7 +85,7 @@ def test_signatures():
     for k in ('niter', 'epL', 'epT', 'epV', 'sigmaR'):
         assert p2[k].default is None, k
     assert p3['sigmaR'].default is None
-    assert (p3['niter'].default, p3['epL'].default, p3['epT'].default, p3['epV'].default) == (5000, 1e-6, 1e1, 1e3)
+    assert (p3['niter'].default, p3['epL'].default, p3['epT'].default, p3['epV'].default) == (5000, 1e-6, 1e1, None)
     for p in (p2, p3):
         assert (p['prefit'].default, p['sigma_disp'].default, p['legacy_defaults'].default) == ('auto', 94.03, False)
         assert all(p[k].kind == inspect.Parameter.KEYWORD_ONLY for k in ('prefit', 'sigma_disp', 'legacy_defaults'))
@@ -337,6 +337,21 @@ def test_stable_steps_keeps_small_steps():
     late = P.stable_steps(problem, dict(epL=1e-3, epT=1e3))
     assert late['epL'] == pytest.approx(big['epL'] / 10, rel=1e-10)
 
+
+def test_3d_epV_is_capped_for_the_regularizer():
+    '''3D: the default epV (1e3) is lowered only where epV DV / sigmaR^2 would exceed 1.'''
+    d = um_3d()
+    out = fit3d(d, niter=0, prefit=False)
+    assert out['settings']['epV'] == 1e3
+    for sd, sM in ((1.0, 0.1), (3.0, 0.1)):
+        problem = C.prepare_problem(3, **d, nt=4, niter=None, epV=None, sigmaR=None, sigmaM=sM)
+        C.resolve_defaults(problem, prefit=False, sigma_disp=sd)
+        assert problem.epV == pytest.approx(problem.sigmaR ** 2 / problem.DV, rel=1e-12) and problem.epV < 1e3
+        out = fit3d(d, niter=100, prefit=False, sigma_disp=sd, sigmaM=sM)
+        assert torch.isfinite(out['v']).all() and float(out['v'].abs().max()) < 10.0
+    out = fit3d(d, niter=100, prefit=False, sigma_disp=1.0, sigmaM=0.1, epV=1e3)  # given: used as is
+    assert out['settings']['epV'] == 1e3
+    assert not (float(out['v'].abs().max()) < 1e3)  # and it diverges (or overflows to nan)
 
 
 # --------------------------------------------------------------------------- pre-fit

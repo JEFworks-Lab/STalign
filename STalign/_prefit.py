@@ -850,7 +850,7 @@ def affine_hessian(problem, curvature=None):
 
 
 def stable_steps(problem, steps):
-    '''Cap default steps (2D) where gradient descent on the energy would be unstable.
+    '''Cap default steps where gradient descent on the energy would be unstable.
 
     `steps` holds the steps to cap (the ones the caller did not give).  epV is lowered to
     STEP_LIMIT_V / (lambda_v + DV / sigmaR^2) if it is larger (velocity_curvature).  The
@@ -864,8 +864,17 @@ def stable_steps(problem, steps):
     curvature of the image term is intensive in v (it does not grow with the tissue area) but
     the steps of curvature_steps are not, so the cap matters for small images, and for
     landmarks, small sigmaR, and coordinates far from the origin (the affine).
+
+    In 3D (fixed default steps, whose stability for the image term is as before Round 2) only
+    the regularizer's part is used: epV <= STEP_LIMIT_V / (DV / sigmaR^2), which matters only
+    for a very small sigma_disp with sigmaM well below the target's intensity scale.
     '''
     steps = dict(steps)
+    if problem.dim == 3:
+        reg = problem.DV / problem.sigmaR ** 2
+        if 'epV' in steps and steps['epV'] * reg > STEP_LIMIT_V:
+            steps['epV'] = STEP_LIMIT_V / reg
+        return steps
     affine = [k for k in ('epL', 'epT') if k in steps]
     if 'epV' not in steps and not affine:
         return steps

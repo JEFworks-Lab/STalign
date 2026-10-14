@@ -27,8 +27,8 @@ from torch.nn.functional import grid_sample
 
 # Settings left as None are chosen by resolve_defaults (see there): sigmaR from the prior
 # displacement scale SIGMA_DISP (um), and in 2D the steps STEPS_2D scaled to the curvature of
-# the image term and NITER_2D iterations, lowered where they would make gradient descent
-# unstable.  In 3D the steps and niter have fixed defaults.
+# the image term and NITER_2D iterations.  In 3D the steps and niter have fixed defaults.  In
+# both, a default step is lowered where it would make gradient descent unstable.
 SIGMA_DISP = 94.03
 NITER_2D = 2000
 STEPS_2D = {'epL': 2e-8, 'epT': 2e-1, 'epV': 2e3}
@@ -431,9 +431,9 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
        them.  If the target has no tissue (_prefit.has_tissue; a constant image), it is
        skipped with a warning; if it fails, it warns and the fit starts from the given L and T.
     2. sigmaR = _prefit.physical_sigmaR(problem, sigma_disp).
-    3. 2D: epL, epT, epV = _prefit.stable_steps(problem, _prefit.curvature_steps(problem,
-       STEPS_2D)) for those left as None (the scaled steps, lowered where they would make
-       gradient descent unstable); 3D: FIXED_3D.
+    3. epL, epT, epV for those left as None: in 2D the values of STEPS_2D scaled by
+       _prefit.curvature_steps, in 3D those of FIXED_3D; then _prefit.stable_steps lowers any
+       of them that would make gradient descent unstable (in 3D only epV, for the regularizer).
     4. niter: NITER_2D in 2D, FIXED_3D['niter'] in 3D.
 
     With legacy_defaults=True the settings left as None take the values of LEGACY_DEFAULTS,
@@ -473,7 +473,7 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
     steps = {k: val for k, val in defaults.items() if getattr(problem, k) is None}
     if problem.niter is None:
         problem.niter = NITER_2D if dim == 2 else FIXED_3D['niter']
-    if reason is None or problem.sigmaR is None or (dim == 2 and steps):
+    if reason is None or problem.sigmaR is None or steps:
         prefit_mod = _sibling('_prefit')
         torch_threads = torch.get_num_threads()
         torch.set_num_threads(resolve_num_threads(num_threads))
@@ -492,8 +492,10 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
                     info = {'ran': False, 'reason': f'failed: {type(e).__name__}: {e}'}
             if problem.sigmaR is None:
                 problem.sigmaR = prefit_mod.physical_sigmaR(problem, sigma_disp)
-            if dim == 2 and steps:
-                steps = prefit_mod.stable_steps(problem, prefit_mod.curvature_steps(problem, steps))
+            if steps:
+                if dim == 2:
+                    steps = prefit_mod.curvature_steps(problem, steps)
+                steps = prefit_mod.stable_steps(problem, steps)
         finally:
             torch.set_num_threads(torch_threads)
     for k, val in steps.items():

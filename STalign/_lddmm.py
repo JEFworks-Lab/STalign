@@ -233,7 +233,7 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
 def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
                       L=None, T=None, A=None, v=None, xv=None,
                       a=500.0, p=2.0, expand=1.25, nt=3,
-                      niter=5000, diffeo_start=0, epL=1e-6, epT=1e1, epV=1e3,
+                      niter=5000, diffeo_start=0, epL=1e-6, epT=1e1, epV=None,
                       sigmaM=1.0, sigmaB=2.0, sigmaA=5.0, sigmaR=None, sigmaP=2e1,
                       device='cpu', dtype=torch.float64, muA=None, muB=None,
                       *, draw='end', num_threads=None, backend='auto', affine_step_control=True,
@@ -275,7 +275,11 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
         value is used as is (2e6 with legacy_defaults=True, which gives deformations of about
         the size of the old regularizer's). See CHANGES.md.
     niter, epL, epT, epV :
-        Defaults 5000, 1e-6, 1e1, 1e3 (no data-driven steps in 3D).
+        Defaults 5000, 1e-6, 1e1 and None: 1e3 (no data-driven steps in 3D), lowered to
+        sigmaR^2 / DV where needed to keep the velocity step stable for the regularizer
+        (epV * DV / sigmaR^2 <= 1, DV the volume of a velocity grid cell). That happens only
+        for a very small sigma_disp (a few um) with sigmaM well below the target's intensity
+        scale. A given value is used as is.
     pointsI, pointsJ, sigmaP :
         Not used: there is no landmark term in 3D, and passing points issues a warning.
         Use L_T_from_points to initialize L and T from landmarks instead.

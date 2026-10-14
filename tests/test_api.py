@@ -53,7 +53,8 @@ KEYS_3D = KEYS_2D + ('Xs',)
 # None: chosen from the data (legacy_defaults=True restores the old values)
 CHANGED_DEFAULTS = {('LDDMM_3D_to_slice', 'sigmaR'): (1e8, None), ('LDDMM', 'sigmaR'): (5e5, None),
                     ('LDDMM', 'niter'): (5000, None), ('LDDMM', 'epL'): (2e-8, None),
-                    ('LDDMM', 'epT'): (2e-1, None), ('LDDMM', 'epV'): (2e3, None)}
+                    ('LDDMM', 'epT'): (2e-1, None), ('LDDMM', 'epV'): (2e3, None),
+                    ('LDDMM_3D_to_slice', 'epV'): (1e3, None)}
 
 
 def data_2d(points=True, CJ=2, **kw):
