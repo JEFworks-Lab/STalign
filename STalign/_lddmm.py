@@ -183,11 +183,10 @@ def LDDMM(xI, I, xJ, J, pointsI=None, pointsJ=None,
         default sigmaR=5e5 on 30 um images). Used only when sigmaR is None; larger values allow
         larger deformations. It assumes that coordinates are in micrometers.
     legacy_defaults : bool, keyword only
-        If True, use the defaults from before Round 2 (see CHANGES.md): no pre-fit (unless
-        prefit=True), niter=5000, epL=2e-8, epT=2e-1, epV=2e3, sigmaR=5e5, and the forward Euler
-        map in the landmark term. Results are then bit for bit those of this version without
-        the Round 2 changes (commit bec34e4). The earlier corrections listed in CHANGES.md
-        still apply, so results can differ from those of the original STalign. Default False.
+        If True, use the defaults of version 1.0 instead of those chosen from the data (see
+        CHANGES.md): no pre-fit (unless prefit=True), niter=5000, epL=2e-8, epT=2e-1, epV=2e3,
+        sigmaR=5e5, and the forward Euler map in the landmark term. The corrections listed in
+        CHANGES.md still apply, so results can differ from those of version 1.0. Default False.
 
     Returns a dictionary
     -------
@@ -317,11 +316,11 @@ def LDDMM_3D_to_slice(xI, I, xJ, J, pointsI=None, pointsJ=None,
     sigma_disp : float, keyword only
         Prior displacement scale in micrometers (default 94.03), used when sigmaR is None.
     legacy_defaults : bool, keyword only
-        If True, use the defaults from before Round 2 (see CHANGES.md): no pre-fit (unless
-        prefit=True) and sigmaR=2e6. Results are then bit for bit those of this version without
-        the Round 2 changes (commit bec34e4). The earlier corrections still apply (the
+        If True, use fixed defaults instead of those chosen from the data (see CHANGES.md): no
+        pre-fit (unless prefit=True), sigmaR=2e6 and epV=1e3. The corrections still apply (the
         regularizer over all three axes, the affine step control and the others listed in
-        CHANGES.md), so results differ from those of the original STalign. Default False.
+        CHANGES.md), so results differ from those of version 1.0, whose default sigmaR=1e8
+        regularizes much less with the corrected regularizer. Default False.
 
     Returns a dictionary
     -------

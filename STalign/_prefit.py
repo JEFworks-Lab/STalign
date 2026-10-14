@@ -870,7 +870,7 @@ def stable_steps(problem, steps):
     the steps of curvature_steps are not, so the cap matters for small images, and for
     landmarks, small sigmaR, and coordinates far from the origin (the affine).
 
-    In 3D (fixed default steps, whose stability for the image term is as before Round 2) only
+    In 3D (fixed default steps, whose stability for the image term is as in version 1.0) only
     the regularizer's part is used: epV <= STEP_LIMIT_V / (DV / sigmaR^2), which matters only
     for a very small sigma_disp with sigmaM well below the target's intensity scale.
     '''

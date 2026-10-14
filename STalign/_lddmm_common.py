@@ -438,8 +438,8 @@ def resolve_defaults(problem, prefit='auto', sigma_disp=SIGMA_DISP, legacy_defau
 
     With legacy_defaults=True the settings left as None take the values of LEGACY_DEFAULTS,
     'auto' does not run the pre-fit, and the landmark term uses the forward Euler map of
-    earlier versions (landmark_map='euler'): the fit is bit for bit that of the package before
-    Round 2 (commit bec34e4), with its corrections of the original STalign.
+    earlier versions (landmark_map='euler'): the fit is bit for bit that of this package before
+    the data-driven defaults were added, with its corrections of version 1.0.
 
     Returns
     -------

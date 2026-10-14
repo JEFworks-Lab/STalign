@@ -54,7 +54,7 @@ def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500
         the source has. mixture=None turns it off (LDDMM's weights of earlier versions, with
         the fixed variances sigmaM^2, sigmaA^2 and sigmaB^2); a dict selects 'em' with some of
         its options changed (see LDDMM). The value you pass is used as given.
-        On the 64 synthetic cell-to-cell problems of the round 2 evaluation suite, the default
+        On 64 synthetic cell-to-cell test problems (see CHANGES.md), the default
         cut the geometric mean error of the 8 partial sections from 15.2 to 4.3 um (all 8
         better), but raised that of the 6 sections of uneven cell density from 7.9 to 12.8 um
         (by up to 99%) and made 5 of 8 serial heart sections 10-57% worse; the other 42
@@ -100,9 +100,8 @@ def align_cells(xI, yI, xJ, yJ, dx=15.0, blur_um=30.0, levels=((4, 500), (2, 500
     Notes
     -----
     Re-rasterizing at a fine pixel size with a fixed physical kernel and fitting a two level
-    pyramid was the most accurate configuration on the synthetic problems of the round 2
-    evaluation suite. Images from other sources (H&E, Visium, an atlas) go to LDDMM
-    directly.
+    pyramid was the most accurate configuration on our synthetic test problems (see
+    CHANGES.md). Images from other sources (H&E, Visium, an atlas) go to LDDMM directly.
 
     The matching weights are not carried over from one level to the next: each level starts
     from LDDMM's initial weights.
