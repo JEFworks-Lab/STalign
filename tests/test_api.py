@@ -75,7 +75,7 @@ def rel(a, b):
 
 
 def original_module():
-    '''The frozen original STalign.py, if available (STALIGN_ORIGINAL or dev/ref/stalign_orig.py).'''
+    '''Version 1.0's STalign.py, if available (STALIGN_ORIGINAL or dev/ref/stalign_orig.py).'''
     path = os.environ.get('STALIGN_ORIGINAL') or os.path.join(REPO, 'dev', 'ref', 'stalign_orig.py')
     if not os.path.exists(path):
         pytest.skip('the frozen original STalign.py is not available (set STALIGN_ORIGINAL)')
@@ -166,6 +166,27 @@ np.savez('outputs.npz', auto=STalign.backend_info()['auto'], **{{k: out[k].numpy
     ours = STalign.LDDMM(**kw, draw=False)
     for k in KEYS_2D:
         np.testing.assert_array_equal(ours[k].numpy(), theirs[k], err_msg=k)
+
+
+def test_package_exports_the_module_functions():
+    '''With an installed STalign first on sys.path, the tutorials' "option B" (``import STalign``
+    with the STalign folder appended to sys.path) imports the package: it has the functions of
+    the module ``STalign.STalign``.'''
+    code = f'''
+import sys
+sys.path.insert(0, {REPO!r})
+sys.path.append({os.path.join(REPO, "STalign")!r})
+import STalign
+from STalign import STalign as module
+assert STalign.__file__.endswith('__init__.py'), STalign.__file__
+assert STalign.STalign is module
+names = {ORIGINAL_FUNCTIONS!r} + ['backend_info', 'align_cells']
+missing = [n for n in names if getattr(STalign, n, None) is not getattr(module, n)]
+assert not missing, missing
+'''
+    env = {k: v for k, v in os.environ.items() if k != 'PYTHONPATH'}
+    result = subprocess.run([sys.executable, '-c', code], env=env, capture_output=True, text=True, timeout=300)
+    assert result.returncode == 0, result.stderr
 
 
 # --------------------------------------------------------------------------- backends
