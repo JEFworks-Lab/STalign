@@ -6,7 +6,7 @@
 # the package that `pip install .` installed, uninstalls it, and tests the source tree (with the C++
 # engine built in place).  Some tests compare with version 1.0's STalign.py, which each job takes
 # from git (commit V1, below).  Tests that need the development data (dev/, not in git) or a source
-# tree of commit bec34e4 (STALIGN_LEGACY_SRC, see tests/test_round2_core.py) skip.
+# tree of the last commit before the new defaults (STALIGN_LEGACY_SRC, see tests/test_defaults.py) skip.
 name: Tests
 on: [push, pull_request, workflow_dispatch]
 permissions:

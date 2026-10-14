@@ -40,7 +40,7 @@ The default 3D sigmaR (2e6) is the package's with legacy_defaults=True: the orac
 affine pre-fit and no data-driven settings, so comparisons pass prefit=False and explicit
 settings to the package.
 
-Round 2 adds two options of the 2D fit:
+Version 2.0 adds two options of the 2D fit:
 
 landmark_map='exact' (default)  The landmarks move with the exact inverse of the backward map
     instead of the original's forward Euler steps ('euler').  Each time step solves

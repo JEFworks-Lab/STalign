@@ -43,7 +43,7 @@ def assert_close(ours, ref, keys, tol):
     return errs
 
 
-# The oracle has no affine pre-fit: the comparisons run without it (tested in test_round2_core.py).
+# The oracle has no affine pre-fit: the comparisons run without it (tested in test_defaults.py).
 def torch_lddmm(**kw):
     return _lddmm.LDDMM(**kw, draw=False, backend='torch', prefit=False)
 
