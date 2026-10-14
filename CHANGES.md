@@ -94,7 +94,7 @@ Long 3D fits with plain affine steps are very sensitive to rounding: a change in
 
 ### Tutorials
 
-- All 17 tutorial notebooks were re-run with this version, and the aligned cell positions they write into `docs/*_data` were regenerated. On the Mac with the C++ engine, their alignment cells take 0.6–35 s; the exception is the curve-annotator tutorial, whose 10,000 iterations on the full H&E image take 3.7 min. (The comparison with version 1.0 is under [Faster](#faster).)
+- All 17 tutorial notebooks were re-run with this version, and the aligned cell positions they write into `docs/*_data` were regenerated. On the Mac with the C++ engine, their alignment cells take 0.5–36 s; the exception is the curve-annotator tutorial, whose 10,000 iterations on the full H&E image take 3.8 min. (The comparison with version 1.0 is under [Faster](#faster).)
 - The MERFISH-to-MERFISH, Xenium-to-Xenium, Xenium-to-STARmap and heart tutorials keep their step-by-step walkthrough and end with a section on `align_cells`. The section aligns the same cells in one call and compares the result with the step-by-step one: the median distance between the two is 48, 14, 98 and 69 µm. The sections explain when to turn off the mixture model (`mixture=None`). The heart tutorial, whose complete serial sections are such a case, turns it off.
 - The 3D tutorials start the fit from the atlas slice the user picks. Before, the starting plane was off by `xI[0][slice]*(1/scale_z - 1)`: 253 µm in the MERFISH tutorial and 47 µm in the STARmap tutorial. They also pass a one-entry `muA` and `muB` for their one-channel target. The STARmap tutorial reads its data by a relative path and draws inline figures.
 - The Xenium-to-Xenium tutorial reads the matching weights `WM` on the target grid instead of the source grid. This has no visible effect there, but it matters whenever the two grids differ.
@@ -103,7 +103,9 @@ Long 3D fits with plain affine steps are very sensitive to rounding: a change in
   - The MERFISH-to-Xenium tutorial had wrong data paths and a commented-out import.
   - The curve-annotator tutorial resamples each pair of curves to the same number of points.
   - The L/T tutorial no longer unpacks `LDDMM`'s result as a tuple.
-  - The Xenium-to-Xenium, Xenium-to-H&E, Xenium-to-STARmap and heart tutorials save their results with `np.savetxt`. The Xenium-to-H&E tutorial also saved an undefined variable, and the heart tutorial's result file is new, as its save cell never ran before.
+  - The Xenium-to-Xenium, Xenium-to-H&E, Xenium-to-STARmap and heart tutorials save their results with `np.savetxt`. The Xenium-to-H&E tutorial also saved an undefined variable, and the heart tutorial's result file, `CN73_E2_STalign_to_CN73_E1.csv.gz` (the cells of CN73_E2 in the coordinates of CN73_E1), is new, as its save cell never ran before.
+- The point-annotator tutorial writes the filtered cells into its `..._filtered.csv.gz` file (it wrote all cells). The tutorials convert between torch tensors and numpy arrays explicitly and pass no unused color limits to `scatter`, so they run without warnings, and the L/T tutorial no longer has a leftover cell that reloaded `STalign`.
+- The uncompressed `Xenium_Breast_Cancer_Rep1_STalign_to_HE.csv` and `Xenium_Breast_Cancer_Rep2_STalign_to_Rep1.csv` in `docs/xenium_data` and `starmap_STalign_to_xenium.csv` in `docs/starmap_data` were written by earlier versions of the tutorials, which now write `.csv.gz` files. They are left as they were, so they do not match the results of this version.
 
 ### Packaging and testing
 
