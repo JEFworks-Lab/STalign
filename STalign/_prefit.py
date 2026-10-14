@@ -8,9 +8,10 @@
   intensity scale of the target or the smoothness scale a.
 * :func:`curvature_steps`: gradient descent steps scaled by a curvature estimate of the image
   matching term (2D).
-* :func:`stable_steps`: those steps capped where gradient descent would be unstable (2D): the
-  curvature of the energy in the velocity field and in the affine at the initial state, from
-  the image term (the same assumptions as curvature_steps), the landmarks and the regularizer.
+* :func:`stable_steps`: default steps capped where gradient descent would be unstable.  In 2D
+  from the curvature of the energy in the velocity field and in the affine at the initial
+  state, from the image term (the same assumptions as curvature_steps), the landmarks and the
+  regularizer; in 3D only epV, from the regularizer.
 
 The pre-fit matches the target J with a linear contrast map of the source [1, I_1, ..., I_C]
 (least squares with LDDMM's 0.1 ridge), with weights that are 1 on target tissue and lower
