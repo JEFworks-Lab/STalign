@@ -1,0 +1,824 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aligning adult mouse coronal brain sections with the Allen Brain Altas &mdash; STalign 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=51b770b3"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Aligning partial coronal brain sections with the Allen Brain Altas" href="starmap-allen3Datlas-alignment.html" />
+    <link rel="prev" title="Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS" href="xenium-starmap-alignment.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#what-changed-in-version-2-0-0">What changed in version 2.0.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#performance">Performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#usage">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="merfish-merfish-alignment.html">Aligning two coronal sections of adult mouse brain from MERFISH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-xenium-alignment.html">Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-heimage-alignment.html">Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-starmap-alignment.html">Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Aligning adult mouse coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starmap-allen3Datlas-alignment.html">Aligning partial coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merfish-visium-alignment-with-point-annotator.html">Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="heart-alignment.html">Aligning heart ST data from ISS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cartana-kidney-alignment-minimal.html">Aligning male and female mouse kidney sections from Cartana</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../STalign.html">Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CHANGES.html">Changes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Aligning adult mouse coronal brain sections with the Allen Brain Altas</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/merfish-allen3Datlas-alignment.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Aligning-adult-mouse-coronal-brain-sections-with-the-Allen-Brain-Altas">
+<h1>Aligning adult mouse coronal brain sections with the Allen Brain Altas<a class="headerlink" href="#Aligning-adult-mouse-coronal-brain-sections-with-the-Allen-Brain-Altas" title="Link to this heading"></a></h1>
+<p>In this notebook, we will align a MERFISH dataset of an adult mouse coronal brain section to the Allen Brain Atlas. You can download additional MERFISH datasets and find more details about this data here: <a class="reference external" href="https://info.vizgen.com/mouse-brain-data">https://info.vizgen.com/mouse-brain-data</a></p>
+<p>We will use STalign to achieve this alignment. We will first load the relevant code libraries.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#Import dependencies</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="c1">#%matplotlib notebook</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span> <span class="c1"># for csv.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">cm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.lines</span><span class="w"> </span><span class="kn">import</span> <span class="n">Line2D</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">os.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">exists</span><span class="p">,</span><span class="n">split</span><span class="p">,</span><span class="n">join</span><span class="p">,</span><span class="n">splitext</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">os</span><span class="w"> </span><span class="kn">import</span> <span class="n">makedirs</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">nrrd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="kn">import</span> <span class="n">grid_sample</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tornado</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skimage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mpl_toolkits.mplot3d.art3d</span><span class="w"> </span><span class="kn">import</span> <span class="n">Poly3DCollection</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># OPTION A: import STalign after pip or pipenv install</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">STalign</span><span class="w"> </span><span class="kn">import</span> <span class="n">STalign</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">## OPTION B: skip cell if installed STalign with pip or pipenv</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"../../STalign"</span><span class="p">)</span>
+
+<span class="c1">## import STalign from upper directory</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">STalign</span>
+</pre></div>
+</div>
+</div>
+<p>We have already downloaded MERFISH datasets (link found above) and stored them in a folder called merfish_data</p>
+<p>Now, we can read in the cell infomation using pandas as pd.</p>
+<p>We must load all cell x and y positions into the variable x and y respectively. Importantly, the <em>scale</em> of the loaded data must approximately match the Allen Brain Atlas, where ~1 pixel unit is ~1 um</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#Load file</span>
+
+<span class="n">filename</span> <span class="o">=</span> <span class="s1">'__'</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">'../merfish_data/s1r1_metadata.csv.gz'</span><span class="p">)</span>
+
+<span class="c1">#Load x position</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'center_x'</span><span class="p">])</span> <span class="c1">#change to x positions of cells</span>
+
+<span class="c1">#Load y position</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'center_y'</span><span class="p">])</span> <span class="c1">#change to column y positions of cells</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dx</span><span class="o">=</span><span class="mi">10</span>
+<span class="n">blur</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+</div>
+<p>Now we can load in data from the Allen Brain Altas.</p>
+<p>We need to load in and save files containing the ontology of regions, a 3D cell density atlas, and annotations of brain regions in the aforementioned 3D atlas.</p>
+<p>Depending on which Allen Atlas you would like to use, you can change the url that you download these files from. In this example, we are aligning the adult mouse (P56) Allen Atlas.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">url</span> <span class="o">=</span> <span class="s1">'http://api.brain-map.org/api/v2/data/query.csv?criteria=model::Structure,rma::criteria,[ontology_id$eq1],rma::options[order$eq</span><span class="si">%27s</span><span class="s1">tructures.graph_order%27][num_rows$eqall]'</span>
+
+<span class="n">ontology_name</span><span class="p">,</span><span class="n">namesdict</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">download_aba_ontology</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="s1">'allen_ontology.csv'</span><span class="p">)</span> <span class="c1">#url for adult mouse</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;Response [200]&gt;
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">imageurl</span> <span class="o">=</span> <span class="s1">'http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/ara_nissl/ara_nissl_50.nrrd'</span>
+<span class="n">labelurl</span> <span class="o">=</span> <span class="s1">'http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/annotation/ccf_2017/annotation_50.nrrd'</span>
+<span class="n">imagefile</span><span class="p">,</span> <span class="n">labelfile</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">download_aba_image_labels</span><span class="p">(</span><span class="n">imageurl</span><span class="p">,</span> <span class="n">labelurl</span><span class="p">,</span> <span class="s1">'aba_nissl.nrrd'</span><span class="p">,</span> <span class="s1">'aba_annotation.nrrd'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Our first step in this alignment will be to rasterize the single cell centroid positions into an image. This converts our x and y arrays of cells into a pixelated image. For this example, we choose to rasterize at a resolution of 10 (um).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#Rasterize Image</span>
+<span class="n">X_</span><span class="p">,</span><span class="n">Y_</span><span class="p">,</span><span class="n">W</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">rasterize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">dx</span><span class="o">=</span><span class="n">dx</span><span class="p">,</span> <span class="n">blur</span> <span class="o">=</span> <span class="n">blur</span><span class="p">,</span><span class="n">draw</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We can visualize the resulting rasterized image.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#Plot unrasterized/rasterized images</span>
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'List of cells'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">'equal'</span><span class="p">)</span>
+
+<span class="n">W</span> <span class="o">=</span> <span class="n">W</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">extent</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">X_</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">Y_</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">Y_</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">W</span><span class="p">,</span>  <span class="n">origin</span><span class="o">=</span><span class="s1">'lower'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Rasterized'</span><span class="p">)</span>
+
+<span class="c1"># save figure</span>
+<span class="c1">#fig.canvas.draw()</span>
+<span class="c1">#fig.savefig(outname[:-4]+'_image.png')</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;Rasterized&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_16_1.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_16_1.png" />
+</div>
+</div>
+<p>Now we need to find an approximate slice number in the Allen Atlas to initialize the alignment. Evaluate whether the value of slice is similar to the target image by viewing a side by side comparison of the ABA slice and the target image. If not, change the value of slice. In this example, slice = 0 is anterior and slice = 264 is posterior.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#find slice</span>
+<span class="c1">#peruse through images in atlas</span>
+<span class="c1"># Loading the atlas</span>
+<span class="nb">slice</span> <span class="o">=</span> <span class="mi">177</span>
+
+<span class="n">vol</span><span class="p">,</span><span class="n">hdr</span> <span class="o">=</span> <span class="n">nrrd</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">imagefile</span><span class="p">)</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">vol</span>
+<span class="n">vol</span><span class="p">,</span><span class="n">hdr</span> <span class="o">=</span> <span class="n">nrrd</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">labelfile</span><span class="p">)</span>
+<span class="n">L</span> <span class="o">=</span> <span class="n">vol</span>
+
+<span class="n">dxA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">hdr</span><span class="p">[</span><span class="s1">'space directions'</span><span class="p">])</span>
+<span class="n">nxA</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span>
+<span class="n">xA</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="n">d</span> <span class="o">-</span> <span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">d</span><span class="o">/</span><span class="mf">2.0</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span><span class="n">d</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">nxA</span><span class="p">,</span><span class="n">dxA</span><span class="p">)]</span>
+<span class="n">XA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="n">xA</span><span class="p">,</span><span class="n">indexing</span><span class="o">=</span><span class="s1">'ij'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">extentA</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">extent_from_x</span><span class="p">(</span><span class="n">xA</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="nb">slice</span><span class="p">],</span><span class="n">extent</span><span class="o">=</span><span class="n">extentA</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Atlas Slice'</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">extent</span><span class="o">=</span><span class="n">extentA</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Target Image'</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_18_0.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_18_0.png" />
+</div>
+</div>
+<p>Next, we need to find an approximate rotation angle of the Allen Atlas to initialize the alignment. Evaluate whether the rotation of the atlas is similar to the target image by viewing a side by side comparison of the ABA slice and the target image. If not, change the value of theta_deg. Note: the rotation here is defined in degrees.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">scipy.ndimage</span><span class="w"> </span><span class="kn">import</span> <span class="n">rotate</span>
+
+<span class="n">theta_deg</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">extentA</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">extent_from_x</span><span class="p">(</span><span class="n">xA</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rotate</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="nb">slice</span><span class="p">],</span> <span class="n">angle</span><span class="o">=</span><span class="n">theta_deg</span><span class="p">),</span><span class="n">extent</span><span class="o">=</span><span class="n">extentA</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Atlas Slice'</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">extent</span><span class="o">=</span><span class="n">extentA</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Target Image'</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_20_0.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_20_0.png" />
+</div>
+</div>
+<p>Next, specify if there are any points on the image above that can be approximately matched with eachother and add them in the following format. This helps speed up alignment. (OPTIONAL)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">points_atlas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2580</span><span class="p">]])</span>
+<span class="n">points_target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">8</span><span class="p">,</span><span class="mi">2533</span><span class="p">]])</span>
+<span class="n">Li</span><span class="p">,</span><span class="n">Ti</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">L_T_from_points</span><span class="p">(</span><span class="n">points_atlas</span><span class="p">,</span><span class="n">points_target</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We can define atlas and target points, xI and xJ, as well as atlas and target images, I and J.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">xJ</span> <span class="o">=</span> <span class="p">[</span><span class="n">Y_</span><span class="p">,</span><span class="n">X_</span><span class="p">]</span>
+<span class="n">J</span> <span class="o">=</span> <span class="n">W</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">W</span><span class="p">))</span>
+<span class="n">xI</span> <span class="o">=</span> <span class="n">xA</span>
+<span class="n">I</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">A</span><span class="p">),</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">I</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">I</span><span class="p">,(</span><span class="n">I</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">I</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<p>Now that we can chosen the slice number and rotation angle, we are ready to initialize parameters related to our alignment.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sigmaA</span> <span class="o">=</span> <span class="mi">2</span> <span class="c1">#standard deviation of artifact intensities</span>
+<span class="n">sigmaB</span> <span class="o">=</span> <span class="mi">2</span> <span class="c1">#standard deviation of background intensities</span>
+<span class="n">sigmaM</span> <span class="o">=</span> <span class="mi">2</span> <span class="c1">#standard deviation of matching tissue intenities</span>
+<span class="n">muA</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">3.0</span><span class="p">],</span><span class="n">device</span><span class="o">=</span><span class="s1">'cpu'</span><span class="p">)</span> <span class="c1">#average of artifact intensities (one value per channel of J)</span>
+<span class="n">muB</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">],</span><span class="n">device</span><span class="o">=</span><span class="s1">'cpu'</span><span class="p">)</span> <span class="c1">#average of background intensities (one value per channel of J)</span>
+<br/></pre></div>
+</div>
+</div>
+<p>We can change the parameters above by looking at the intensity histogram of our target image (below). We need to consider intensities of artifacts (tissue that is present in the target image and absent in the atlas), which is usually in the upper range of intensity values. We also need to find the intensity of the background values that does not correspond to any tissue, usually around 0, and standard deviations for these values. The matching tissue intensities are regions that should have
+tissue that can be aligned in both the atlas and the target image.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">J</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Intensity'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Number of Pixels'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'Intensity Histogram of Target Image'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;Intensity Histogram of Target Image&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_28_1.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_28_1.png" />
+</div>
+</div>
+<p>The following parameters vary depending on your target image and the duration &amp; accuracy of the alignment. The scale parameters refer to a scaling of the atlas in (x, y, z) to match the size of the target image. The nt parameter ensures smoothness and invertibility of the image transformation. The niter refers to the number of iteration steps in gradient descent to achieve minimum error between the altas and the target image.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># initialize variables</span>
+<span class="n">scale_x</span> <span class="o">=</span> <span class="mf">0.9</span> <span class="c1">#default = 0.9</span>
+<span class="n">scale_y</span> <span class="o">=</span> <span class="mf">0.9</span> <span class="c1">#default = 0.9</span>
+<span class="n">scale_z</span> <span class="o">=</span> <span class="mf">0.9</span> <span class="c1">#default = 0.9</span>
+<span class="n">theta0</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">)</span><span class="o">*</span><span class="n">theta_deg</span>
+
+<span class="c1"># get an initial guess</span>
+<span class="c1"># the atlas z of the inspected slice, xI[0][slice], maps to target z = 0</span>
+<span class="k">if</span> <span class="s1">'Ti'</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="n">scale_z</span><span class="o">*</span><span class="n">xI</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="nb">slice</span><span class="p">],</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">xJ</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="p">(</span><span class="n">Ti</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">scale_y</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">xJ</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">-</span><span class="p">(</span><span class="n">Ti</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">scale_x</span><span class="p">)])</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="n">scale_z</span><span class="o">*</span><span class="n">xI</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="nb">slice</span><span class="p">],</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">xJ</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">xJ</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
+
+<span class="n">scale_atlas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">scale_z</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">scale_y</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>   <span class="c1"># rows (y)</span>
+                        <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">scale_x</span><span class="p">]])</span>  <span class="c1"># columns (x)</span>
+<span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">],</span>
+             <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta0</span><span class="p">),</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta0</span><span class="p">)],</span>
+              <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta0</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta0</span><span class="p">)]])</span>
+<span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">L</span><span class="p">,</span><span class="n">scale_atlas</span><span class="p">)</span><span class="c1">#np.identity(3)</span>
+</pre></div>
+</div>
+</div>
+<p>Now, we can perform alignment of the atlas to our target slice.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+
+<span class="c1"># run LDDMM</span>
+<span class="c1"># specify device (default device for STalign.LDDMM is cpu)</span>
+<span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="s1">'cuda:0'</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="s1">'cpu'</span>
+
+<span class="c1">#returns mat = affine transform, v = velocity, xv = pixel locations of velocity points</span>
+<span class="n">transform</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">LDDMM_3D_to_slice</span><span class="p">(</span>
+    <span class="n">xI</span><span class="p">,</span><span class="n">I</span><span class="p">,</span><span class="n">xJ</span><span class="p">,</span><span class="n">J</span><span class="p">,</span>
+    <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span><span class="n">L</span><span class="o">=</span><span class="n">L</span><span class="p">,</span>
+    <span class="n">nt</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span><span class="n">niter</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="s1">'cpu'</span><span class="p">,</span>
+    <span class="n">sigmaA</span> <span class="o">=</span> <span class="n">sigmaA</span><span class="p">,</span> <span class="c1">#standard deviation of artifact intensities</span>
+    <span class="n">sigmaB</span> <span class="o">=</span> <span class="n">sigmaB</span><span class="p">,</span> <span class="c1">#standard deviation of background intensities</span>
+    <span class="n">sigmaM</span> <span class="o">=</span> <span class="n">sigmaM</span><span class="p">,</span> <span class="c1">#standard deviation of matching tissue intenities</span>
+    <span class="n">muA</span> <span class="o">=</span> <span class="n">muA</span><span class="p">,</span> <span class="c1">#average of artifact intensities</span>
+    <span class="n">muB</span> <span class="o">=</span> <span class="n">muB</span> <span class="c1">#average of background intensities</span>
+<span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 7min 36s, sys: 8.71 s, total: 7min 44s
+Wall time: 33.8 s
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_32_1.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_32_1.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_32_2.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_32_2.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_32_3.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_32_3.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">transform</span><span class="p">[</span><span class="s1">'A'</span><span class="p">]</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">transform</span><span class="p">[</span><span class="s1">'v'</span><span class="p">]</span>
+<span class="n">xv</span> <span class="o">=</span> <span class="n">transform</span><span class="p">[</span><span class="s1">'xv'</span><span class="p">]</span>
+<span class="n">Xs</span> <span class="o">=</span> <span class="n">transform</span><span class="p">[</span><span class="s1">'Xs'</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>Once we have aligned the atlas to our target image, we can project the brain regions defined in the atlas to our target image and export these annotations, along with information about the positions of the atlas that align with the slice.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">analyze3Dalign</span><span class="p">(</span><span class="n">labelfile</span><span class="p">,</span>  <span class="n">xv</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">A</span><span class="p">,</span> <span class="n">xJ</span><span class="p">,</span> <span class="n">dx</span><span class="p">,</span> <span class="n">scale_x</span><span class="o">=</span><span class="n">scale_x</span><span class="p">,</span> <span class="n">scale_y</span><span class="o">=</span><span class="n">scale_y</span><span class="p">,</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">X_</span><span class="o">=</span><span class="n">X_</span><span class="p">,</span> <span class="n">Y_</span><span class="o">=</span><span class="n">Y_</span><span class="p">,</span> <span class="n">namesdict</span><span class="o">=</span><span class="n">namesdict</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="s1">'cpu'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>coord0</th>
+      <th>coord1</th>
+      <th>coord2</th>
+      <th>x</th>
+      <th>y</th>
+      <th>struct_id</th>
+      <th>acronym</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2226.456137</td>
+      <td>567.637369</td>
+      <td>-5109.753377</td>
+      <td>156.563284</td>
+      <td>4271.326432</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2228.821565</td>
+      <td>551.093942</td>
+      <td>-5110.694737</td>
+      <td>156.509284</td>
+      <td>4256.962431</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2233.743458</td>
+      <td>517.998271</td>
+      <td>-5108.351484</td>
+      <td>159.965284</td>
+      <td>4228.180431</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2218.117892</td>
+      <td>628.169964</td>
+      <td>-5093.390581</td>
+      <td>167.579284</td>
+      <td>4323.868433</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2220.401305</td>
+      <td>610.805238</td>
+      <td>-5102.694334</td>
+      <td>160.559284</td>
+      <td>4308.802433</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>78324</th>
+      <td>2430.818332</td>
+      <td>642.421784</td>
+      <td>5165.449962</td>
+      <td>9154.007886</td>
+      <td>4445.528506</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>78325</th>
+      <td>2427.295416</td>
+      <td>618.759127</td>
+      <td>5085.602052</td>
+      <td>9088.829884</td>
+      <td>4423.712505</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>78326</th>
+      <td>2432.106506</td>
+      <td>625.840998</td>
+      <td>5182.665305</td>
+      <td>9170.261887</td>
+      <td>4431.758506</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>78327</th>
+      <td>2427.319947</td>
+      <td>611.064228</td>
+      <td>5081.608309</td>
+      <td>9086.183884</td>
+      <td>4417.016505</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+    <tr>
+      <th>78328</th>
+      <td>2426.413954</td>
+      <td>614.573063</td>
+      <td>5066.581559</td>
+      <td>9073.169884</td>
+      <td>4419.770505</td>
+      <td>0</td>
+      <td>bg</td>
+    </tr>
+  </tbody>
+</table>
+<p>78329 rows × 7 columns</p>
+</div></div>
+</div>
+<p>Now, we can explore our alignment and brain region annotations!</p>
+<p>We can visualize the MERFISH slice overlayed with the matched section in the Allen Brain Atlas.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">It</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">I</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="s1">'cpu'</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">AI</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">interp3D</span><span class="p">(</span><span class="n">xI</span><span class="p">,</span><span class="n">It</span><span class="p">,</span><span class="n">Xs</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="n">padding_mode</span><span class="o">=</span><span class="s2">"border"</span><span class="p">)</span>
+<span class="n">Ishow_source</span> <span class="o">=</span> <span class="p">((</span><span class="n">AI</span><span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">AI</span><span class="p">,(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))[</span><span class="o">...</span><span class="p">,</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">AI</span><span class="p">,(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span><span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">AI</span><span class="p">,(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)))[</span><span class="o">...</span><span class="p">,</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">])</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+<span class="n">Jt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">J</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="s1">'cpu'</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">Ishow_target</span> <span class="o">=</span> <span class="n">Jt</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">/</span><span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">Jt</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mpl</span>
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">ax0</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">Ishow_target</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">Blues</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'MERFISH Slice'</span><span class="p">)</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">Ishow_source</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">Reds</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'z=0 slice of Aligned 3D Allen Brain Atlas'</span><span class="p">)</span>
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">Ishow_target</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">Blues</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">Ishow_source</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">Reds</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Overlayed'</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_39_0.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_39_0.png" />
+</div>
+</div>
+<p>We can view the slice of the atlas that aligned to the target image. Note that the slice is curved with respect to the Allen Atlas, capturing the <em>not truely coronal</em> nature of the target slice.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">verts</span><span class="p">,</span> <span class="n">faces</span><span class="p">,</span> <span class="n">normals</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="n">skimage</span><span class="o">.</span><span class="n">measure</span><span class="o">.</span><span class="n">marching_cubes</span><span class="p">(</span><span class="n">vol</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">,</span><span class="n">spacing</span> <span class="o">=</span> <span class="n">dxA</span><span class="p">)</span>
+<span class="n">verts</span> <span class="o">=</span> <span class="n">verts</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xA</span><span class="p">])</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">'3d'</span><span class="p">)</span>
+<span class="n">mesh</span> <span class="o">=</span> <span class="n">Poly3DCollection</span><span class="p">(</span><span class="n">verts</span><span class="p">[</span><span class="n">faces</span><span class="p">])</span>
+<span class="c1">#mesh.set_edgecolor('k')</span>
+<span class="n">mesh</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s1">'r'</span><span class="p">)</span>
+<span class="n">mesh</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">add_collection3d</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">8000</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)</span>  <span class="c1"># a = 6 (times two for 2nd ellipsoid)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">8000</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)</span>  <span class="c1"># b = 10</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="mi">8000</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)</span>  <span class="c1"># c = 16</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'coord0'</span><span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'coord1'</span><span class="p">]</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'coord2'</span><span class="p">]</span>
+<span class="c1">#ax.grid(True)</span>
+<span class="c1">#ax.set_xticks([])</span>
+<span class="c1">#ax.set_yticks([])</span>
+<span class="c1">#ax.set_zticks([])</span>
+<span class="c1">#pos1 = ax.get_position()</span>
+<span class="c1">#pos = [pos1.x0 +0.3, pos1.y0+0.3, pos1.width/2, pos1.height/2]</span>
+<span class="c1">#ax.set_position(pos)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter3D</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span> <span class="mf">0.1</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="o">-</span><span class="mi">240</span><span class="p">,</span> <span class="mi">90</span><span class="p">)</span>
+<span class="c1">#ax.view_init(-90, 120)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_41_0.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_41_0.png" />
+</div>
+</div>
+<p>We can also plot all of the brain regions that are captured in the slice, as defined by our alignment.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">STalign</span><span class="o">.</span><span class="n">plot_brain_regions</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(&lt;Figure size 640x480 with 1 Axes&gt;, &lt;Axes: &gt;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_43_1.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_43_1.png" />
+</div>
+</div>
+<p>If we also interested in only a few regions, in this example let’s take VISp4 and VISp5, we can plot those regions using the following function.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">brain_regions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'VISp4'</span><span class="p">,</span> <span class="s1">'VISp5'</span><span class="p">]</span>
+<span class="n">STalign</span><span class="o">.</span><span class="n">plot_subset_brain_regions</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">brain_regions</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(&lt;Figure size 640x480 with 1 Axes&gt;, &lt;Axes: &gt;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_merfish-allen3Datlas-alignment_45_1.png" src="../_images/notebooks_merfish-allen3Datlas-alignment_45_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="xenium-starmap-alignment.html" class="btn btn-neutral float-left" title="Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="starmap-allen3Datlas-alignment.html" class="btn btn-neutral float-right" title="Aligning partial coronal brain sections with the Allen Brain Altas" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

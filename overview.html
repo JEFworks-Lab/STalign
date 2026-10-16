@@ -1,0 +1,311 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overview &mdash; STalign 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=51b770b3"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tutorials" href="tutorials.html" />
+    <link rel="prev" title="Welcome to STalign’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#installation">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-c-engine-optional">The C++ engine (optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-with-pipenv">Installation with pipenv</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#what-changed-in-version-2-0-0">What changed in version 2.0.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#performance">Performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#input-data">Input Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#single-cell-resolution-st-alignment">single-cell resolution ST alignment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single-cell-and-spot-resolution-st-alignment">single-cell and spot-resolution ST alignment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#d-2d-alignment">3D-2D alignment</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="STalign.html">Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CHANGES.html">Changes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Overview</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/overview.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png">
+<p><code class="docutils literal notranslate"><span class="pre">STalign</span></code> aligns spatial transcriptomics (ST) tissue sections to each other and to 3D atlases like the Allen Brain Atlas using algorithms that build upon diffeomorphic metric mapping.</p>
+<p>More information regarding the overall approach, methods and validations can be found in our publication:
+<a href="https://www.nature.com/articles/s41467-023-43915-7">
+<b>STalign: Alignment of spatial transcriptomics data using diffeomorphic metric mapping</b>
+Kalen Clifton*, Manjari Anant*, Gohta Aihara, Lyla Atta, Osagie K Aimiuwu, Justus M Kebschull, Michael I Miller, Daniel Tward^, Jean Fan^
+</a></p>
+<section id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
+<img src="https://jef.works/assets/papers/STalign_anim_small.gif">
+<p>STalign enables:</p>
+<ul class="simple">
+<li><p>alignment of single-cell resolution ST datasets within technologies</p></li>
+<li><p>alignment single-cell resolution ST datasets to histology</p></li>
+<li><p>alignment of ST datasets across technologies</p></li>
+<li><p>alignment of ST datasets to a 3D common coordinate framework</p></li>
+</ul>
+</section>
+<section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="s2">"git+https://github.com/JEFworks-Lab/STalign.git"</span>
+</pre></div>
+</div>
+<p>This installs <code class="docutils literal notranslate"><span class="pre">STalign</span></code> and the dependencies listed in <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code>. The tutorials also use <code class="docutils literal notranslate"><span class="pre">plotly</span></code>, <code class="docutils literal notranslate"><span class="pre">scipy</span></code>, <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code> and <code class="docutils literal notranslate"><span class="pre">scikit-image</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">plotly</span> <span class="n">scipy</span> <span class="n">scikit</span><span class="o">-</span><span class="n">learn</span> <span class="n">scikit</span><span class="o">-</span><span class="n">image</span>
+</pre></div>
+</div>
+<p>To import <code class="docutils literal notranslate"><span class="pre">STalign</span></code> in Python:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">STalign</span><span class="w"> </span><span class="kn">import</span> <span class="n">STalign</span>
+</pre></div>
+</div>
+<section id="the-c-engine-optional">
+<h2>The C++ engine (optional)<a class="headerlink" href="#the-c-engine-optional" title="Link to this heading"></a></h2>
+<p>If a C++17 compiler is available, <code class="docutils literal notranslate"><span class="pre">pip</span></code> also compiles a C++ engine for <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code>: the Xcode Command Line Tools on macOS (<code class="docutils literal notranslate"><span class="pre">xcode-select</span> <span class="pre">--install</span></code>), <code class="docutils literal notranslate"><span class="pre">g++</span></code> or <code class="docutils literal notranslate"><span class="pre">clang++</span></code> on Linux, or the Microsoft C++ Build Tools on Windows. The compiler is optional: without one the installation still succeeds and <code class="docutils literal notranslate"><span class="pre">STalign</span></code> uses its pure <code class="docutils literal notranslate"><span class="pre">torch</span></code> implementation, which computes the same iterations up to rounding, only more slowly (see <a class="reference internal" href="#performance"><span class="std std-ref">Performance</span></a>). The engine has been tested on macOS (Apple clang) and Linux (gcc 11 and 13); Windows builds are expected to work but have not been tested yet.</p>
+<p><code class="docutils literal notranslate"><span class="pre">backend_info()</span></code> tells which engine is used:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">STalign</span><span class="o">.</span><span class="n">backend_info</span><span class="p">()</span>
+<span class="c1"># {'auto': 'cpp', 'cpp': True, 'cpp_error': None, 'num_threads': 16}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">'auto':</span> <span class="pre">'cpp'</span></code> means that alignments on the CPU in float64 (the default) use the C++ engine; otherwise <code class="docutils literal notranslate"><span class="pre">'cpp_error'</span></code> says why it is not available (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-v</span></code> also shows a warning in the build log). Alignments on a GPU or in float32 always use <code class="docutils literal notranslate"><span class="pre">torch</span></code>, and <code class="docutils literal notranslate"><span class="pre">backend='cpp'</span></code> or <code class="docutils literal notranslate"><span class="pre">backend='torch'</span></code> chooses explicitly. An alignment uses at most <code class="docutils literal notranslate"><span class="pre">torch.get_num_threads()</span></code> CPU threads; the environment variable <code class="docutils literal notranslate"><span class="pre">STALIGN_NUM_THREADS</span></code> or the argument <code class="docutils literal notranslate"><span class="pre">num_threads</span></code> sets another maximum. Results do not depend on the number of threads.</p>
+<p>To use <code class="docutils literal notranslate"><span class="pre">STalign</span></code> from a clone of this repository without installing it (as the tutorials do with <code class="docutils literal notranslate"><span class="pre">sys.path.append</span></code>), build the engine once, from the base directory of the clone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">pybind11</span> <span class="n">setuptools</span>
+<span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">build_ext</span> <span class="o">--</span><span class="n">inplace</span>
+</pre></div>
+</div>
+</section>
+<section id="installation-with-pipenv">
+<h2>Installation with pipenv<a class="headerlink" href="#installation-with-pipenv" title="Link to this heading"></a></h2>
+<p>To work in a <a class="reference external" href="https://pipenv.pypa.io/en/latest/"><code class="docutils literal notranslate"><span class="pre">pipenv</span></code></a> environment, fork and <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span></code> this repository. From its base directory, create a <code class="docutils literal notranslate"><span class="pre">Pipfile.lock</span></code> from the <code class="docutils literal notranslate"><span class="pre">Pipfile</span></code> and activate the environment (<code class="docutils literal notranslate"><span class="pre">exit</span></code> leaves it):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pipenv</span> <span class="n">install</span> <span class="n">requests</span>
+<span class="n">pipenv</span> <span class="n">shell</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Pipfile.lock</span></code> depends on the platform: do not commit it if you contribute to <code class="docutils literal notranslate"><span class="pre">STalign</span></code> or share the repository with others.</p>
+</section>
+</section>
+<section id="what-changed-in-version-2-0-0">
+<h1>What changed in version 2.0.0<a class="headerlink" href="#what-changed-in-version-2-0-0" title="Link to this heading"></a></h1>
+<p>Version 2.0.0 keeps the functions and arguments of earlier versions, aligns much faster, fixes several bugs and chooses more of the alignment settings from the data, so alignments differ from earlier results. For example, the 10,000 iterations of the MERFISH tutorial take about 10 s with the C++ engine and 1.5 min with <code class="docutils literal notranslate"><span class="pre">torch</span></code>, instead of about 9 min. The changes most likely to matter for existing scripts:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> start with a coarse affine pre-alignment that finds large rotations (2D) and tilted slice planes (3D), and choose <code class="docutils literal notranslate"><span class="pre">sigmaR</span></code> and, in 2D, the step sizes from the images (coordinates in µm); <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> runs 2000 iterations by default. Arguments you pass are used as given; <code class="docutils literal notranslate"><span class="pre">prefit=False</span></code> turns the pre-alignment off, and <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> all of these defaults (it keeps the corrections below). On held-out synthetic test problems, the geometric mean alignment error with the new defaults was 0.43 times that with <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> in 2D and 0.21 times in 3D.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transform_points_source_to_target</span></code> and the other source-to-target transforms use the exact inverse of the fitted map; cells can move by up to about 100 µm on the tutorial datasets (<code class="docutils literal notranslate"><span class="pre">exact_inverse=False</span></code> gives the previous approximation). With landmarks, <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> matches them under this map.</p></li>
+<li><p>The regularizer of <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> is corrected and the step of each affine parameter is controlled, so 3D alignments change and no longer depend on rounding. <code class="docutils literal notranslate"><span class="pre">analyze3Dalign</span></code> returns corrected atlas coordinates.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> draw their figures once, at the end (<code class="docutils literal notranslate"><span class="pre">draw=True</span></code> redraws them every 10 iterations as before, <code class="docutils literal notranslate"><span class="pre">draw=False</span></code> turns them off).</p></li>
+<li><p>New: <code class="docutils literal notranslate"><span class="pre">align_cells</span></code> aligns two sets of cells in one call (see <a class="reference internal" href="#input-data"><span class="std std-ref">Input Data</span></a>), <code class="docutils literal notranslate"><span class="pre">rasterize(...,</span> <span class="pre">blur_um=...)</span></code> gives the kernel width in µm, and <code class="docutils literal notranslate"><span class="pre">LDDMM(mixture='em')</span></code> can help where the target section lacks tissue that the source has.</p></li>
+</ul>
+<p><a class="reference internal" href="CHANGES.html"><span class="std std-doc">CHANGES.md</span></a> lists every change with its measured effect.</p>
+</section>
+<section id="performance">
+<h1>Performance<a class="headerlink" href="#performance" title="Link to this heading"></a></h1>
+<p>Time of the tutorials’ alignments (<code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> or <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code>) with their own data, parameters and numbers of iterations, on a Mac / on Linux (end to end adds rasterizing the cells and transforming them):</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>tutorial</p></th>
+<th class="head"><p>iterations</p></th>
+<th class="head"><p>version 1.0</p></th>
+<th class="head"><p>C++ engine</p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">torch</span></code> engine</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>MERFISH to MERFISH</p></td>
+<td><p>10,000</p></td>
+<td><p>9.2 min / 12.1 min</p></td>
+<td><p>10 s / 45 s</p></td>
+<td><p>1.5 min / 1.7 min</p></td>
+</tr>
+<tr class="row-odd"><td><p>MERFISH, simulated deformation</p></td>
+<td><p>1,000</p></td>
+<td><p>2.3 min / 3.8 min</p></td>
+<td><p>4.2 s / 14 s</p></td>
+<td><p>19 s / 31 s</p></td>
+</tr>
+<tr class="row-even"><td><p>Xenium to Xenium</p></td>
+<td><p>300</p></td>
+<td><p>10 s / 15 s</p></td>
+<td><p>0.18 s / 0.65 s</p></td>
+<td><p>1.8 s / 2.3 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>Xenium to H&amp;E image</p></td>
+<td><p>2,000</p></td>
+<td><p>1.3 min / 1.9 min</p></td>
+<td><p>1.5 s / 6.5 s</p></td>
+<td><p>14 s / 24 s</p></td>
+</tr>
+<tr class="row-even"><td><p>Heart sections</p></td>
+<td><p>1,000</p></td>
+<td><p>2.9 min / 3.8 min</p></td>
+<td><p>7.2 s / 31 s</p></td>
+<td><p>29 s / 1.1 min</p></td>
+</tr>
+<tr class="row-odd"><td><p>MERFISH to Visium, with landmarks</p></td>
+<td><p>200</p></td>
+<td><p>4.2 min / 12.5 min</p></td>
+<td><p>4.4 s / 30 s</p></td>
+<td><p>35 s / 2.0 min</p></td>
+</tr>
+<tr class="row-even"><td><p>MERFISH to Allen atlas (3D)</p></td>
+<td><p>2,000</p></td>
+<td><p>21.6 min / 48.4 min</p></td>
+<td><p>34 s / 3.0 min</p></td>
+<td><p>1.8 min / 8.1 min</p></td>
+</tr>
+<tr class="row-odd"><td><p>STARmap to Allen atlas (3D)</p></td>
+<td><p>800</p></td>
+<td><p>16.3 min / 32.8 min</p></td>
+<td><p>30 s / 2.8 min</p></td>
+<td><p>2.0 min / 7.6 min</p></td>
+</tr>
+<tr class="row-even"><td><p>Visium to Visium, affine only</p></td>
+<td><p>1,000</p></td>
+<td><p>16 s / 30 s</p></td>
+<td><p>0.92 s / 1.1 s</p></td>
+<td><p>1.3 s / 1.9 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>Xenium to STARmap</p></td>
+<td><p>4,000</p></td>
+<td><p>2.4 min / 3.3 min</p></td>
+<td><p>6.2 s / 14 s</p></td>
+<td><p>25 s / 31 s</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>all 10 tutorials</strong></p></td>
+<td><p></p></td>
+<td><p>60.6 min / 119.3 min</p></td>
+<td><p>1.6 min / 8.2 min</p></td>
+<td><p>7.5 min / 22.0 min</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>all 10, end to end</strong></p></td>
+<td><p></p></td>
+<td><p>61.1 min / 120.2 min</p></td>
+<td><p>1.7 min / 8.2 min</p></td>
+<td><p>7.5 min / 22.1 min</p></td>
+</tr>
+</tbody>
+</table>
+<p>Measured on an Apple M1 Ultra (macOS, 16 threads) and an AMD Ryzen 5 5560U (Linux, 8 threads), one alignment at a time, on the CPU in float64 without figures; version 1.0 ran with 2 threads or with 16 (Linux: 8), whichever was faster, for 100–300 iterations (all of them for Xenium to Xenium and Visium to Visium), extrapolated to the tutorial’s number from its steady time per iteration. Of these times, the new affine pre-fit and step sizes take up to 6 s on the Mac (12 s on Linux); <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> skips them. Rasterizing 86,000 cells takes 31 ms instead of 1.8 s, and transforming all cells of a tutorial takes at most 0.07 s (Mac). The method and more numbers are in <a class="reference internal" href="CHANGES.html"><span class="std std-doc">CHANGES.md</span></a>.</p>
+</section>
+<section id="input-data">
+<h1>Input Data<a class="headerlink" href="#input-data" title="Link to this heading"></a></h1>
+<p>To use this tool, you will need provide the following information:</p>
+<section id="single-cell-resolution-st-alignment">
+<h2>single-cell resolution ST alignment<a class="headerlink" href="#single-cell-resolution-st-alignment" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Source: Arrays of x and y positions of cells</p></li>
+<li><p>Target: Arrays of x and y positions of cells</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">STalign.align_cells(xI,</span> <span class="pre">yI,</span> <span class="pre">xJ,</span> <span class="pre">yJ)</span></code> aligns two such sets of cells in one call: it rasterizes them at 15 µm and runs <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> coarse to fine, which had 0.39 times the error of <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> on the 15, 30 or 60 µm rasters of our tests (but 5–14% more error on 9 of the 11 problems whose rasters had 15 µm pixels; see <a class="reference internal" href="CHANGES.html"><span class="std std-doc">CHANGES.md</span></a>). By default it uses <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>’s mixture model (<code class="docutils literal notranslate"><span class="pre">mixture='em'</span></code>), which helps where the target lacks tissue that the source has but made targets of uneven cell density worse in our tests; <code class="docutils literal notranslate"><span class="pre">mixture=None</span></code> turns it off. Its result works with the transform functions like that of <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>.</p>
+</section>
+<section id="single-cell-and-spot-resolution-st-alignment">
+<h2>single-cell and spot-resolution ST alignment<a class="headerlink" href="#single-cell-and-spot-resolution-st-alignment" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Source: Arrays of x and y positions of cells from single-cell resolution ST data</p></li>
+<li><p>Target: Registered H&amp;E image from spot-resolution ST data</p></li>
+</ul>
+</section>
+<section id="d-2d-alignment">
+<h2>3D-2D alignment<a class="headerlink" href="#d-2d-alignment" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Source: (Default: Adult mouse Allen Brain Altas CCFv3) 3D Matrix with voxels corresponding to (1) cell intensity and (2) annotated tissue regions</p></li>
+<li><p>Target: Arrays of x and y positions of cells</p></li>
+</ul>
+</section>
+</section>
+<section id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h1>
+<p>To use <code class="docutils literal notranslate"><span class="pre">STalign</span></code>, please refer to our <a class="reference external" href="https://jef.works/STalign/tutorials.html">tutorials</a> with usage examples.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to STalign’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tutorials.html" class="btn btn-neutral float-right" title="Tutorials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

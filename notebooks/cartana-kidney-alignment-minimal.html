@@ -1,0 +1,479 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aligning male and female mouse kidney sections from Cartana &mdash; STalign 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=51b770b3"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Functions" href="../STalign.html" />
+    <link rel="prev" title="Aligning heart ST data from ISS" href="heart-alignment.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#what-changed-in-version-2-0-0">What changed in version 2.0.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#performance">Performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#usage">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="merfish-merfish-alignment.html">Aligning two coronal sections of adult mouse brain from MERFISH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-xenium-alignment.html">Aligning partially matched, serial, single-cell resolution breast cancer spatial transcriptomics data from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-heimage-alignment.html">Aligning single-cell resolution breast cancer spatial transcriptomics data to corresponding H&amp;E staining image from Xenium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xenium-starmap-alignment.html">Aligning partially matched coronal sections of adult mouse brain from Xenium and STARmap PLUS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merfish-allen3Datlas-alignment.html">Aligning adult mouse coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starmap-allen3Datlas-alignment.html">Aligning partial coronal brain sections with the Allen Brain Altas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merfish-visium-alignment-with-point-annotator.html">Aligning single-cell resolution spatial transcriptomics data to H&amp;E staining image from Visium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="heart-alignment.html">Aligning heart ST data from ISS</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Aligning male and female mouse kidney sections from Cartana</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Read-in-and-format-the-input">Read in and format the input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Before-alignment">Before alignment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Alignment-and-diagnostic-plots">Alignment and diagnostic plots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#After-alignment">After alignment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Write-out-the-results">Write out the results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../STalign.html">Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CHANGES.html">Changes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Aligning male and female mouse kidney sections from Cartana</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/cartana-kidney-alignment-minimal.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Aligning-male-and-female-mouse-kidney-sections-from-Cartana">
+<h1>Aligning male and female mouse kidney sections from Cartana<a class="headerlink" href="#Aligning-male-and-female-mouse-kidney-sections-from-Cartana" title="Link to this heading"></a></h1>
+<p>In this notebook, we align two single cell resolution spatial transcriptomics datasets of sham-operated adult mouse kidney sections, assayed by Cartana in situ sequencing and segmented with Baysor from <a class="reference external" href="https://www.nature.com/articles/s41467-024-45752-8">Wu et al</a>: a male section (<a class="reference external" href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7090410">GSM7090410</a>) as the source and a female section (<a class="reference external" href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7090415">GSM7090415</a>) as the target.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">## import dependencies</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">STalign</span>
+
+<span class="c1"># make plots bigger</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">"figure.figsize"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="Read-in-and-format-the-input">
+<h2>Read in and format the input<a class="headerlink" href="#Read-in-and-format-the-input" title="Link to this heading"></a></h2>
+<p>Each dataset is a Baysor <code class="docutils literal notranslate"><span class="pre">segmentation_cell_stats.csv</span></code> file, which we have compressed and placed in a folder called <code class="docutils literal notranslate"><span class="pre">cartana_data</span></code>. It has one row per cell, with the cell centroid in the <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> columns.</p>
+<p><code class="docutils literal notranslate"><span class="pre">STalign</span></code> needs the cell centroids as numpy arrays. Its defaults assume micrometers, while Baysor reports image pixels, so we convert them. The pixel size is not stated in the data release; 0.1625 µm per pixel gives a section of about 4.4 × 5.8 mm, consistent with mouse kidney.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># micrometers per image pixel (assumed)</span>
+<span class="n">um_per_px</span> <span class="o">=</span> <span class="mf">0.1625</span>
+
+<span class="c1"># source (male) and target (female) cells</span>
+<span class="n">df1</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">'../cartana_data/GSM7090410_cartana_sham_male_segmentation_cell_stats.csv.gz'</span><span class="p">)</span>
+<span class="n">df2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">'../cartana_data/GSM7090415_cartana_sham_female_segmentation_cell_stats.csv.gz'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df1</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+
+<span class="c1"># cell centroids in um</span>
+<span class="n">xI</span> <span class="o">=</span> <span class="n">df1</span><span class="p">[</span><span class="s1">'x'</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">*</span><span class="n">um_per_px</span>
+<span class="n">yI</span> <span class="o">=</span> <span class="n">df1</span><span class="p">[</span><span class="s1">'y'</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">*</span><span class="n">um_per_px</span>
+<span class="n">xJ</span> <span class="o">=</span> <span class="n">df2</span><span class="p">[</span><span class="s1">'x'</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">*</span><span class="n">um_per_px</span>
+<span class="n">yJ</span> <span class="o">=</span> <span class="n">df2</span><span class="p">[</span><span class="s1">'y'</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">*</span><span class="n">um_per_px</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+   cell            x            y  cluster  n_transcripts   density  \
+0     1  5905.766000  4884.044000        4              5  0.007945
+1     2  5086.160000  5708.391250        5              8  0.011020
+2     3  5556.215000  5281.355000        6             10  0.005935
+3     4  5017.552000  5799.638000        5             10  0.010640
+4     5  6035.902857  4798.607143        5              7  0.007109
+
+   elongation    area  avg_confidence
+0       5.859   629.3          0.9994
+1       1.989   725.7          0.9999
+2       2.592  1685.0          1.0000
+3       3.218   940.2          1.0000
+4       4.155   984.7          0.9992
+</pre></div></div>
+</div>
+<p>Both sections already have the papilla pointing down, so no initial rotation is needed. We only move the source cells so that their centroid is on the target’s, which gives the alignment a good starting point.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># move the centroid of the source cells onto the centroid of the target cells</span>
+<span class="n">xI</span> <span class="o">=</span> <span class="n">xI</span> <span class="o">-</span> <span class="n">xI</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">+</span> <span class="n">xJ</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">yI</span> <span class="o">=</span> <span class="n">yI</span> <span class="o">-</span> <span class="n">yI</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">+</span> <span class="n">yJ</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Before-alignment">
+<h2>Before alignment<a class="headerlink" href="#Before-alignment" title="Link to this heading"></a></h2>
+<p>Image coordinates have their origin at the top left, so we invert the y axis.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xI</span><span class="p">,</span><span class="n">yI</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'source (male)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xJ</span><span class="p">,</span><span class="n">yJ</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'target (female)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">'equal'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">markerscale</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">loc</span> <span class="o">=</span> <span class="s1">'lower left'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x12cd44050&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_cartana-kidney-alignment-minimal_7_1.png" src="../_images/notebooks_cartana-kidney-alignment-minimal_7_1.png" />
+</div>
+</div>
+</section>
+<section id="Alignment-and-diagnostic-plots">
+<h2>Alignment and diagnostic plots<a class="headerlink" href="#Alignment-and-diagnostic-plots" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">align_cells</span></code> rasterizes both sets of cells into density images and runs <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> on them, coarse to fine. Several options differ from the defaults here:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dx=30</span></code>: rasterize at 30 µm instead of 15 µm. Coarser images are faster to fit and smooth out cell-to-cell variation that does not help a whole-section alignment, while 30 µm still resolves the tissue boundary (50 µm matched the outline of the section less well).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">levels=((2,1000),(1,3000))</span></code>: the coarse-to-fine schedule, as (pooling factor, iterations) pairs. We run 1000 iterations on the images pooled to 60 µm, then 3000 at the full 30 µm. The default, ((4,500),(2,500)), would pool 30 µm images to 120 and 60 µm, and 500 iterations is not enough for the energy to level off.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mixture=None</span></code>: the default mixture model allows for tissue missing from the target, but the female section is complete.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prefit=False</span></code>: by default <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> first fits an affine transform from several starting angles. For these sections it picked a 30° start that ended in a stretch of about 30% along one axis, so we start from the centroid shift above instead.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">align_cells</span></code> draws <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>’s diagnostic figures for its last, finest level:</p>
+<ul class="simple">
+<li><p>the smoothing kernel of the velocity field;</p></li>
+<li><p>the source deformed onto the target (before and after its intensities are matched to the target’s), the target, the velocity field, the matching weights of the target pixels, and the remaining error, which should show no large structure;</p></li>
+<li><p>the energy over the iterations: <code class="docutils literal notranslate"><span class="pre">E</span></code> is the total, <code class="docutils literal notranslate"><span class="pre">EM</span></code> the image matching term and <code class="docutils literal notranslate"><span class="pre">ER</span></code> the regularization of the deformation. At iteration 50 the matching weights, which start at 0.5, are first re-estimated, which changes the scale of the energy; after that <code class="docutils literal notranslate"><span class="pre">E</span></code> should level off when the alignment has converged. Here it is flat within about 2% from early in the last level, with <code class="docutils literal notranslate"><span class="pre">ER</span></code> still rising slowly as the deformation keeps making small adjustments.</p></li>
+</ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">align_cells</span><span class="p">(</span><span class="n">xI</span><span class="p">,</span> <span class="n">yI</span><span class="p">,</span> <span class="n">xJ</span><span class="p">,</span> <span class="n">yJ</span><span class="p">,</span> <span class="n">dx</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">1000</span><span class="p">),(</span><span class="mi">1</span><span class="p">,</span><span class="mi">3000</span><span class="p">)),</span>
+                          <span class="n">mixture</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prefit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">'cpu'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 15.7 s, sys: 229 ms, total: 15.9 s
+Wall time: 2.73 s
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_cartana-kidney-alignment-minimal_9_1.png" src="../_images/notebooks_cartana-kidney-alignment-minimal_9_1.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_cartana-kidney-alignment-minimal_9_2.png" src="../_images/notebooks_cartana-kidney-alignment-minimal_9_2.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_cartana-kidney-alignment-minimal_9_3.png" src="../_images/notebooks_cartana-kidney-alignment-minimal_9_3.png" />
+</div>
+</div>
+</section>
+<section id="After-alignment">
+<h2>After alignment<a class="headerlink" href="#After-alignment" title="Link to this heading"></a></h2>
+<p>We apply the transform to the source cells. <code class="docutils literal notranslate"><span class="pre">STalign</span></code> uses (row, column) order, so we pass the points as (y, x) and swap them back.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tpointsI</span> <span class="o">=</span> <span class="n">STalign</span><span class="o">.</span><span class="n">transform_points_source_to_target</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s1">'xv'</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="s1">'v'</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="s1">'A'</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">yI</span><span class="p">,</span> <span class="n">xI</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<span class="n">xI_aligned</span> <span class="o">=</span> <span class="n">tpointsI</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">yI_aligned</span> <span class="o">=</span> <span class="n">tpointsI</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xI_aligned</span><span class="p">,</span><span class="n">yI_aligned</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'source (male), STaligned'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xJ</span><span class="p">,</span><span class="n">yJ</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'target (female)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">'equal'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">markerscale</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">loc</span> <span class="o">=</span> <span class="s1">'lower left'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x12f47a9c0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_cartana-kidney-alignment-minimal_11_1.png" src="../_images/notebooks_cartana-kidney-alignment-minimal_11_1.png" />
+</div>
+</div>
+</section>
+<section id="Write-out-the-results">
+<h2>Write out the results<a class="headerlink" href="#Write-out-the-results" title="Link to this heading"></a></h2>
+<p>We append the aligned positions to the original source data, both in the image pixel units of the target, so they can be used in place of its <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>, and in micrometers. We save them as a compressed <code class="docutils literal notranslate"><span class="pre">.csv.gz</span></code> file.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">df1</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">aligned_x</span> <span class="o">=</span> <span class="n">xI_aligned</span><span class="o">/</span><span class="n">um_per_px</span><span class="p">,</span>
+                     <span class="n">aligned_y</span> <span class="o">=</span> <span class="n">yI_aligned</span><span class="o">/</span><span class="n">um_per_px</span><span class="p">,</span>
+                     <span class="n">aligned_x_um</span> <span class="o">=</span> <span class="n">xI_aligned</span><span class="p">,</span>
+                     <span class="n">aligned_y_um</span> <span class="o">=</span> <span class="n">yI_aligned</span><span class="p">)</span>
+<span class="n">results</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s1">'../cartana_data/GSM7090410_cartana_sham_male_STalign_to_GSM7090415_cartana_sham_female_align_cells.csv.gz'</span><span class="p">,</span>
+               <span class="n">compression</span><span class="o">=</span><span class="s1">'gzip'</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">results</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cell</th>
+      <th>x</th>
+      <th>y</th>
+      <th>cluster</th>
+      <th>n_transcripts</th>
+      <th>density</th>
+      <th>elongation</th>
+      <th>area</th>
+      <th>avg_confidence</th>
+      <th>aligned_x</th>
+      <th>aligned_y</th>
+      <th>aligned_x_um</th>
+      <th>aligned_y_um</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>5905.766000</td>
+      <td>4884.044000</td>
+      <td>4</td>
+      <td>5</td>
+      <td>0.007945</td>
+      <td>5.859</td>
+      <td>629.3</td>
+      <td>0.9994</td>
+      <td>5215.722303</td>
+      <td>6257.965821</td>
+      <td>847.554874</td>
+      <td>1016.919446</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>5086.160000</td>
+      <td>5708.391250</td>
+      <td>5</td>
+      <td>8</td>
+      <td>0.011020</td>
+      <td>1.989</td>
+      <td>725.7</td>
+      <td>0.9999</td>
+      <td>4565.575292</td>
+      <td>7172.918637</td>
+      <td>741.905985</td>
+      <td>1165.599278</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>5556.215000</td>
+      <td>5281.355000</td>
+      <td>6</td>
+      <td>10</td>
+      <td>0.005935</td>
+      <td>2.592</td>
+      <td>1685.0</td>
+      <td>1.0000</td>
+      <td>4937.389106</td>
+      <td>6690.008583</td>
+      <td>802.325730</td>
+      <td>1087.126395</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>5017.552000</td>
+      <td>5799.638000</td>
+      <td>5</td>
+      <td>10</td>
+      <td>0.010640</td>
+      <td>3.218</td>
+      <td>940.2</td>
+      <td>1.0000</td>
+      <td>4515.110684</td>
+      <td>7274.851790</td>
+      <td>733.705486</td>
+      <td>1182.163416</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>6035.902857</td>
+      <td>4798.607143</td>
+      <td>5</td>
+      <td>7</td>
+      <td>0.007109</td>
+      <td>4.155</td>
+      <td>984.7</td>
+      <td>0.9992</td>
+      <td>5323.900946</td>
+      <td>6162.581790</td>
+      <td>865.133904</td>
+      <td>1001.419541</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="heart-alignment.html" class="btn btn-neutral float-left" title="Aligning heart ST data from ISS" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../STalign.html" class="btn btn-neutral float-right" title="Functions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

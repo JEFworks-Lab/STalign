@@ -1,0 +1,370 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Changes &mdash; STalign 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=51b770b3"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Functions" href="STalign.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            STalign
+              <img src="https://raw.githubusercontent.com/JEFworks-Lab/STalign/main/STalign_logos_fin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#what-changed-in-version-2-0-0">What changed in version 2.0.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#performance">Performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#input-data">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="STalign.html">Functions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Changes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">2.0.0 (2026-10-14)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#faster">Faster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#more-accurate-default-alignments">More accurate default alignments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#new-functions-and-options">New functions and options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#changes-that-affect-results">Changes that affect results</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bug-fixes">Bug fixes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tutorials">Tutorials</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#packaging-and-testing">Packaging and testing</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STalign</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Changes</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/CHANGES.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="changes">
+<h1>Changes<a class="headerlink" href="#changes" title="Link to this heading"></a></h1>
+<section id="id1">
+<h2>2.0.0 (2026-10-14)<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>This version keeps every function and argument of version 1.0, though some defaults changed (listed under <a class="reference internal" href="#new-functions-and-options"><span class="std std-ref">New functions and options</span></a>). Alignments run much faster, several bugs are fixed, and <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> choose more of their settings from the data (the new defaults below), so results differ from earlier ones. <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> turns the new defaults off.</p>
+<section id="faster">
+<h3>Faster<a class="headerlink" href="#faster" title="Link to this heading"></a></h3>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> have a new optional C++ engine, compiled by <code class="docutils literal notranslate"><span class="pre">pip</span></code> when a C++17 compiler is available. Without one, they use a new pure <code class="docutils literal notranslate"><span class="pre">torch</span></code> implementation. Both compute the same iterations up to rounding. Time of the tutorials’ alignments (<code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> or <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code>) with their own data, parameters and numbers of iterations, on a Mac / on Linux (end to end adds rasterizing the cells and transforming them):</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>tutorial</p></th>
+<th class="head"><p>iterations</p></th>
+<th class="head"><p>version 1.0</p></th>
+<th class="head"><p>C++ engine</p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">torch</span></code> engine</p></th>
+<th class="head"><p>C++ engine, <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>MERFISH to MERFISH</p></td>
+<td><p>10,000</p></td>
+<td><p>9.2 min / 12.1 min</p></td>
+<td><p>10 s / 45 s</p></td>
+<td><p>1.5 min / 1.7 min</p></td>
+<td><p>7.9 s / 42 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>MERFISH, simulated deformation</p></td>
+<td><p>1,000</p></td>
+<td><p>2.3 min / 3.8 min</p></td>
+<td><p>4.2 s / 14 s</p></td>
+<td><p>19 s / 31 s</p></td>
+<td><p>2.1 s / 11 s</p></td>
+</tr>
+<tr class="row-even"><td><p>Xenium to Xenium</p></td>
+<td><p>300</p></td>
+<td><p>10 s / 15 s</p></td>
+<td><p>0.18 s / 0.65 s</p></td>
+<td><p>1.8 s / 2.3 s</p></td>
+<td><p>0.17 s / 0.64 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>Xenium to H&amp;E image</p></td>
+<td><p>2,000</p></td>
+<td><p>1.3 min / 1.9 min</p></td>
+<td><p>1.5 s / 6.5 s</p></td>
+<td><p>14 s / 24 s</p></td>
+<td><p>1.4 s / 6.3 s</p></td>
+</tr>
+<tr class="row-even"><td><p>Heart sections</p></td>
+<td><p>1,000</p></td>
+<td><p>2.9 min / 3.8 min</p></td>
+<td><p>7.2 s / 31 s</p></td>
+<td><p>29 s / 1.1 min</p></td>
+<td><p>3.6 s / 26 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>MERFISH to Visium, with landmarks</p></td>
+<td><p>200</p></td>
+<td><p>4.2 min / 12.5 min</p></td>
+<td><p>4.4 s / 30 s</p></td>
+<td><p>35 s / 2.0 min</p></td>
+<td><p>4.3 s / 29 s</p></td>
+</tr>
+<tr class="row-even"><td><p>MERFISH to Allen atlas (3D)</p></td>
+<td><p>2,000</p></td>
+<td><p>21.6 min / 48.4 min</p></td>
+<td><p>34 s / 3.0 min</p></td>
+<td><p>1.8 min / 8.1 min</p></td>
+<td><p>28 s / 2.8 min</p></td>
+</tr>
+<tr class="row-odd"><td><p>STARmap to Allen atlas (3D)</p></td>
+<td><p>800</p></td>
+<td><p>16.3 min / 32.8 min</p></td>
+<td><p>30 s / 2.8 min</p></td>
+<td><p>2.0 min / 7.6 min</p></td>
+<td><p>24 s / 2.7 min</p></td>
+</tr>
+<tr class="row-even"><td><p>Visium to Visium, affine only</p></td>
+<td><p>1,000</p></td>
+<td><p>16 s / 30 s</p></td>
+<td><p>0.92 s / 1.1 s</p></td>
+<td><p>1.3 s / 1.9 s</p></td>
+<td><p>0.06 s / 0.03 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>Xenium to STARmap</p></td>
+<td><p>4,000</p></td>
+<td><p>2.4 min / 3.3 min</p></td>
+<td><p>6.2 s / 14 s</p></td>
+<td><p>25 s / 31 s</p></td>
+<td><p>2.7 s / 9.3 s</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>all 10 tutorials</strong></p></td>
+<td><p></p></td>
+<td><p>60.6 min / 119.3 min</p></td>
+<td><p>1.6 min / 8.2 min</p></td>
+<td><p>7.5 min / 22.0 min</p></td>
+<td><p>1.2 min / 7.5 min</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>all 10, end to end</strong></p></td>
+<td><p></p></td>
+<td><p>61.1 min / 120.2 min</p></td>
+<td><p>1.7 min / 8.2 min</p></td>
+<td><p>7.5 min / 22.1 min</p></td>
+<td><p>1.3 min / 7.6 min</p></td>
+</tr>
+</tbody>
+</table>
+<p>Measured on an Apple M1 Ultra (macOS, 16 threads) and an AMD Ryzen 5 5560U (Linux, 8 threads, <code class="docutils literal notranslate"><span class="pre">nice</span> <span class="pre">-n</span> <span class="pre">19</span></code>), one alignment at a time, on the CPU in float64 without figures, with replicas of the tutorials (this version: best of 2 runs); version 1.0 ran with 2 threads or with 16 (Linux: 8), whichever was faster, for 300 iterations (100 for MERFISH to Visium and the 3D tutorials, all of them for Xenium to Xenium and Visium to Visium), extrapolated to the tutorial’s number from its steady time per iteration, which includes redrawing its figures every 10 iterations as it always does (three full-length runs were within 2.5% of the extrapolation). In total, the C++ engine runs the ten fits 37 times faster than version 1.0 on the Mac and 15 times faster on Linux (17–58 and 7–27 times per tutorial), and the <code class="docutils literal notranslate"><span class="pre">torch</span></code> engine 8 and 5 times faster. The tutorials pass their own numbers of iterations, so these times do not include the shorter default of 2000 iterations in 2D (below). The other new defaults add up to 6 s per fit on the Mac and 12 s on Linux, mostly for the affine pre-fit; without them (<code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code>) the C++ engine is 49 and 16 times faster in total. On the Linux machine the C++ engine gains less: with one thread it is 1.6–2.1 times slower than on the Mac, and 8 threads make it 3.4–4.2 times faster than one thread, where 16 threads on the Mac make it 11–13 times faster (MERFISH to MERFISH and MERFISH to Allen atlas, <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code>).</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> draw their figures once, after the last iteration, instead of every 10 iterations (<code class="docutils literal notranslate"><span class="pre">draw=True</span></code> restores the old behavior).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rasterize</span></code> is about 60 times faster on the Mac and 45 times on Linux (85,958 cells: 1.8 s to 31 ms and 3.3 s to 75 ms; 2 million cells: 45 s to 0.72 s and 78 s to 1.6 s), and <code class="docutils literal notranslate"><span class="pre">rasterize_with_signal</span></code> as much with one signal column and about 20 times with 16 columns. Both give the same images up to rounding (1e-12 relative). Peak memory is bounded.</p></li>
+<li><p>The transform functions split large point sets into chunks and use several threads. Transforming all cells of a tutorial takes at most 0.07 s on the Mac and 0.3 s on Linux; <code class="docutils literal notranslate"><span class="pre">analyze3Dalign</span></code> takes 0.07 s instead of 1.9 s in the STARmap tutorial (Linux: 0.27 s instead of 5.4 s). In 2D the exact inverse (below) makes source-to-target transforms slower than the previous approximation, though still fast: 0.025 s instead of 0.005 s for the cells of the MERFISH tutorial (Mac).</p></li>
+</ul>
+</section>
+<section id="more-accurate-default-alignments">
+<h3>More accurate default alignments<a class="headerlink" href="#more-accurate-default-alignments" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> now start with a coarse affine pre-alignment, and choose the regularization weight <code class="docutils literal notranslate"><span class="pre">sigmaR</span></code> and (in 2D) the step sizes from the images. The accuracy comparisons in this section are with <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> (below): this version, with the corrections under <a class="reference internal" href="#changes-that-affect-results"><span class="std std-ref">Changes that affect results</span></a>, but with the previous defaults, which are those of version 1.0 except <code class="docutils literal notranslate"><span class="pre">sigmaR=2e6</span></code> in 3D. On the held-out problems of the evaluation suite (synthetic sections with a known deformation, never used for tuning, all run on the same machine type and each paired with its fit under <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code>), the geometric mean error of the alignment fell from 27.5 to 11.9 µm in 2D (ratio 0.43, ±2 SE 0.27–0.70; better on 21 of 27 problems, worse on 2; median ratio 0.87) and from 123.9 to 25.8 µm in 3D (ratio 0.21, 0.08–0.51; better on 4 of 4). On 15 further held-out problems with other combinations of deformation size, realism and pixel size, the ratios were 0.37 in 2D (0.18–0.76; 10 better, 2 worse of 13) and 0.28 in 3D (2 problems; not significant). On the suite’s main set, whose problems were also used to choose the new settings, they were 0.36 in 2D (0.21–0.63) and 0.13 in 3D (0.08–0.21). The 2D fits took 0.43–0.52 times as long as with <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> (about half), mostly because of the new default of 2000 iterations. The large gains come from alignments that failed with the old defaults: rotated sections, slices tilted by a few degrees, and the synthetic Xenium sections, on which the old step sizes were unstable. Version 2.0 also matches landmarks under the fitted map, and adds <code class="docutils literal notranslate"><span class="pre">align_cells</span></code> for two sets of cells and a mixture model for targets with missing tissue (an option of <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>, on by default in <code class="docutils literal notranslate"><span class="pre">align_cells</span></code>).</p>
+<ul class="simple">
+<li><p><strong>Affine pre-fit</strong> (<code class="docutils literal notranslate"><span class="pre">prefit='auto'</span></code>). LDDMM’s gradient descent does not correct a large initial misalignment: it failed on test sections rotated by 20–30° and never corrected atlas planes tilted by a few degrees. Now, before LDDMM, many starts are fitted as affine maps on coarse (about 80 pixels across) images, and the best one is refined and handed to LDDMM. In 2D the starts are the initial affine rotated in 12 steps of 30° about the target’s tissue centroid; in 3D the initial plane tilted by -6, 0 and 6° about both in-plane axes and shifted by -300, 0 and 300 µm along its normal. Ties (energies within 1%) go to the start closest to the initial affine, so nearly symmetric tissue keeps its orientation. In 2D the pre-fit is skipped when landmarks are given, and in both from a nonzero initial velocity <code class="docutils literal notranslate"><span class="pre">v</span></code> (a warm start); <code class="docutils literal notranslate"><span class="pre">prefit=True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code> forces it. A target without tissue (a constant image) skips it with a warning. It takes about 1–4 s per 2D tutorial and 5 s per 3D tutorial on the Mac (4 or 16 threads), and 1–4 s and 8.5–10 s on Linux (8 threads), is deterministic, and is reported in the result’s <code class="docutils literal notranslate"><span class="pre">'prefit'</span></code> entry.</p></li>
+<li><p><strong>sigmaR from a displacement scale</strong> (<code class="docutils literal notranslate"><span class="pre">sigmaR=None</span></code>, new <code class="docutils literal notranslate"><span class="pre">sigma_disp=94.03</span></code>). A fixed <code class="docutils literal notranslate"><span class="pre">sigmaR</span></code> means a different deformation prior at every pixel size, intensity scale and smoothness <code class="docutils literal notranslate"><span class="pre">a</span></code>: on the evaluation suite the best <code class="docutils literal notranslate"><span class="pre">sigmaR</span></code> moved with the pixel size. The default <code class="docutils literal notranslate"><span class="pre">sigmaR</span></code> is now <code class="docutils literal notranslate"><span class="pre">sigma_disp</span> <span class="pre">·</span> <span class="pre">sqrt(C</span> <span class="pre">π)</span> <span class="pre">·</span> <span class="pre">a^(d/2)</span> <span class="pre">·</span> <span class="pre">sqrt(nt)</span> <span class="pre">·</span> <span class="pre">(dx</span> <span class="pre">/</span> <span class="pre">30</span> <span class="pre">µm)</span> <span class="pre">·</span> <span class="pre">sigmaM</span> <span class="pre">/</span> <span class="pre">s_J</span></code> (C = 12 in 2D, 64 in 3D; dx the target pixel size in source units; s_J the typical tissue intensity of the target), so the prior allows displacements of about <code class="docutils literal notranslate"><span class="pre">sigma_disp</span></code> µm whatever the images. At the defaults, a 30 µm target with <code class="docutils literal notranslate"><span class="pre">s_J</span> <span class="pre">=</span> <span class="pre">sigmaM</span></code> gets about the previous 2D default 5e5. It assumes coordinates in µm. A given <code class="docutils literal notranslate"><span class="pre">sigmaR</span></code> is used as is. In 3D it replaces the previous default <code class="docutils literal notranslate"><span class="pre">sigmaR=1e8</span></code>, which regularizes much less with the corrected 3D regularizer (below): the 3D tutorials get about 1.1e7 (MERFISH) and 1.85e6 (STARmap).</p></li>
+<li><p><strong>2D step sizes from the data</strong> (<code class="docutils literal notranslate"><span class="pre">epL</span></code>, <code class="docutils literal notranslate"><span class="pre">epT</span></code>, <code class="docutils literal notranslate"><span class="pre">epV</span></code> = None). The previous defaults are scaled by <code class="docutils literal notranslate"><span class="pre">sigmaM²</span> <span class="pre">·</span> <span class="pre">1.1</span> <span class="pre">/</span> <span class="pre">G</span></code>, where G estimates the curvature of the image term from the target’s variance and the source’s gradients after the pre-fit. Fixed steps were unstable on some images and needlessly small on others. G sums over the target’s pixels, but the largest stable step of the velocity field does not grow with the tissue area, so on small images these steps alone were far too large (a 1.2 mm image fitted to itself diverged, its cells moving by over 100 µm), and they did not account for landmarks, a small <code class="docutils literal notranslate"><span class="pre">sigma_disp</span></code> or, for the affine steps, coordinates far from the origin. Each default step is therefore lowered where needed, from the curvature of the energy at the starting affine (the image term under the same assumptions as G, the landmarks and the regularizer): <code class="docutils literal notranslate"><span class="pre">epV</span></code> to at most half the step at which gradient descent diverges, <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">(λ</span> <span class="pre">+</span> <span class="pre">DV</span> <span class="pre">/</span> <span class="pre">sigmaR²)</span></code> with λ the largest eigenvalue of the kernel-smoothed curvature in the velocity field, and <code class="docutils literal notranslate"><span class="pre">epL</span></code> and <code class="docutils literal notranslate"><span class="pre">epT</span></code> by a common factor to at most a quarter of theirs. λ is found by subspace iteration, whose time grows with the number of points of the velocity grid: for a 17 × 21 mm target with 25 µm pixels it took 1.9 s at the default <code class="docutils literal notranslate"><span class="pre">a=500</span></code> and 15 s at <code class="docutils literal notranslate"><span class="pre">a=200</span></code> (2 threads). On 351 test fits (crops and rescales of the MERFISH, Xenium and heart sections to 1–16 mm with 15–60 µm pixels, fitted to themselves or to a rotated, deformed copy, with and without landmarks, at <code class="docutils literal notranslate"><span class="pre">sigma_disp</span></code> from 10 to 300, and with landmarks 20–50 mm from the origin), 142 were unstable with the steps scaled by G alone and none are with the caps; sections fitted to themselves stay within 0.04 µm of the identity (within 0.74 µm over 99% of the tissue when the pre-fit, accurate to a few µm, starts them). On the evaluation suite only the steps of the sparse heart sections are lowered (epV by 0.50–0.68; the uncapped ones were at 73–100% of the divergence limit), plus the affine steps of the heart and Xenium-to-H&amp;E tutorials: the serial heart sections moved by less than 0.1 µm, the error of two partial ones fell from 105.8 to 84.1 µm and from 82.8 to 67.5 µm (the first started at 42.5 µm, so it fails with or without the cap), and the tutorials’ results are unchanged except Xenium-to-H&amp;E (landmark error 111.7 to 108.4 µm, within its sensitivity to rounding). <code class="docutils literal notranslate"><span class="pre">align_cells</span></code> without the mixture model (<code class="docutils literal notranslate"><span class="pre">mixture=None</span></code>), with its 500 iterations per level, converges more slowly on the serial heart sections (up to 9% more error; the same error with 1500 iterations per level) and improves on the partial ones. Given values are used as is.</p></li>
+<li><p><strong>3D step sizes.</strong> <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> keeps its steps (<code class="docutils literal notranslate"><span class="pre">epL=1e-6</span></code>, <code class="docutils literal notranslate"><span class="pre">epT=1e1</span></code>), but its <code class="docutils literal notranslate"><span class="pre">epV</span></code> default is now <code class="docutils literal notranslate"><span class="pre">None</span></code>: 1e3 as before, lowered where the regularizer alone would make gradient descent diverge (to <code class="docutils literal notranslate"><span class="pre">epV</span> <span class="pre">·</span> <span class="pre">DV</span> <span class="pre">/</span> <span class="pre">sigmaR²</span> <span class="pre">≤</span> <span class="pre">1</span></code>, DV the volume of a velocity grid cell). That happens only for a very small <code class="docutils literal notranslate"><span class="pre">sigma_disp</span></code> with <code class="docutils literal notranslate"><span class="pre">sigmaM</span></code> well below the target’s intensity. A given value is used as is.</p></li>
+<li><p><strong>2000 iterations by default in 2D</strong> (<code class="docutils literal notranslate"><span class="pre">niter=None</span></code>, previously 5000). With the new steps, stopping at 2000 instead of 5000 iterations changed the error by 0.4% (±2 SE −0.2 to +1.0%) and halved the time of the 2D fits.</p></li>
+<li><p><strong>Landmarks are matched under the fitted map</strong> (<code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> with <code class="docutils literal notranslate"><span class="pre">pointsI</span></code> and <code class="docutils literal notranslate"><span class="pre">pointsJ</span></code>). The landmark term moved <code class="docutils literal notranslate"><span class="pre">pointsI</span></code> by forward Euler steps, which invert the fitted target-to-source map only approximately, so the fit matched landmark positions that differ from those <code class="docutils literal notranslate"><span class="pre">transform_points_source_to_target</span></code> gives after the fit. Each time step is now solved exactly (fixed-point iteration and a Newton step; the gradient follows from the implicit function theorem), in both engines. With the other new defaults, on the MERFISH-to-Visium tutorial problem the error of its 12 landmarks fell from 75.4 to 70.1 µm, and when 4 of them were held out of the fit, their error fell from 272.8 to 268.1 µm. The Xenium-to-Xenium tutorial is unchanged (28.5 µm), and on Xenium-to-H&amp;E the change (114.3 to 111.7 µm) is within that problem’s sensitivity to rounding. A <code class="docutils literal notranslate"><span class="pre">RuntimeWarning</span></code> reports steps that did not converge, and steps whose Newton matrix is singular, which take the forward Euler step instead.</p></li>
+<li><p><strong>Caveat: targets with missing tissue.</strong> Where the target lacks tissue that the source has (partial sections), the new defaults did not help: of 8 such test problems, 3 improved on <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> (by 14–78%) and 5 got worse (by 9–29%). Check such alignments, and compare with <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> or <code class="docutils literal notranslate"><span class="pre">prefit=False</span></code>, or try <code class="docutils literal notranslate"><span class="pre">mixture='em'</span></code> (below), which <code class="docutils literal notranslate"><span class="pre">align_cells</span></code> uses by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> (keyword-only) restores the previous defaults: no pre-fit (unless <code class="docutils literal notranslate"><span class="pre">prefit=True</span></code>), forward Euler steps in the landmark term, <code class="docutils literal notranslate"><span class="pre">niter=5000</span></code>, <code class="docutils literal notranslate"><span class="pre">epL=2e-8</span></code>, <code class="docutils literal notranslate"><span class="pre">epT=2e-1</span></code>, <code class="docutils literal notranslate"><span class="pre">epV=2e3</span></code> and <code class="docutils literal notranslate"><span class="pre">sigmaR=5e5</span></code> in 2D, and <code class="docutils literal notranslate"><span class="pre">sigmaR=2e6</span></code> and <code class="docutils literal notranslate"><span class="pre">epV=1e3</span></code> without the cap in 3D. The results are then bit for bit those without these changes (the corrections below still apply).</p></li>
+<li><p>The result has two new entries: <code class="docutils literal notranslate"><span class="pre">'prefit'</span></code> (whether the pre-fit ran, the affine <code class="docutils literal notranslate"><span class="pre">'A'</span></code> the fit started from, which is the initial affine when the pre-fit did not run, and if it ran the energy of every start) and <code class="docutils literal notranslate"><span class="pre">'settings'</span></code> (the <code class="docutils literal notranslate"><span class="pre">niter</span></code>, <code class="docutils literal notranslate"><span class="pre">sigmaR</span></code>, <code class="docutils literal notranslate"><span class="pre">epL</span></code>, <code class="docutils literal notranslate"><span class="pre">epT</span></code> and <code class="docutils literal notranslate"><span class="pre">epV</span></code> the fit used). Passing them back, with <code class="docutils literal notranslate"><span class="pre">A=out['prefit']['A']</span></code> in place of <code class="docutils literal notranslate"><span class="pre">L</span></code>, <code class="docutils literal notranslate"><span class="pre">T</span></code> or <code class="docutils literal notranslate"><span class="pre">A</span></code> and <code class="docutils literal notranslate"><span class="pre">prefit=False</span></code> (and <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> if the fit used it), repeats the fit exactly, for example to align several sections with the same settings.</p></li>
+<li><p><strong>New function <code class="docutils literal notranslate"><span class="pre">align_cells(xI,</span> <span class="pre">yI,</span> <span class="pre">xJ,</span> <span class="pre">yJ)</span></code></strong> aligns two sets of cells in one call. It rasterizes both at 15 µm with a Gaussian kernel of 30 µm standard deviation and runs <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> coarse to fine on mean-pooled copies of these images (500 iterations at 60 µm pixels, then 500 at 30 µm), each level starting from the previous level’s affine and velocity field, with <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>’s defaults at each level except for the mixture model (<code class="docutils literal notranslate"><span class="pre">mixture='em'</span></code>, below), which <code class="docutils literal notranslate"><span class="pre">align_cells</span></code> uses by default and <code class="docutils literal notranslate"><span class="pre">mixture=None</span></code> turns off. It returns <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>’s result, so the transform functions work on it as usual, plus the two rasters. On the 27 held-out synthetic cell-to-cell problems of our evaluation suite (known deformations of real MERFISH, Xenium and heart cell sets), it had less than half the error of <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> with the new defaults on the suite’s own rasters (15, 30 or 60 µm pixels with a kernel tied to the pixel size): geometric mean 4.6 instead of 11.9 µm (ratio 0.39, ±2 SE 0.29–0.51; better on 24 problems, worse on 3), in less than half the fitting time, and 0.17 times the error of <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> with <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> (27.5 µm; 0.10–0.27). On the suite’s main set and on the 13 further held-out problems, its ratios to <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> were 0.38 (0.30–0.50) and 0.34 (0.21–0.55). It was less accurate than <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> only on problems whose rasters in the suite already had 15 µm pixels: on 9 of these 11 problems, by 5–14% (10–14% on the 3 held-out ones; 3.3 instead of 3.0 µm, for example). On the other 2, whose rasters had a kernel twice as wide, it had 0.42–0.44 times the error of <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>. Images from other sources (H&amp;E, Visium, an atlas) still go to <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> directly.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">align_cells</span></code> uses the mixture model by default</strong>, because it fixes most cases of partial tissue: over the 64 distinct synthetic cell-to-cell problems of the three sets, it cut the geometric mean error of the 8 partial sections from 15.2 to 4.3 µm (ratio 0.29, ±2 SE 0.18–0.45; all 8 better). Without it, a sparse heart section missing 20% of its cells barely improved on the initial affine (49.9 instead of 50.9 µm; 4.5 µm with it). Where the target has all the tissue but uneven cell density, it does harm: the error of the 6 such sections rose from 7.9 to 12.8 µm (ratio 1.62, 1.31–2.00; up to 1.99 times), though it stays well below the 46.7 µm of <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>, and 5 of the 8 serial heart sections got 10–57% worse (ratio 1.14, 1.02–1.26). The other 42 problems changed by less than 2%. Over all 64 the ratio was 0.91 (0.80–1.03; 0.91 on the main set and 0.88 and 1.00 on the two held-out sets, none significant). Pass <code class="docutils literal notranslate"><span class="pre">mixture=None</span></code> where the target section is complete.</p></li>
+<li><p><strong>New option <code class="docutils literal notranslate"><span class="pre">LDDMM(mixture='em')</span></code></strong> (keyword-only, 2D, off by default): a mixture model that estimates the noise of the matching term from the residual and gives a low matching weight to target pixels that look like background where the deformed source has tissue, as where the target section is incomplete. From iteration 50, every 5 iterations, each target pixel is weighted between the matching class and a background class whose mean is the median of the target’s border (or <code class="docutils literal notranslate"><span class="pre">muB</span></code>); a dict changes these choices (see the docstring). On the main set of the evaluation suite, with the other new defaults, it cut the error of the 3 partial-section problems to 0.36 times that without it (all 3 better) and left the 21 serial sections unchanged on average (ratio 1.01), but one of the 2 problems with uneven cell density got 10% worse (the other 23% better). Overall the ratio was 0.89 (±2 SE 0.78–1.02, not significant), so it is not <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>’s default: try it where the target lacks tissue. <code class="docutils literal notranslate"><span class="pre">align_cells</span></code> uses it by default (above). Both engines implement it natively, at no measurable cost per iteration. <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> does not implement it (any <code class="docutils literal notranslate"><span class="pre">mixture</span></code> but <code class="docutils literal notranslate"><span class="pre">None</span></code> raises <code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code>).</p></li>
+</ul>
+</section>
+<section id="new-functions-and-options">
+<h3>New functions and options<a class="headerlink" href="#new-functions-and-options" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">align_cells</span></code> and <code class="docutils literal notranslate"><span class="pre">LDDMM(mixture=...)</span></code> (above).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">STalign</span></code> also gives the functions of <code class="docutils literal notranslate"><span class="pre">STalign.STalign</span></code> (<code class="docutils literal notranslate"><span class="pre">STalign.LDDMM</span></code> and so on), so the tutorials that import <code class="docutils literal notranslate"><span class="pre">STalign.py</span></code> from the repository with <code class="docutils literal notranslate"><span class="pre">sys.path.append</span></code> also work when STalign is installed. <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">STalign</span> <span class="pre">import</span> <span class="pre">STalign</span></code> works as before.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> take the keyword-only arguments <code class="docutils literal notranslate"><span class="pre">prefit</span></code>, <code class="docutils literal notranslate"><span class="pre">sigma_disp</span></code> and <code class="docutils literal notranslate"><span class="pre">legacy_defaults</span></code> (above), <code class="docutils literal notranslate"><span class="pre">backend</span></code> (<code class="docutils literal notranslate"><span class="pre">'auto'</span></code>, <code class="docutils literal notranslate"><span class="pre">'cpp'</span></code> or <code class="docutils literal notranslate"><span class="pre">'torch'</span></code>), <code class="docutils literal notranslate"><span class="pre">num_threads</span></code>, <code class="docutils literal notranslate"><span class="pre">draw</span></code> and <code class="docutils literal notranslate"><span class="pre">affine_step_control</span></code> (default <code class="docutils literal notranslate"><span class="pre">False</span></code> in <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">True</span></code> in <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code>, see below). The new <code class="docutils literal notranslate"><span class="pre">backend_info()</span></code> reports which engine is used and, if the C++ engine is unavailable, why.</p></li>
+<li><p>The number of threads is at most <code class="docutils literal notranslate"><span class="pre">num_threads</span></code>, else the environment variable <code class="docutils literal notranslate"><span class="pre">STALIGN_NUM_THREADS</span></code>, else <code class="docutils literal notranslate"><span class="pre">torch.get_num_threads()</span></code>. Results do not depend on it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transform_points_source_to_target</span></code>, <code class="docutils literal notranslate"><span class="pre">build_transform(direction='f')</span></code>, <code class="docutils literal notranslate"><span class="pre">build_transform3D(direction='f')</span></code> and <code class="docutils literal notranslate"><span class="pre">transform_image_target_to_source</span></code> take <code class="docutils literal notranslate"><span class="pre">exact_inverse</span></code> (default <code class="docutils literal notranslate"><span class="pre">True</span></code>, see below).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rasterize</span></code> and <code class="docutils literal notranslate"><span class="pre">rasterize_with_signal</span></code> take a keyword-only <code class="docutils literal notranslate"><span class="pre">blur_um</span></code>: the kernel standard deviation in the units of the cell coordinates, instead of <code class="docutils literal notranslate"><span class="pre">blur</span></code> in pixels (<code class="docutils literal notranslate"><span class="pre">blur</span> <span class="pre">=</span> <span class="pre">blur_um/(2*dx)</span></code>), so the kernel keeps its physical width at any pixel size. Giving both <code class="docutils literal notranslate"><span class="pre">blur</span></code> and <code class="docutils literal notranslate"><span class="pre">blur_um</span></code> is an error. Calls without <code class="docutils literal notranslate"><span class="pre">blur_um</span></code> give the same images as before.</p></li>
+<li><p>Changed defaults (each explained above): <code class="docutils literal notranslate"><span class="pre">None</span></code> for <code class="docutils literal notranslate"><span class="pre">niter</span></code> (was 5000), <code class="docutils literal notranslate"><span class="pre">sigmaR</span></code> (5e5), <code class="docutils literal notranslate"><span class="pre">epL</span></code> (2e-8), <code class="docutils literal notranslate"><span class="pre">epT</span></code> (2e-1) and <code class="docutils literal notranslate"><span class="pre">epV</span></code> (2e3) in <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>, for <code class="docutils literal notranslate"><span class="pre">sigmaR</span></code> (1e8) and <code class="docutils literal notranslate"><span class="pre">epV</span></code> (1e3) in <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code>, and for <code class="docutils literal notranslate"><span class="pre">blur</span></code> (1.0) in <code class="docutils literal notranslate"><span class="pre">rasterize</span></code> and <code class="docutils literal notranslate"><span class="pre">rasterize_with_signal</span></code>, where it means 1.0 unless <code class="docutils literal notranslate"><span class="pre">blur_um</span></code> is given.</p></li>
+</ul>
+</section>
+<section id="changes-that-affect-results">
+<h3>Changes that affect results<a class="headerlink" href="#changes-that-affect-results" title="Link to this heading"></a></h3>
+<p>These corrections apply whatever the defaults. Their effects below were measured with the previous defaults (those of <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code>).</p>
+<ul>
+<li><p><strong>Source-to-target transforms use the exact inverse of the fitted mapping.</strong> <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> fits a target-to-source map; mapping cells the other way previously used a forward Euler approximation that is not its inverse. On the tutorial fits, cells move by 1–13 µm on average and up to ~100 µm. The ground-truth error of the simulation tutorial drops from 9.68 to 6.68 µm (6.38 µm with the new defaults). <code class="docutils literal notranslate"><span class="pre">exact_inverse=False</span></code> gives the previous approximation.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">transform_points_target_to_source</span></code> integrates the velocity in the correct time order</strong> (t = nt-1 down to 0, as <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">build_transform</span></code> do). Changes are small: at most 0.26 raster pixels on the tutorials.</p></li>
+<li><p><strong>The 3D regularizer is corrected.</strong> <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> transformed the velocity over only two of its three axes, so it applied no smoothness left-to-right and a position-dependent penalty up to 83,521 times stronger at the midline. It now computes the documented 0.5/sigmaR² Σ_t ‖L v_t‖². At the old default <code class="docutils literal notranslate"><span class="pre">sigmaR=1e8</span></code> the corrected term regularizes much less than the old one did (in the 3D tutorials the rms velocity became up to twice as large). <code class="docutils literal notranslate"><span class="pre">sigmaR=2e6</span></code>, the value <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code> uses, gives deformations of about the previous size (rms velocity 16.7 and 17.4 µm in the MERFISH and STARmap tutorials, against 15.7 and 14.7 µm before); the default is now chosen from the data (above). <code class="docutils literal notranslate"><span class="pre">sigmaR=1e8</span></code> gives the old value.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> controls the step of each affine parameter</strong> (<code class="docutils literal notranslate"><span class="pre">affine_step_control=True</span></code>, the new default). With the default <code class="docutils literal notranslate"><span class="pre">epT</span></code>, the translation found by plain gradient descent never settled: it jumped back and forth by 45–165 µm per iteration until the last one, so the result depended on rounding. Now the step of each entry of <code class="docutils literal notranslate"><span class="pre">L</span></code> and <code class="docutils literal notranslate"><span class="pre">T</span></code> is multiplied by its own factor between 0.001 and 1, which halves when that parameter’s gradient changes sign from one iteration to the next and grows by 5% per iteration while it does not, so steps are never larger than <code class="docutils literal notranslate"><span class="pre">epL</span></code> and <code class="docutils literal notranslate"><span class="pre">epT</span></code>. The affine parameters converge (the translation moves by 0.001–0.3 µm per iteration at the end), and changing the initial translation in its last digit moves the cells by about 1e-12 µm instead of 30–84 µm. With <code class="docutils literal notranslate"><span class="pre">sigmaR=2e6</span></code>, the 3D tutorial alignments match the atlas about as well as version 1.0 did:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p></p></th>
+<th class="head"><p>matching energy</p></th>
+<th class="head"><p>cells in brain</p></th>
+<th class="head"><p>Dice (tissue vs brain)</p></th>
+<th class="head"><p>correlation with the atlas</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>MERFISH, version 1.0</p></td>
+<td><p>29,095</p></td>
+<td><p>97.1%</p></td>
+<td><p>0.885</p></td>
+<td><p>0.394</p></td>
+</tr>
+<tr class="row-odd"><td><p>MERFISH, this version, <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code></p></td>
+<td><p>30,169</p></td>
+<td><p>96.9%</p></td>
+<td><p>0.882</p></td>
+<td><p>0.400</p></td>
+</tr>
+<tr class="row-even"><td><p>STARmap, version 1.0</p></td>
+<td><p>92,564</p></td>
+<td><p>97.5%</p></td>
+<td><p>0.804</p></td>
+<td><p>0.516</p></td>
+</tr>
+<tr class="row-odd"><td><p>STARmap, this version, <code class="docutils literal notranslate"><span class="pre">legacy_defaults=True</span></code></p></td>
+<td><p>77,782</p></td>
+<td><p>97.7%</p></td>
+<td><p>0.805</p></td>
+<td><p>0.522</p></td>
+</tr>
+</tbody>
+</table>
+<p>(Matching energy: EM over the last 20 iterations, lower is better. Correlation: the target with the deformed atlas Nissl image over the tissue.) With the new defaults, 97.3% of the cells are in the brain in the MERFISH tutorial, with Dice 0.885 and correlation 0.632, and 98.8%, 0.806 and 0.666 in the STARmap tutorial. <code class="docutils literal notranslate"><span class="pre">affine_step_control=False</span></code> gives the plain gradient steps. The control is off by default in <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>: on the 2D tutorials the plain steps either already converge (MERFISH: the cells move by 0.03 µm with the control) or the control made the landmark error worse (the noisy H&amp;E target of the Xenium tutorial: 34.2 instead of 30.3 pixels of the H&amp;E image).</p>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">analyze3Dalign</span></code> returns correct atlas coordinates.</strong> It indexed a 10-unit grid with indices computed from <code class="docutils literal notranslate"><span class="pre">dx</span></code>, so coordinates were wrong whenever <code class="docutils literal notranslate"><span class="pre">dx</span></code> was not 10 (by 4.3 mm on average in the STARmap tutorial, <code class="docutils literal notranslate"><span class="pre">dx=50</span></code>) and biased by up to 19 µm otherwise. Region labels were mostly right and change for under 3% of cells at region boundaries.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> and <code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> return the affine <code class="docutils literal notranslate"><span class="pre">A</span></code>, velocity <code class="docutils literal notranslate"><span class="pre">v</span></code> and (3D) sample points <code class="docutils literal notranslate"><span class="pre">Xs</span></code> of the same, last evaluated iteration. <code class="docutils literal notranslate"><span class="pre">v</span></code> previously came from one update later than <code class="docutils literal notranslate"><span class="pre">A</span></code>. The difference is one velocity step.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">muA</span></code> and <code class="docutils literal notranslate"><span class="pre">muB</span></code> are matched to the number of target channels. A 3-entry mean against a 1-channel target (as in the 3D tutorials) previously counted the squared distance three times; it now warns and uses the single value. Integer, float, list, numpy and torch values are accepted.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rasterize_with_signal</span></code> keeps the sign of a signed signal (it returned the absolute value). <code class="docutils literal notranslate"><span class="pre">normalize</span></code> maps a constant array to <code class="docutils literal notranslate"><span class="pre">t_min</span></code> instead of NaN, so <code class="docutils literal notranslate"><span class="pre">rasterize</span></code> with a constant gene gives a zero image instead of NaN.</p></li>
+</ul>
+<p>Long 3D fits with plain affine steps are very sensitive to rounding: a change in the last digit of the input moved version 1.0’s result by 30–84 µm on average in the 3D tutorials. Small differences from earlier versions are therefore expected even where nothing was fixed. With the affine step control, the new default in 3D, the same change moves the result by about 1e-12 µm, and the C++ and <code class="docutils literal notranslate"><span class="pre">torch</span></code> engines give the same 3D tutorial alignments to within 1e-11 µm. 2D alignments of noisy images can still be sensitive: the same change moves the cells of the Xenium-to-H&amp;E tutorial by 8 µm on average.</p>
+</section>
+<section id="bug-fixes">
+<h3>Bug fixes<a class="headerlink" href="#bug-fixes" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rasterizePCA</span></code> works (it raised <code class="docutils literal notranslate"><span class="pre">NameError:</span> <span class="pre">name</span> <span class="pre">'tools'</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">defined</span></code>) and tolerates genes without counts.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">build_transform3D(direction='f')</span></code> works (it always raised an error) and accepts <code class="docutils literal notranslate"><span class="pre">v=None</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">v_to_phii</span></code> and <code class="docutils literal notranslate"><span class="pre">v_to_phii_3D</span></code> accept the velocity layout that <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code> returns.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">calculate_tre</span></code> and the transform functions accept numpy arrays, torch tensors and lists of integers or floats.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">point_annotator.py</span></code> and <code class="docutils literal notranslate"><span class="pre">curve_annotator.py</span></code> work with output file names (they raised <code class="docutils literal notranslate"><span class="pre">NameError</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">saveRasters</span></code> writes into the folder <code class="docutils literal notranslate"><span class="pre">path</span></code> (it wrote next to it without a trailing slash).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">download_aba_ontology</span></code> and <code class="docutils literal notranslate"><span class="pre">download_aba_image_labels</span></code> raise on HTTP errors instead of saving the error page.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_brain_regions</span></code> gives every region its own color with a readable legend; both plot helpers return <code class="docutils literal notranslate"><span class="pre">(fig,</span> <span class="pre">ax)</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LDDMM_3D_to_slice</span></code> warns that it ignores <code class="docutils literal notranslate"><span class="pre">pointsI</span></code> and <code class="docutils literal notranslate"><span class="pre">pointsJ</span></code> (it has no landmark term).</p></li>
+<li><p>Inputs are checked before fitting, with error messages that name the problem. A drawing error warns instead of stopping the fit.</p></li>
+</ul>
+</section>
+<section id="tutorials">
+<h3>Tutorials<a class="headerlink" href="#tutorials" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>All 17 tutorial notebooks were re-run with this version, and the aligned cell positions they write into <code class="docutils literal notranslate"><span class="pre">docs/*_data</span></code> were regenerated. On the Mac with the C++ engine, their alignment cells take 0.5–36 s; the exception is the curve-annotator tutorial, whose 10,000 iterations on the full H&amp;E image take 3.8 min. (The comparison with version 1.0 is under <a class="reference internal" href="#faster"><span class="std std-ref">Faster</span></a>.)</p></li>
+<li><p>The MERFISH-to-MERFISH, Xenium-to-Xenium, Xenium-to-STARmap and heart tutorials keep their step-by-step walkthrough and end with a section on <code class="docutils literal notranslate"><span class="pre">align_cells</span></code>. The section aligns the same cells in one call and compares the result with the step-by-step one: the median distance between the two is 48, 14, 98 and 69 µm. The sections explain when to turn off the mixture model (<code class="docutils literal notranslate"><span class="pre">mixture=None</span></code>). The heart tutorial, whose complete serial sections are such a case, turns it off.</p></li>
+<li><p>The 3D tutorials start the fit from the atlas slice the user picks. Before, the starting plane was off by <code class="docutils literal notranslate"><span class="pre">xI[0][slice]*(1/scale_z</span> <span class="pre">-</span> <span class="pre">1)</span></code>: 253 µm in the MERFISH tutorial and 47 µm in the STARmap tutorial. They also pass a one-entry <code class="docutils literal notranslate"><span class="pre">muA</span></code> and <code class="docutils literal notranslate"><span class="pre">muB</span></code> for their one-channel target. The STARmap tutorial reads its data by a relative path and draws inline figures.</p></li>
+<li><p>The Xenium-to-Xenium tutorial reads the matching weights <code class="docutils literal notranslate"><span class="pre">WM</span></code> on the target grid instead of the source grid. This has no visible effect there, but it matters whenever the two grids differ.</p></li>
+<li><p>Tutorials that no longer ran were fixed:</p>
+<ul>
+<li><p>The simulation tutorial uses the current API and scikit-learn’s <code class="docutils literal notranslate"><span class="pre">root_mean_squared_error</span></code>. Its ground-truth error is now 6.38 µm instead of 9.68 µm.</p></li>
+<li><p>The MERFISH-to-Xenium tutorial had wrong data paths and a commented-out import.</p></li>
+<li><p>The curve-annotator tutorial resamples each pair of curves to the same number of points.</p></li>
+<li><p>The L/T tutorial no longer unpacks <code class="docutils literal notranslate"><span class="pre">LDDMM</span></code>’s result as a tuple.</p></li>
+<li><p>The Xenium-to-Xenium, Xenium-to-H&amp;E, Xenium-to-STARmap and heart tutorials save their results as tables: the target’s own columns plus <code class="docutils literal notranslate"><span class="pre">aligned_x</span></code> and <code class="docutils literal notranslate"><span class="pre">aligned_y</span></code> (their save cells called <code class="docutils literal notranslate"><span class="pre">to_csv</span></code> on numpy arrays and raised an error). The Xenium-to-H&amp;E tutorial also saved an undefined variable, and the heart tutorial’s result file, <code class="docutils literal notranslate"><span class="pre">CN73_E2_STalign_to_CN73_E1.csv.gz</span></code> (the cells of CN73_E2 in the coordinates of CN73_E1), is new, as its save cell never ran before.</p></li>
+</ul>
+</li>
+<li><p>The point-annotator tutorial writes the filtered cells into its <code class="docutils literal notranslate"><span class="pre">..._filtered.csv.gz</span></code> file (it wrote all cells). The tutorials convert between torch tensors and numpy arrays explicitly and pass no unused color limits to <code class="docutils literal notranslate"><span class="pre">scatter</span></code>, so they run without warnings, and the L/T tutorial no longer has a leftover cell that reloaded <code class="docutils literal notranslate"><span class="pre">STalign</span></code>.</p></li>
+<li><p>The uncompressed <code class="docutils literal notranslate"><span class="pre">Xenium_Breast_Cancer_Rep1_STalign_to_HE.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">Xenium_Breast_Cancer_Rep2_STalign_to_Rep1.csv</span></code> in <code class="docutils literal notranslate"><span class="pre">docs/xenium_data</span></code> and <code class="docutils literal notranslate"><span class="pre">starmap_STalign_to_xenium.csv</span></code> in <code class="docutils literal notranslate"><span class="pre">docs/starmap_data</span></code> were written by earlier versions of the tutorials, which now write <code class="docutils literal notranslate"><span class="pre">.csv.gz</span></code> files. They are left as they were, so they do not match the results of this version.</p></li>
+</ul>
+</section>
+<section id="packaging-and-testing">
+<h3>Packaging and testing<a class="headerlink" href="#packaging-and-testing" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>The version is 2.0.0. It is defined once, as <code class="docutils literal notranslate"><span class="pre">STalign.__version__</span></code>, which <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> and the documentation read.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> lists only the runtime dependencies, unpinned: matplotlib, numpy, pandas, pynrrd, requests and torch. pandas, pynrrd and requests are needed only by the Allen atlas helpers. The tutorials also use plotly, scipy, scikit-learn and scikit-image.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> declares the build requirements. pybind11 is needed only to compile the C++ engine; if compilation fails, installation still succeeds and the <code class="docutils literal notranslate"><span class="pre">torch</span></code> engine is used. Building the C++ engine in a clone (<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">build_ext</span> <span class="pre">--inplace</span></code>) also needs setuptools, which Python 3.12 and later no longer include in new virtual environments.</p></li>
+<li><p>Wheels include the license of pocketfft (BSD-3-Clause), which the C++ engine compiles in, next to STalign’s own.</p></li>
+<li><p>A <code class="docutils literal notranslate"><span class="pre">pytest</span></code> suite in <code class="docutils literal notranslate"><span class="pre">tests/</span></code> checks both engines against a plain-autograd reference implementation of the iteration (<code class="docutils literal notranslate"><span class="pre">tests/reference.py</span></code>), and the rasterization, the transforms and the function signatures against version 1.0, whose <code class="docutils literal notranslate"><span class="pre">STalign.py</span></code> it takes from the environment variable <code class="docutils literal notranslate"><span class="pre">STALIGN_ORIGINAL</span></code>.</p></li>
+<li><p>A GitHub Actions workflow (<code class="docutils literal notranslate"><span class="pre">.github/workflows/tests.yaml</span></code>) builds STalign with its C++ engine and runs the test suite on Linux and macOS (Apple silicon) with Python 3.10, 3.12 and 3.14, with version 1.0’s <code class="docutils literal notranslate"><span class="pre">STalign.py</span></code> taken from git for the comparisons. It also installs STalign without a compiler and checks that the <code class="docutils literal notranslate"><span class="pre">torch</span></code> engine is used. The documentation workflow now uses <code class="docutils literal notranslate"><span class="pre">actions/setup-python&#64;v7</span></code> and <code class="docutils literal notranslate"><span class="pre">peaceiris/actions-gh-pages&#64;v4</span></code> (the previous versions needed Node 16) and <code class="docutils literal notranslate"><span class="pre">actions/checkout&#64;v7</span></code>, and installs <code class="docutils literal notranslate"><span class="pre">docs/requirements.txt</span></code> with the CPU build of torch. The documentation renders the numpy-style docstrings (with napoleon) and includes this file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs/requirements.txt</span></code> can be installed with pip (it listed the standard-library modules <code class="docutils literal notranslate"><span class="pre">os</span></code>, <code class="docutils literal notranslate"><span class="pre">collections</span></code> and <code class="docutils literal notranslate"><span class="pre">copy</span></code>, and <code class="docutils literal notranslate"><span class="pre">nrrd</span></code> instead of <code class="docutils literal notranslate"><span class="pre">pynrrd</span></code>) and adds ipython, which highlights the notebooks’ code. The <code class="docutils literal notranslate"><span class="pre">Pipfile</span></code> adds scikit-image and scikit-learn, which the tutorials use, and pybind11 and setuptools, which building the C++ engine in place needs. <code class="docutils literal notranslate"><span class="pre">pipenv-requirements.txt</span></code> is regenerated from it.</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="STalign.html" class="btn btn-neutral float-left" title="Functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, JEFworks Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
