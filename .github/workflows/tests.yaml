@@ -1,0 +1,104 @@
+# Builds STalign with its C++ engine and runs the test suite on Linux and macOS, and checks that
+# STalign installs and works without a compiler (the pure torch engine).
+#
+# The tests import STalign from the source tree (tests/conftest.py), also as the tutorials do, with
+# its STalign folder on sys.path, where an installed copy would take precedence.  So each job checks
+# the package that `pip install .` installed, uninstalls it, and tests the source tree (with the C++
+# engine built in place).  Some tests compare with version 1.0's STalign.py, which each job takes
+# from git (commit V1, below).  Tests that need the development data (dev/, not in git) or a source
+# tree of the last commit before the new defaults (STALIGN_LEGACY_SRC, see tests/test_defaults.py) skip.
+name: Tests
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  OMP_NUM_THREADS: '2'
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+  # version 1.0 (JEFworks-Lab/STalign main, 2023-12-11)
+  V1: b2068edc98974efa54537eca194736e177bbe11d
+jobs:
+  test:
+    name: ${{ matrix.os }}, Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.10', '3.12', '3.14']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install CPU-only torch
+        if: runner.os == 'Linux'
+        run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install STalign (compiles the C++ engine)
+        run: python -m pip install -v .
+      - name: Check that the installed STalign has the C++ engine
+        working-directory: ${{ runner.temp }}
+        run: |
+          python - <<'EOF'
+          import STalign
+          from STalign import STalign as S
+          info = S.backend_info()
+          print(STalign.__version__, STalign.__file__, info)
+          assert info['cpp'] is True and info['auto'] == 'cpp', info
+          EOF
+      - name: Build the C++ engine in the source tree
+        run: |
+          python -m pip uninstall -y STalign
+          python -m pip install pybind11 pytest scipy setuptools
+          python setup.py build_ext --inplace
+          python -c "from STalign import STalign; i = STalign.backend_info(); print(i); assert i['cpp'] is True, i"
+      - name: Get version 1.0's STalign.py for the comparison tests
+        run: |
+          git fetch --no-tags --depth=1 origin "$V1"
+          git show "$V1:STalign/STalign.py" > "$RUNNER_TEMP/stalign_orig.py"
+          echo "STALIGN_ORIGINAL=$RUNNER_TEMP/stalign_orig.py" >> "$GITHUB_ENV"
+          # it imports these at the top
+          python -m pip install plotly tornado
+      - name: Run the tests
+        run: python -m pytest -q
+
+  torch-fallback:
+    name: No compiler (torch engine), ubuntu-latest, Python 3.12
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install CPU-only torch
+        run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install STalign with a compiler that always fails
+        env:
+          CC: 'false'
+          CXX: 'false'
+        run: python -m pip install -v .
+      - name: Check that STalign falls back to the torch engine
+        working-directory: ${{ runner.temp }}
+        run: |
+          python - <<'EOF'
+          from STalign import STalign
+          info = STalign.backend_info()
+          print(info)
+          assert info['cpp'] is False and info['auto'] == 'torch' and info['cpp_error'], info
+          EOF
+      - name: Get version 1.0's STalign.py for the comparison tests
+        run: |
+          git fetch --no-tags --depth=1 origin "$V1"
+          git show "$V1:STalign/STalign.py" > "$RUNNER_TEMP/stalign_orig.py"
+          echo "STALIGN_ORIGINAL=$RUNNER_TEMP/stalign_orig.py" >> "$GITHUB_ENV"
+          # it imports these at the top
+          python -m pip install plotly tornado
+      - name: Run the API tests
+        run: |
+          python -m pip uninstall -y STalign
+          python -m pip install pytest
+          python -m pytest -q tests/test_api.py

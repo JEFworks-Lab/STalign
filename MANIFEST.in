@@ -1,0 +1,9 @@
+# Files of the source distribution beyond the Python package itself:
+# setup.py reads requirements.txt, the C++ engine needs its headers, and the tests
+# need their oracle (tests/reference.py).
+include requirements.txt
+include LICENSE
+include README.md
+graft STalign/_cpp
+recursive-include tests *.py
+global-exclude *.so *.pyd *.o *.py[cod] __pycache__
