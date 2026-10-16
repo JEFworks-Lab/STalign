@@ -12,8 +12,8 @@ import STalign  # noqa: E402  (this checkout's package, for its version)
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'STalign'
-copyright = '2023, JEFworks Lab'
-author = 'Manjari Anant, Kalen Clifton, Daniel Tward, Jean Fan, et al.'
+copyright = '2026, JEFworks Lab'
+author = 'Manjari Anant, Kalen Clifton, Kamil Slowikowski, Daniel Tward, Jean Fan, et al.'
 release = STalign.__version__
 
 # -- General configuration ---------------------------------------------------
